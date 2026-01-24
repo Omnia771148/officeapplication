@@ -1,0 +1,100 @@
+/* src/app/login/login.css */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap');
+
+.loginContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  width: 100vw;
+  background: linear-gradient(90deg, #fdfbf7 50%, #e3d5c6 50%);
+  font-family: 'Outfit', sans-serif;
+  overflow: hidden;
+}
+
+.loginCard {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  /* Glassmorphism or just overlay? The image implies elements floating on the split bg */
+  position: relative;
+  z-index: 10;
+}
+
+.headerTitle {
+  background: #fff;
+  color: #333;
+  font-size: 2rem;
+  font-weight: 400; /* Cursive-ish or elegant */
+  font-family: 'Outfit', serif; /* or just stick to sans if unsure */
+  font-style: italic;
+  padding: 15px 60px;
+  border-radius: 50px;
+  margin-bottom: 60px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+  letter-spacing: 1px;
+}
+
+.inputGroup {
+  width: 100%;
+  margin-bottom: 25px;
+  position: relative;
+}
+
+.inputField {
+  width: 100%;
+  padding: 15px 25px;
+  padding-left: 50px; /* Space for icon */
+  border: none;
+  border-radius: 50px;
+  background: #fff;
+  font-size: 1rem;
+  color: #555;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.inputField:focus {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
+
+.icon {
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #e57373; /* Red/Pinkish icon color from typical aesthetic UIs */
+  font-size: 1.2rem;
+}
+
+.loginButton {
+  background: #fff;
+  color: #000;
+  border: none;
+  padding: 15px 60px;
+  border-radius: 50px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+  margin-top: 20px;
+}
+
+.loginButton:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+  background: #f8f8f8;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+  .loginContainer {
+    background: linear-gradient(90deg, #fdfbf7 50%, #e3d5c6 50%);
+  }
+}
