@@ -42,6 +42,24 @@ export default function BrosPage() {
                     Accepted
                 </button>
             </Link>
+
+            <Link href="/payments">
+                <button style={{
+                    marginTop: '30px',
+                    marginLeft: '20px',
+                    padding: '12px 24px',
+                    fontSize: '1rem',
+                    backgroundColor: '#FF6F61',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                    transition: 'transform 0.2s'
+                }}>
+                    Payments
+                </button>
+            </Link>
         </div>
     );
 }
