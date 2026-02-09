@@ -35,6 +35,19 @@ export default function Dashboard() {
                     </button>
                 ))}
             </div>
+
+            <button
+                className="branchButton"
+                style={{
+                    marginTop: '30px',
+                    width: '90%',
+                    maxWidth: '400px',
+                    backgroundColor: '#E91E63'
+                }}
+                onClick={() => router.push('/live')}
+            >
+                Live Orders
+            </button>
         </div>
     );
 }

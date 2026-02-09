@@ -1,5 +1,4 @@
 import Link from 'next/link';
-
 export default function MayuriPage() {
     return (
         <div style={{ padding: '40px', fontFamily: 'var(--font-outfit), sans-serif', textAlign: 'center' }}>
@@ -7,7 +6,6 @@ export default function MayuriPage() {
             <p style={{ marginTop: '20px', fontSize: '1.2rem', color: '#555' }}>
                 Welcome to the Mayuri management page.
             </p>
-
             <Link href="/yet-to-accept">
                 <button style={{
                     marginTop: '30px',
@@ -24,7 +22,6 @@ export default function MayuriPage() {
                     Yet To Accept
                 </button>
             </Link>
-
             <Link href="/accepted">
                 <button style={{
                     marginTop: '30px',
@@ -42,7 +39,6 @@ export default function MayuriPage() {
                     Accepted
                 </button>
             </Link>
-
             <Link href="/payments">
                 <button style={{
                     marginTop: '30px',
