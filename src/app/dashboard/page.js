@@ -48,6 +48,21 @@ export default function Dashboard() {
             >
                 Live Orders
             </button>
+
+            <button
+                className="branchButton"
+                style={{
+                    marginTop: '20px',
+                    width: '90%',
+                    maxWidth: '400px',
+                    backgroundColor: '#673AB7', // Deep Purple
+                    height: 'auto', // Allow height to adjust for potentially long text
+                    padding: '15px' // Add padding since height is auto
+                }}
+                onClick={() => router.push('/deliveryboypendingpayments')}
+            >
+                Delivery Boy Pending Payments
+            </button>
         </div>
     );
 }
