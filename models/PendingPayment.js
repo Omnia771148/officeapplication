@@ -17,6 +17,13 @@ const PendingPaymentSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    transactions: [{
+        transactionId: String,
+        date: {
+            type: Date,
+            default: Date.now
+        }
+    }]
 }, { strict: false });
 
 export default mongoose.models.PendingPayment || mongoose.model('PendingPayment', PendingPaymentSchema);
