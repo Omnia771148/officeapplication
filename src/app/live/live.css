@@ -1,0 +1,212 @@
+.liveContainer {
+    padding: 20px;
+    background-color: #f0f2f5;
+    min-height: 100vh;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.pageTitle {
+    text-align: center;
+    color: #333;
+    margin-bottom: 30px;
+    font-size: 2rem;
+}
+
+.loading,
+.noData {
+    text-align: center;
+    font-size: 1.2rem;
+    color: #666;
+    margin-top: 50px;
+}
+
+.ordersGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.orderCard {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    transition: transform 0.2s;
+    border-left: 5px solid #2196F3;
+    /* Default accent color */
+}
+
+.orderCard:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.15);
+}
+
+.cardHeader {
+    background-color: #f8f9fa;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.cardHeader h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #333;
+}
+
+.statusBadge {
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    background-color: #e0e0e0;
+    color: #555;
+}
+
+/* Status variants */
+.statusBadge.completed {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.statusBadge.pending {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.statusBadge.processing {
+    background-color: #cce5ff;
+    color: #004085;
+}
+
+.statusBadge.cancelled {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.cardBody {
+    padding: 15px;
+}
+
+.infoRow {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.infoRow:last-child {
+    border-bottom: none;
+}
+
+.label {
+    font-weight: 600;
+    color: #555;
+    text-transform: capitalize;
+}
+
+.value {
+    color: #333;
+    text-align: right;
+    font-weight: 500;
+}
+
+.navigation {
+    margin-top: 40px;
+    text-align: center;
+}
+
+.backButton {
+    background-color: #333;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.2s;
+}
+
+.backButton:hover {
+    background-color: #555;
+}
+
+/* Items specific styling */
+.itemsContainer {
+    grid-column: 1 / -1;
+    /* Make items take full width if inside grid */
+    padding: 10px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.itemsContainer .label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #555;
+    font-size: 0.95rem;
+}
+
+.itemsList {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    background-color: #fafafa;
+    border-radius: 6px;
+    padding: 5px 10px;
+}
+
+.itemRow {
+    padding: 8px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #eee;
+}
+
+.itemDetails {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.itemName {
+    font-size: 0.95rem;
+    color: #333;
+    font-weight: 500;
+}
+
+.itemPrice {
+    font-size: 0.8rem;
+    color: #777;
+    margin-top: 2px;
+}
+
+.itemMeta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    min-width: 60px;
+}
+
+.itemQty {
+    font-size: 0.85rem;
+    font-weight: bold;
+    color: #555;
+    background: #e0e0e0;
+    padding: 2px 8px;
+    border-radius: 12px;
+    margin-bottom: 4px;
+}
+
+.itemTotal {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #2e7d32;
+    /* Green for total price */
+}

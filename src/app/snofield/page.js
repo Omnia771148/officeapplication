@@ -1,5 +1,4 @@
 import Link from 'next/link';
-
 export default function SnofieldPage() {
     return (
         <div style={{ padding: '40px', fontFamily: 'var(--font-outfit), sans-serif', textAlign: 'center' }}>
@@ -7,7 +6,6 @@ export default function SnofieldPage() {
             <p style={{ marginTop: '20px', fontSize: '1.2rem', color: '#555' }}>
                 Welcome to the Snofield management page.
             </p>
-
             <Link href="/yet-to-accept">
                 <button style={{
                     marginTop: '30px',
@@ -24,7 +22,6 @@ export default function SnofieldPage() {
                     Yet To Accept
                 </button>
             </Link>
-
             <Link href="/accepted">
                 <button style={{
                     marginTop: '30px',
@@ -40,6 +37,23 @@ export default function SnofieldPage() {
                     transition: 'transform 0.2s'
                 }}>
                     Accepted
+                </button>
+            </Link>
+            <Link href="/payments">
+                <button style={{
+                    marginTop: '30px',
+                    marginLeft: '20px',
+                    padding: '12px 24px',
+                    fontSize: '1rem',
+                    backgroundColor: '#FF6F61',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                    transition: 'transform 0.2s'
+                }}>
+                    Payments
                 </button>
             </Link>
         </div>
