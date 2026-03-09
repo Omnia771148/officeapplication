@@ -35,6 +35,16 @@ export default function Dashboard() {
                     </button>
                 ))}
             </div>
+
+            <div style={{ marginTop: '30px', width: '90%', maxWidth: '800px' }}>
+                <button
+                    className="branchButton"
+                    style={{ '--btn-color': '#8e44ad' }}
+                    onClick={() => router.push('/viewdeliveryboys')}
+                >
+                    New Delivery Boys
+                </button>
+            </div>
         </div>
     );
 }
