@@ -8,8 +8,23 @@
 .header {
     display: flex;
     align-items: center;
-    gap: 20px;
-    margin-bottom: 30px;
+    position: relative;
+    margin-bottom: 40px;
+    padding: 10px 0;
+}
+
+.headerContent {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    width: 100%;
+}
+
+.backButton {
+    position: absolute;
+    left: 0;
+    z-index: 10;
 }
 
 .header h1 {
@@ -28,6 +43,50 @@
     font-weight: 500;
     transition: all 0.2s;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.searchContainer {
+    width: 100%;
+    max-width: 550px;
+    background: linear-gradient(145deg, #ffffff, #f0f7f7);
+    padding: 6px;
+    border-radius: 35px;
+    box-shadow: 0 8px 25px rgba(0, 150, 136, 0.12);
+    display: flex;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.searchContainer:hover {
+    box-shadow: 0 12px 30px rgba(0, 150, 136, 0.18);
+    transform: translateY(-2px);
+}
+
+.searchInput {
+    width: 100%;
+    padding: 14px 25px;
+    border: none;
+    border-radius: 30px;
+    font-size: 1.05rem;
+    outline: none;
+    transition: all 0.3s ease;
+    background: transparent;
+    color: #2d3436;
+    /* Deep charcoal for text */
+    font-weight: 500;
+    letter-spacing: 0.3px;
+}
+
+.searchInput::placeholder {
+    color: #009688;
+    /* Teal placeholder for premium feel */
+    opacity: 0.6;
+    font-weight: 400;
+}
+
+.searchInput:focus {
+    color: #00796b;
+    /* Darker teal on focus */
 }
 
 .backButton:hover {
@@ -100,6 +159,67 @@
 .statusToggle:hover {
     opacity: 0.8;
     transform: scale(1.05);
+}
+
+.inconvinienceContainer {
+    margin-top: 15px;
+    padding: 12px;
+    background: #fff9f0;
+    /* Soft warm background */
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid #ffeaa7;
+}
+
+.inconvinienceLabel {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #d35400;
+    /* Contrast color for label */
+}
+
+.counterBox {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+.counterBtn {
+    border: none;
+    background: none;
+    font-size: 1.2rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s, color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.counterBtn.minus {
+    color: #e74c3c;
+}
+
+.counterBtn.plus {
+    color: #27ae60;
+}
+
+.counterBtn:hover {
+    transform: scale(1.2);
+}
+
+.counterValue {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #2d3436;
+    min-width: 20px;
+    text-align: center;
 }
 
 .loadingContainer,

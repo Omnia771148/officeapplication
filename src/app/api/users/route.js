@@ -15,11 +15,15 @@ export async function GET() {
 export async function PATCH(request) {
     try {
         await dbConnect();
-        const { userId, blickstatus } = await request.json();
-        
+        const { userId, blickstatus, inconvinience } = await request.json();
+
+        const updateData = {};
+        if (blickstatus !== undefined) updateData.blickstatus = blickstatus;
+        if (inconvinience !== undefined) updateData.inconvinience = inconvinience;
+
         const updatedUser = await User.findByIdAndUpdate(
             userId,
-            { blickstatus: blickstatus },
+            updateData,
             { new: true }
         );
 
