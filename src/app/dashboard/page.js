@@ -80,13 +80,13 @@ export default function Dashboard() {
                     marginTop: '20px',
                     width: '90%',
                     maxWidth: '400px',
-                    backgroundColor: '#00BCD4', // Cyan
+                    backgroundColor: '#009688', // Teal
                     height: 'auto',
                     padding: '15px'
                 }}
-                onClick={() => router.push('/deliverguynewsignup')}
+                onClick={() => router.push('/customers')}
             >
-                Delivery Guy New Signup
+                CUSTOMERS AND DETAILS
             </button>
         </div>
     );

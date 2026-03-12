@@ -1,0 +1,113 @@
+.customersContainer {
+    padding: 20px;
+    background-color: #f8f9fa;
+    min-height: 100vh;
+    font-family: 'Inter', -apple-system, sans-serif;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.header h1 {
+    font-size: 1.8rem;
+    color: #2d3436;
+    margin: 0;
+    font-weight: 700;
+}
+
+.backButton {
+    background: #fff;
+    border: 1px solid #dfe6e9;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.backButton:hover {
+    background: #f1f2f6;
+    transform: translateX(-2px);
+}
+
+.customerGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.customerCard {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    border: 1px solid #eee;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.customerCard:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.customerCard h3 {
+    margin: 0 0 10px 0;
+    color: #009688;
+    font-size: 1.25rem;
+}
+
+.customerCard p {
+    margin: 5px 0;
+    color: #636e72;
+    font-size: 0.95rem;
+}
+
+.stats {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #f1f2f6;
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: #b2bec3;
+}
+
+.statusToggle {
+    border: none;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all 0.2s;
+}
+
+.statusToggle.blocked {
+    background-color: #ff7675;
+    color: white;
+}
+
+.statusToggle.active {
+    background-color: #55efc4;
+    color: #2d3436;
+}
+
+.statusToggle:hover {
+    opacity: 0.8;
+    transform: scale(1.05);
+}
+
+.loadingContainer,
+.noData {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 50vh;
+    font-size: 1.2rem;
+    color: #636e72;
+}
