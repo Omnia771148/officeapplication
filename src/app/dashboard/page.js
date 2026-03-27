@@ -65,13 +65,13 @@ export default function Dashboard() {
                     marginTop: '20px',
                     width: '90%',
                     maxWidth: '400px',
-                    backgroundColor: '#673AB7', // Deep Purple
-                    height: 'auto', // Allow height to adjust for potentially long text
-                    padding: '15px' // Add padding since height is auto
+                    backgroundColor: '#FF9800', // Orange
+                    height: 'auto', 
+                    padding: '15px' 
                 }}
-                onClick={() => router.push('/deliveryboypendingpayments')}
+                onClick={() => router.push('/restaurant-register')}
             >
-                Delivery Boy Pending Payments
+                Register New Restaurant
             </button>
 
             <button
@@ -80,13 +80,13 @@ export default function Dashboard() {
                     marginTop: '20px',
                     width: '90%',
                     maxWidth: '400px',
-                    backgroundColor: '#00BCD4', // Cyan
-                    height: 'auto',
-                    padding: '15px'
+                    backgroundColor: '#673AB7', // Deep Purple
+                    height: 'auto', // Allow height to adjust for potentially long text
+                    padding: '15px' // Add padding since height is auto
                 }}
-                onClick={() => router.push('/deliverguynewsignup')}
+                onClick={() => router.push('/deliveryboypendingpayments')}
             >
-                Delivery Guy New Signup
+                Delivery Boy Pending Payments
             </button>
         </div>
     );
