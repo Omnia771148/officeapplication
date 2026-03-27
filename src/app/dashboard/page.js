@@ -88,6 +88,21 @@ export default function Dashboard() {
             >
                 Delivery Boy Pending Payments
             </button>
+
+            <button
+                className="branchButton"
+                style={{
+                    marginTop: '20px',
+                    width: '90%',
+                    maxWidth: '400px',
+                    backgroundColor: '#009688', // Teal
+                    height: 'auto',
+                    padding: '15px'
+                }}
+                onClick={() => router.push('/customers')}
+            >
+                CUSTOMERS AND DETAILS
+            </button>
         </div>
     );
 }
