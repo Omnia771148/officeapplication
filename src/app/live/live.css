@@ -69,22 +69,43 @@
 }
 
 /* Status variants */
-.statusBadge.completed {
-    background-color: #d4edda;
-    color: #155724;
-}
-
 .statusBadge.pending {
     background-color: #fff3cd;
     color: #856404;
 }
 
-.statusBadge.processing {
+.statusBadge.accepted, 
+.statusBadge.processing, 
+.statusBadge.preparing {
     background-color: #cce5ff;
     color: #004085;
 }
 
-.statusBadge.cancelled {
+.statusBadge.ready {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.statusBadge.accepted-by-delivery-boy {
+    background-color: #e2d9f3;
+    color: #4a148c;
+}
+
+.statusBadge.picked-up, 
+.statusBadge.out-for-delivery {
+    background-color: #ffe8cc;
+    color: #e65100;
+}
+
+.statusBadge.completed, 
+.statusBadge.delivered,
+.statusBadge.will-be-delivered-soon {
+    background-color: #28a745;
+    color: white;
+}
+
+.statusBadge.cancelled, 
+.statusBadge.rejected {
     background-color: #f8d7da;
     color: #721c24;
 }
@@ -209,4 +230,42 @@
     font-weight: 600;
     color: #2e7d32;
     /* Green for total price */
+}
+
+/* Action Buttons */
+.cardActions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 15px;
+    border-top: 1px solid #e9ecef;
+    background-color: #f8f9fa;
+}
+
+.actionButton {
+    display: block;
+    text-align: center;
+    padding: 10px;
+    border-radius: 8px;
+    color: white;
+    text-decoration: none;
+    font-weight: 600;
+    transition: opacity 0.2s;
+    font-size: 0.95rem;
+}
+
+.actionButton:hover {
+    opacity: 0.9;
+}
+
+.userButton {
+    background-color: #007bff;
+}
+
+.deliveryButton {
+    background-color: #28a745;
+}
+
+.restaurantButton {
+    background-color: #dc3545;
 }
