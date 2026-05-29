@@ -1,61 +1,45 @@
+'use client';
+
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import BranchStats from '@/components/BranchStats';
+import '@/components/BranchPage.css';
+
 export default function SnofieldPage() {
+    const router = useRouter();
+
     return (
-        <div style={{ padding: '40px', fontFamily: 'var(--font-outfit), sans-serif', textAlign: 'center' }}>
-            <h1 style={{ fontSize: '2.5rem', color: '#FF6B6B' }}>Snofield Branch</h1>
-            <p style={{ marginTop: '20px', fontSize: '1.2rem', color: '#555' }}>
+        <div className="branchPageContainer">
+            <div className="branchHeader">
+                <button className="branchBackButton" onClick={() => router.back()}>← Back</button>
+            </div>
+
+            <h1 className="branchTitle" style={{ color: '#009688' }}>Snofield Branch</h1>
+            <p className="branchSubtitle">
                 Welcome to the Snofield management page.
             </p>
-            <Link href="/yet-to-accept">
-                <button style={{
-                    marginTop: '30px',
-                    padding: '12px 24px',
-                    fontSize: '1rem',
-                    backgroundColor: '#4ECDC4',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                    transition: 'transform 0.2s'
-                }}>
-                    Yet To Accept
-                </button>
-            </Link>
-            <Link href="/accepted">
-                <button style={{
-                    marginTop: '30px',
-                    marginLeft: '20px',
-                    padding: '12px 24px',
-                    fontSize: '1rem',
-                    backgroundColor: '#4CAF50',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                    transition: 'transform 0.2s'
-                }}>
-                    Accepted
-                </button>
-            </Link>
-            <Link href="/payments">
-                <button style={{
-                    marginTop: '30px',
-                    marginLeft: '20px',
-                    padding: '12px 24px',
-                    fontSize: '1rem',
-                    backgroundColor: '#FF6F61',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                    transition: 'transform 0.2s'
-                }}>
-                    Payments
-                </button>
-            </Link>
+
+            <div className="branchButtonContainer">
+                <Link href="/yet-to-accept">
+                    <button className="branchActionButton yetToAccept">
+                        Yet To Accept
+                    </button>
+                </Link>
+
+                <Link href="/accepted">
+                    <button className="branchActionButton accepted">
+                        Accepted
+                    </button>
+                </Link>
+
+                <Link href="/payments">
+                    <button className="branchActionButton payments">
+                        Payments
+                    </button>
+                </Link>
+            </div>
+
+            <BranchStats restaurantId="3" />
         </div>
     );
 }
