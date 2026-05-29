@@ -62,7 +62,7 @@ export default function LivePage() {
                                     </div>
                                 )}
                                 {Object.entries(status).map(([key, value]) => {
-                                    if (['_id', '__v', 'updatedAt', 'createdAt', 'orderId', 'status', 'restaurantName', 'restaurantId'].includes(key)) return null;
+                                    if (['_id', '__v', 'updatedAt', 'createdAt', 'orderId', 'status', 'restaurantName', 'restaurantId', 'restaurantPhone', 'userPhone', 'deliveryBoyPhone', 'deliveryboyPhone', 'restaurantAcceptedAt', 'deliveryBoyAcceptedAt'].includes(key)) return null;
 
                                     if (key === 'items' && Array.isArray(value)) {
                                         return (
@@ -104,8 +104,28 @@ export default function LivePage() {
                                     );
                                 })}
                                 <div className="infoRow">
-                                    <span className="label">Time:</span>
-                                    <span className="value">{new Date(status.createdAt).toLocaleString()}</span>
+                                    <span className="label">Order Placed:</span>
+                                    <span className="value">{status.createdAt ? new Date(status.createdAt).toLocaleString() : 'N/A'}</span>
+                                </div>
+                                <div className="infoRow">
+                                    <span className="label">Restaurant Accepted:</span>
+                                    <span className="value">
+                                        {status.restaurantAcceptedAt ? (
+                                            new Date(status.restaurantAcceptedAt).toLocaleString()
+                                        ) : (
+                                            <span className="pendingBadgeRed">Pending</span>
+                                        )}
+                                    </span>
+                                </div>
+                                <div className="infoRow">
+                                    <span className="label">Delivery Boy Accepted:</span>
+                                    <span className="value">
+                                        {status.deliveryBoyAcceptedAt ? (
+                                            new Date(status.deliveryBoyAcceptedAt).toLocaleString()
+                                        ) : (
+                                            <span className="pendingBadgeRed">Pending</span>
+                                        )}
+                                    </span>
                                 </div>
                             </div>
                             <div className="cardActions">

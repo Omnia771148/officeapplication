@@ -70,8 +70,19 @@
 
 /* Status variants */
 .statusBadge.pending {
-    background-color: #fff3cd;
-    color: #856404;
+    background-color: #dc3545; /* Red */
+    color: white;
+}
+
+.pendingBadgeRed {
+    background-color: #dc3545; /* Red */
+    color: white;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    display: inline-block;
 }
 
 .statusBadge.accepted, 
@@ -102,6 +113,25 @@
 .statusBadge.will-be-delivered-soon {
     background-color: #28a745;
     color: white;
+}
+
+.statusBadge.waiting-for-delivery-boy,
+.statusBadge.waiting-for-delivery-boy-to-accept,
+.statusBadge.waiting-for-delivery-boy-to-accept-order,
+.statusBadge.waiting-for-delivery-boy-accept {
+    background-color: #1e7e34; /* Thick green */
+    color: white;
+}
+
+.pendingDeliveryBoy {
+    background-color: #dc3545; /* Red */
+    color: white;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    display: inline-block;
 }
 
 .statusBadge.cancelled, 
