@@ -23,7 +23,7 @@ export default function CustomersPage() {
                         phone: user.phone || user.mobile || user.phoneNumber || 'N/A',
                         email: user.email || 'N/A',
                         address: user.address || (user.location ? `${user.location.address || ''}` : 'No Address'),
-                        createdAt: user.createdAt || user.joinedAt || null,
+                        createdAt: user.createdAt || user.joinedAt || (user._id && user._id.length >= 8 ? new Date(parseInt(user._id.substring(0, 8), 16) * 1000) : null),
                         blickstatus: user.blickstatus ?? true,
                         inconvinience: Number(user.inconvinience) || 0,
                         coins: Number(user.coins) || 0
@@ -79,7 +79,8 @@ export default function CustomersPage() {
     };
 
     const filteredCustomers = customers.filter(customer =>
-        customer.phone.toLowerCase().includes(searchTerm.toLowerCase())
+        customer.phone.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        customer.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     if (loading) {
@@ -95,7 +96,7 @@ export default function CustomersPage() {
                     <div className="searchContainer">
                         <input
                             type="text"
-                            placeholder="Search by phone number..."
+                            placeholder="Search by name or phone number..."
                             className="searchInput"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
