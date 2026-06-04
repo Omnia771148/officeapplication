@@ -8,7 +8,6 @@ export default function BranchButtons({ restaurantId }) {
 
     const handleNavigation = (path) => {
         localStorage.setItem('restaurantId', restaurantId);
-        alert(`Restaurant ID: ${restaurantId}`);
         router.push(path);
     };
 

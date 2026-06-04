@@ -70,16 +70,15 @@ export default function Dashboard() {
     }, [alertedOrders, userInteracted]);
 
     const branches = [
-        { name: 'Snofield', path: '/snofield', color: '#FF6B6B', id: '3' },
         { name: 'Kushas', path: '/kushas', color: '#4ECDC4', id: '1' },
         { name: 'Knl', path: '/knl', color: '#45B7D1', id: '2' },
+        { name: 'Snofield', path: '/snofield', color: '#FF6B6B', id: '3' },
         { name: 'Bros', path: '/bros', color: '#FFA07A', id: '4' },
         { name: 'Mayuri', path: '/mayuri', color: '#98D8C8', id: '5' },
     ];
 
     const handleBranchClick = (branch) => {
         localStorage.setItem('restaurantId', branch.id);
-        alert(`Selected Branch ID: ${branch.id}`);
         router.push(branch.path);
     };
 
@@ -94,7 +93,10 @@ export default function Dashboard() {
                         style={{ '--btn-color': branch.color }}
                         onClick={() => handleBranchClick(branch)}
                     >
-                        {branch.name}
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                            <span>{branch.name}</span>
+                            <span style={{ fontSize: '0.85rem', opacity: 0.9, marginTop: '5px', fontWeight: 'normal' }}>ID: {branch.id}</span>
+                        </div>
                     </button>
                 ))}
             </div>
