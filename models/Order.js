@@ -6,6 +6,6 @@ const OrderSchema = new mongoose.Schema({
         required: true,
     },
     // We allow other fields to be present and saved/retrieved
-}, { strict: false });
+}, { strict: false, timestamps: true });
 
 export default mongoose.models.Order || mongoose.model('Order', OrderSchema);
