@@ -15,15 +15,32 @@ export async function GET() {
 export async function PATCH(request) {
     try {
         await dbConnect();
-        const { userId, blickstatus, inconvinience } = await request.json();
+        const { userId, blickstatus, inconvinience, coins, transactionId, noofcoins } = await request.json();
 
         const updateData = {};
         if (blickstatus !== undefined) updateData.blickstatus = blickstatus;
         if (inconvinience !== undefined) updateData.inconvinience = inconvinience;
+        if (coins !== undefined) updateData.coins = coins;
+
+        let query = updateData;
+        if (transactionId) {
+            const coinsVal = Number(noofcoins) || 0;
+            query = {
+                ...updateData,
+                $inc: { coins: -coinsVal },
+                $push: { 
+                    transactionofcoins: { 
+                        transactionId, 
+                        noofcoins: coinsVal,
+                        createdAt: new Date()
+                    } 
+                }
+            };
+        }
 
         const updatedUser = await User.findByIdAndUpdate(
             userId,
-            updateData,
+            query,
             { new: true }
         );
 

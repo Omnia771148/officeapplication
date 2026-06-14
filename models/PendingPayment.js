@@ -19,6 +19,7 @@ const PendingPaymentSchema = new mongoose.Schema({
     },
     transactions: [{
         transactionId: String,
+        amount: Number,
         date: {
             type: Date,
             default: Date.now

@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import './BranchStats.css';
 
-export default function BranchStats({ restaurantId }) {
+export default function BranchStats({ restaurantId, onFssaiLoaded, onDetailsLoaded }) {
     const [stats, setStats] = useState([]);
+    const [fssai, setFssai] = useState('');
     const [loading, setLoading] = useState(true);
     const [tooltip, setTooltip] = useState({ visible: false, x: 0, y: 0, title: '', value: '' });
 
@@ -15,6 +16,13 @@ export default function BranchStats({ restaurantId }) {
                 const data = await res.json();
                 if (data.success) {
                     setStats(data.data);
+                    setFssai(data.fssai || 'N/A');
+                    if (onFssaiLoaded) {
+                        onFssaiLoaded(data.fssai || 'N/A');
+                    }
+                    if (onDetailsLoaded) {
+                        onDetailsLoaded(data.restaurantDetails || null);
+                    }
                 }
             } catch (err) {
                 console.error("Error fetching branch stats:", err);
@@ -24,6 +32,7 @@ export default function BranchStats({ restaurantId }) {
         };
 
         if (restaurantId) {
+            localStorage.setItem('restaurantId', restaurantId);
             fetchStats();
         }
     }, [restaurantId]);
@@ -79,6 +88,7 @@ export default function BranchStats({ restaurantId }) {
             <h2 className="statsTitle">
                 📊 Last 7 Days Performance
             </h2>
+
 
             <div className="statsGrid">
                 <div className="summaryCard orders">

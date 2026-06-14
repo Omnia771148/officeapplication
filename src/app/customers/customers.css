@@ -219,6 +219,337 @@
     text-align: center;
 }
 
+.coinsRow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    padding: 10px 12px;
+    background: #fefcf0;
+    border-radius: 8px;
+    border: 1px solid #f9ebae;
+}
+
+.coinsDisplay {
+    margin: 0 !important;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.95rem;
+    color: #636e72;
+}
+
+.coinsValue {
+    color: #b7950b;
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.coinsActions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: white;
+    padding: 3px 8px;
+    border-radius: 20px;
+    box-shadow: 0 2px 8px rgba(183, 149, 11, 0.08);
+    border: 1px solid #f9ebae;
+}
+
+.coinActionBtn {
+    border: none;
+    background: none;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s, color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+}
+
+.coinActionBtn.minus {
+    color: #e74c3c;
+}
+
+.coinActionBtn.plus {
+    color: #27ae60;
+}
+
+.coinActionBtn:hover {
+    transform: scale(1.25);
+}
+
+.coinDeltaValue {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #636e72;
+    min-width: 28px;
+    text-align: center;
+    display: inline-block;
+}
+
+.coinDeltaValue.positive {
+    color: #27ae60;
+}
+
+.coinDeltaValue.negative {
+    color: #e74c3c;
+}
+
+.addCoinsConfirmBtn {
+    background-color: #009688;
+    color: white;
+    border: none;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-left: 4px;
+}
+
+.addCoinsConfirmBtn:hover:not(:disabled) {
+    background-color: #00796b;
+    transform: translateY(-1px);
+}
+
+.addCoinsConfirmBtn:disabled {
+    background-color: #dfe6e9;
+    color: #b2bec3;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.coinsControls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.coinsModeToggle {
+    display: flex;
+    background: #f1f2f6;
+    padding: 2px;
+    border-radius: 15px;
+    border: 1px solid #dfe6e9;
+}
+
+.modeToggleBtn {
+    border: none;
+    background: transparent;
+    padding: 4px 10px;
+    border-radius: 13px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #636e72;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.modeToggleBtn.active {
+    background: white;
+    color: #009688;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+}
+
+.bulkCoinsInput {
+    width: 80px;
+    padding: 6px 10px;
+    border: 1px solid #f9ebae;
+    border-radius: 12px;
+    outline: none;
+    font-size: 0.8rem;
+    background: white;
+    color: #2d3436;
+    font-weight: 600;
+}
+
+.bulkCoinsInput::placeholder {
+    color: #b2bec3;
+}
+
+.payCoinsBtn {
+    background-color: #673ab7;
+    color: white;
+    border: none;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-left: 4px;
+}
+
+.payCoinsBtn:hover {
+    background-color: #512da8;
+    transform: translateY(-1px);
+}
+
+.txnModalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(5px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.txnModalContainer {
+    background: white;
+    width: 90%;
+    max-width: 420px;
+    border-radius: 16px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.18);
+    overflow: hidden;
+    animation: modalAppear 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.txnModalHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #f1f2f6;
+    background: #fafafa;
+}
+
+.txnModalHeader h3 {
+    margin: 0;
+    font-size: 1.15rem;
+    color: #2d3436;
+    font-weight: 700;
+}
+
+.txnModalCloseBtn {
+    border: none;
+    background: transparent;
+    font-size: 1.6rem;
+    color: #b2bec3;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+    transition: color 0.2s;
+}
+
+.txnModalCloseBtn:hover {
+    color: #2d3436;
+}
+
+.txnModalBody {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.txnModalUser {
+    margin: 0;
+    font-size: 0.95rem;
+    color: #636e72;
+}
+
+.txnModalField {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.txnModalField label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #2d3436;
+}
+
+.txnModalInput {
+    padding: 10px 12px;
+    border: 1px solid #dfe6e9;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: #2d3436;
+    outline: none;
+    transition: border-color 0.2s;
+    background: white;
+}
+
+.txnModalInput:focus {
+    border-color: #009688;
+}
+
+.txnModalFooter {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 20px;
+    border-top: 1px solid #f1f2f6;
+    background: #fafafa;
+}
+
+.txnModalCancelBtn {
+    background: #f1f2f6;
+    border: 1px solid #dfe6e9;
+    color: #2d3436;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.txnModalCancelBtn:hover {
+    background: #dfe6e9;
+}
+
+.txnModalOkBtn {
+    background-color: #009688;
+    color: white;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.txnModalOkBtn:hover:not(:disabled) {
+    background-color: #00796b;
+    transform: translateY(-1px);
+}
+
+.txnModalOkBtn:disabled {
+    background-color: #dfe6e9;
+    color: #b2bec3;
+    cursor: not-allowed;
+}
+
+@keyframes modalAppear {
+    from {
+        opacity: 0;
+        transform: scale(0.96) translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+
 .loadingContainer,
 .noData {
     display: flex;
@@ -227,6 +558,57 @@
     height: 50vh;
     font-size: 1.2rem;
     color: #636e72;
+}
+
+.filterContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    margin-top: 5px;
+}
+
+.filterLabel {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #636e72;
+}
+
+.filterPills {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    width: 100%;
+    max-width: 550px;
+    flex-wrap: wrap;
+}
+
+.filterPill {
+    background: #ffffff;
+    border: 1px solid #dfe6e9;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #2d3436;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.filterPill:hover {
+    background: #f0f7f7;
+    border-color: #009688;
+    color: #009688;
+    transform: translateY(-1px);
+}
+
+.filterPill.active {
+    background: #009688;
+    border-color: #009688;
+    color: #ffffff;
+    box-shadow: 0 4px 10px rgba(0, 150, 136, 0.3);
 }
 
 @media (max-width: 768px) {
@@ -253,5 +635,36 @@
 
     .customerGrid {
         grid-template-columns: 1fr;
+    }
+
+    .filterPills {
+        justify-content: flex-start;
+        overflow-x: auto;
+        padding: 4px 5px 10px 5px;
+        scroll-behavior: smooth;
+        -webkit-overflow-scrolling: touch;
+        white-space: nowrap;
+        flex-wrap: nowrap;
+        /* Hide scrollbars but keep functionality */
+        scrollbar-width: none;
+        width: calc(100% + 10px);
+        margin-left: -5px;
+    }
+    .filterPills::-webkit-scrollbar {
+        display: none;
+    }
+    
+    .filterPill {
+        flex: 0 0 auto;
+    }
+    
+    .filterContainer {
+        align-items: flex-start;
+        padding: 0;
+        width: 100%;
+    }
+    
+    .filterLabel {
+        padding-left: 5px;
     }
 }

@@ -27,10 +27,10 @@ export async function GET(request) {
 export async function POST(request) {
     try {
         await dbConnect();
-        const { restaurantId, transactionId } = await request.json();
+        const { restaurantId, transactionId, amount } = await request.json();
 
-        if (!restaurantId || !transactionId) {
-            return NextResponse.json({ success: false, error: 'Restaurant ID and Transaction ID are required' }, { status: 400 });
+        if (!restaurantId || !transactionId || !amount) {
+            return NextResponse.json({ success: false, error: 'Restaurant ID, Transaction ID, and Amount are required' }, { status: 400 });
         }
 
         const updatedPayment = await PendingPayment.findOneAndUpdate(
@@ -40,6 +40,7 @@ export async function POST(request) {
                 $push: {
                     transactions: {
                         transactionId,
+                        amount: Number(amount),
                         date: new Date()
                     }
                 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import '@/components/OrdersDisplay.css';
 
 const renderValue = (key, value) => {
@@ -54,7 +55,7 @@ const renderValue = (key, value) => {
     return String(value);
 };
 
-export default function OrdersDisplay() {
+export default function RejectedPage() {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [restaurantId, setRestaurantId] = useState(null);
@@ -70,7 +71,7 @@ export default function OrdersDisplay() {
 
         const fetchOrders = async () => {
             try {
-                const res = await fetch(`/api/orders?restaurantId=${storedRestaurantId}`);
+                const res = await fetch(`/api/rejected?restaurantId=${storedRestaurantId}`);
                 const data = await res.json();
                 if (data.success) {
                     setOrders(data.data);
@@ -84,32 +85,51 @@ export default function OrdersDisplay() {
         fetchOrders();
     }, []);
 
-    if (loading) return <div className="loadingText">Loading orders...</div>;
-    if (!restaurantId) return <div className="errorText">No Branch Selected</div>;
+    if (loading) return (
+        <div className="ordersContainer">
+            <div className="loadingText">Loading rejected orders...</div>
+        </div>
+    );
+
+    if (!restaurantId) return (
+        <div className="ordersContainer">
+            <div className="errorText">No Branch Selected</div>
+            <Link href="/dashboard" style={{ textDecoration: 'none' }}>
+                <button className="backBtn">← Back to Dashboard</button>
+            </Link>
+        </div>
+    );
 
     return (
-        <div className="ordersList">
+        <div className="ordersContainer">
+            <div className="ordersHeader">
+                <button onClick={() => window.history.back()} className="backBtn">← Back</button>
+                <h1 className="ordersTitle rejected">❌ Rejected Orders</h1>
+            </div>
+
             {orders.length === 0 ? (
-                <div className="noOrdersText">No orders found.</div>
+                <div className="noOrdersText">No rejected orders found for this branch.</div>
             ) : (
-                orders.map((order) => (
-                    <div key={order._id} className="orderCard">
-                        <h3 className="orderCardTitle">Order ID: {order.orderId || order._id}</h3>
-                        <div className="orderGrid">
-                            {Object.entries(order).map(([key, value]) => {
-                                if (key === '_id' || key === 'restaurantId' || key === '__v' || key === 'orderId') return null;
-                                return (
-                                    <div key={key} className="orderItem">
-                                        <span className="orderItemLabel">{key.replace(/([A-Z])/g, ' $1')}</span>
-                                        <div className="orderItemValue">
-                                            {renderValue(key, value)}
+                <div className="ordersList">
+                    {orders.map((order) => (
+                        <div key={order._id} className="orderCard">
+                            <h3 className="orderCardTitle">Order ID: {order.orderId || order._id}</h3>
+                            <div className="orderGrid">
+                                {Object.entries(order).map(([key, value]) => {
+                                    if (key === '_id' || key === 'restaurantId' || key === '__v' || key === 'orderId') return null;
+                                    return (
+                                        <div key={key} className="orderItem">
+                                            <span className="orderItemLabel">{key.replace(/([A-Z])/g, ' $1')}</span>
+                                            <div className="orderItemValue">
+                                                {renderValue(key, value)}
+                                            </div>
                                         </div>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                })}
+                            </div>
                         </div>
-                    </div>
-                ))
+                    ))}
+                </div>
             )}
         </div>
     );

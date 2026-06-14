@@ -30,15 +30,18 @@ export async function POST(request) {
             return NextResponse.json({ success: false, error: 'Record not found' }, { status: 404 });
         }
 
-        const currentCharge = paymentRecord.deliveryCharge;
+        const parsedAmount = Number(amountPaid);
+        if (isNaN(parsedAmount) || parsedAmount <= 0) {
+            return NextResponse.json({ success: false, error: 'Valid amount paid is required' }, { status: 400 });
+        }
 
         paymentRecord.transactions.push({
             transactionId,
-            amountPaid: currentCharge, // Storing what was cleared
+            amountPaid: parsedAmount,
             date: new Date()
         });
 
-        paymentRecord.deliveryCharge = 0;
+        paymentRecord.deliveryCharge = Math.max(0, paymentRecord.deliveryCharge - parsedAmount);
         await paymentRecord.save();
 
         return NextResponse.json({ success: true, data: paymentRecord });

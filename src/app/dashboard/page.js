@@ -69,45 +69,37 @@ export default function Dashboard() {
         return () => clearInterval(intervalId);
     }, [alertedOrders, userInteracted]);
 
-    const branches = [
-        { name: 'Kushas', path: '/kushas', color: '#4ECDC4', id: '1' },
-        { name: 'Knl', path: '/knl', color: '#45B7D1', id: '2' },
-        { name: 'Snofield', path: '/snofield', color: '#FF6B6B', id: '3' },
-        { name: 'Bros', path: '/bros', color: '#FFA07A', id: '4' },
-        { name: 'Mayuri', path: '/mayuri', color: '#98D8C8', id: '5' },
-    ];
-
-    const handleBranchClick = (branch) => {
-        localStorage.setItem('restaurantId', branch.id);
-        router.push(branch.path);
-    };
-
     return (
         <div className="dashboardContainer">
-            <h1 className="dashboardTitle">Select a Branch</h1>
-            <div className="buttonGrid">
-                {branches.map((branch) => (
-                    <button
-                        key={branch.name}
-                        className="branchButton"
-                        style={{ '--btn-color': branch.color }}
-                        onClick={() => handleBranchClick(branch)}
-                    >
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                            <span>{branch.name}</span>
-                            <span style={{ fontSize: '0.85rem', opacity: 0.9, marginTop: '5px', fontWeight: 'normal' }}>ID: {branch.id}</span>
-                        </div>
-                    </button>
-                ))}
-            </div>
+            <h1 className="dashboardTitle">Management Dashboard</h1>
 
-            <div style={{ marginTop: '30px', width: '90%', maxWidth: '800px' }}>
+            <div style={{ width: '90%', maxWidth: '800px' }}>
                 <button
                     className="branchButton"
-                    style={{ '--btn-color': '#8e44ad' }}
+                    style={{ '--btn-color': '#009688', marginBottom: '20px' }}
+                    onClick={() => router.push('/restaurants')}
+                >
+                    Restaurants
+                </button>
+            </div>
+
+            <div style={{ width: '90%', maxWidth: '800px' }}>
+                <button
+                    className="branchButton"
+                    style={{ '--btn-color': '#8e44ad', marginBottom: '20px' }}
                     onClick={() => router.push('/viewdeliveryboys')}
                 >
                     New Delivery Boys
+                </button>
+            </div>
+
+            <div style={{ width: '90%', maxWidth: '800px' }}>
+                <button
+                    className="branchButton"
+                    style={{ '--btn-color': '#9b59b6' }}
+                    onClick={() => router.push('/deliveryboy-details')}
+                >
+                    Delivery Boy Details
                 </button>
             </div>
 

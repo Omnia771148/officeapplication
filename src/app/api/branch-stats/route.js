@@ -1,5 +1,6 @@
 import dbConnect from '../../../../lib/mongoose';
 import FinalCompletedOrder from '../../../../models/FinalCompletedOrder';
+import RestuarentUser from '../../../../models/RestuarentUser';
 import { NextResponse } from 'next/server';
 
 export async function GET(request) {
@@ -11,6 +12,10 @@ export async function GET(request) {
         if (!restaurantId) {
             return NextResponse.json({ success: false, error: 'Restaurant ID is required' }, { status: 400 });
         }
+
+        // Fetch FSSAI license number
+        const restaurant = await RestuarentUser.findOne({ restId: restaurantId }).lean();
+        const fssai = restaurant ? restaurant.fssai : 'N/A';
 
         // Calculate date 7 days ago
         const sevenDaysAgo = new Date();
@@ -57,7 +62,23 @@ export async function GET(request) {
             }
         });
 
-        return NextResponse.json({ success: true, data: stats });
+        return NextResponse.json({ 
+            success: true, 
+            data: stats, 
+            fssai,
+            restaurantDetails: restaurant ? {
+                email: restaurant.email,
+                phone: restaurant.phone,
+                password: restaurant.password,
+                restId: restaurant.restId,
+                restLocation: restaurant.restLocation,
+                address: restaurant.address,
+                fssai: restaurant.fssai,
+                openTime: restaurant.openTime,
+                closeTime: restaurant.closeTime,
+                restaurantLocation: restaurant.restaurantLocation
+            } : null
+        });
     } catch (error) {
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }

@@ -22,6 +22,27 @@
     gap: 10px;
 }
 
+.fssaiBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #1e2a28; /* Dark green/teal tint */
+    border: 1px solid #00bfa5;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: #ffffff;
+    font-weight: 600;
+    margin-bottom: 25px;
+}
+
+.fssaiBadge span {
+    color: #00bfa5;
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+
 .statsGrid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));

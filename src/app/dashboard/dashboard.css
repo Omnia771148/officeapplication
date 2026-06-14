@@ -45,3 +45,45 @@
     box-shadow: 0 10px 15px rgba(0, 0, 0, 0.2);
     filter: brightness(1.1);
 }
+
+.searchContainer {
+    width: 100%;
+    max-width: 550px;
+    background: linear-gradient(145deg, #ffffff, #f0f7f7);
+    padding: 6px;
+    border-radius: 35px;
+    box-shadow: 0 8px 25px rgba(0, 150, 136, 0.12);
+    display: flex;
+    align-items: center;
+    transition: all 0.3s ease;
+    margin: 0 auto 30px auto;
+}
+
+.searchContainer:hover {
+    box-shadow: 0 12px 30px rgba(0, 150, 136, 0.18);
+    transform: translateY(-2px);
+}
+
+.searchInput {
+    width: 100%;
+    padding: 14px 25px;
+    border: none;
+    border-radius: 30px;
+    font-size: 1.05rem;
+    outline: none;
+    transition: all 0.3s ease;
+    background: transparent;
+    color: #2d3436;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+}
+
+.searchInput::placeholder {
+    color: #009688;
+    opacity: 0.6;
+    font-weight: 400;
+}
+
+.searchInput:focus {
+    color: #00796b;
+}
