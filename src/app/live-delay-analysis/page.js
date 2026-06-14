@@ -49,7 +49,8 @@ export default function LiveDelayAnalysisPage() {
     });
 
     const delayedByDeliveryBoy = orderStatuses.filter(status => {
-        const elapsed = getMinutesElapsed(status.createdAt);
+        if (!status.restaurantAcceptedAt) return false;
+        const elapsed = getMinutesElapsed(status.restaurantAcceptedAt);
         return elapsed > 5 && !status.deliveryBoyAcceptedAt;
     });
 
@@ -112,7 +113,7 @@ export default function LiveDelayAnalysisPage() {
                                     <p className="noDelayText">No delivery boy delays detected (all accepted within 5 minutes).</p>
                                 ) : (
                                     delayedByDeliveryBoy.map(order => {
-                                        const elapsed = getMinutesElapsed(order.createdAt);
+                                        const elapsed = getMinutesElapsed(order.restaurantAcceptedAt);
                                         return (
                                             <div key={order._id} className="delayMiniCard delivery">
                                                 <div className="miniCardHeader">
