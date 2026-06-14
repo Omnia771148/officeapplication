@@ -8,6 +8,7 @@ export default function LivePage() {
     const [orderStatuses, setOrderStatuses] = useState([]);
     const [loading, setLoading] = useState(true);
 
+
     const fetchOrderStatuses = async () => {
         try {
             const res = await fetch('/api/orderstatuses');
@@ -35,6 +36,14 @@ export default function LivePage() {
     return (
         <div className="liveContainer">
             <h1 className="pageTitle">Live Order Statuses</h1>
+
+            <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                <Link href="/live-delay-analysis">
+                    <button className="analysisToggleBtn">
+                        📊 Analyze Delayed Orders (5m+ Delay)
+                    </button>
+                </Link>
+            </div>
 
             <div className="ordersGrid">
                 {orderStatuses.length === 0 ? (

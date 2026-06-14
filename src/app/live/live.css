@@ -299,3 +299,216 @@
 .restaurantButton {
     background-color: #dc3545;
 }
+
+/* Delay Analysis Styles */
+.analysisToggleBtn {
+    background: linear-gradient(135deg, #ff7675, #d63031);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    font-size: 1rem;
+    font-weight: 700;
+    border-radius: 30px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(214, 48, 49, 0.3);
+    transition: all 0.3s ease;
+}
+
+.analysisToggleBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(214, 48, 49, 0.4);
+    filter: brightness(1.1);
+}
+
+.delayAnalysisPanel {
+    background: #ffffff;
+    border: 1px solid #f1f5f9;
+    border-radius: 16px;
+    padding: 24px;
+    margin: 0 auto 35px auto;
+    max-width: 1200px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+}
+
+.analysisPanelTitle {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #e53e3e;
+    margin: 0 0 20px 0;
+    text-align: center;
+}
+
+.delayColumns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+.delayColumn {
+    background: #f8fafc;
+    border: 1px solid #edf2f7;
+    border-radius: 12px;
+    padding: 20px;
+}
+
+.columnHeader {
+    margin: 0 0 16px 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #edf2f7;
+}
+
+.columnHeader.restaurant {
+    color: #c53030;
+}
+
+.columnHeader.delivery {
+    color: #b7791f;
+}
+
+.miniCardsContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.delayMiniCard {
+    background: #ffffff;
+    border: 1px solid #edf2f7;
+    border-radius: 8px;
+    padding: 14px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    transition: all 0.2s;
+}
+
+.delayMiniCard:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.04);
+}
+
+.delayMiniCard.restaurant {
+    border-left: 4px solid #c53030;
+}
+
+.delayMiniCard.delivery {
+    border-left: 4px solid #b7791f;
+}
+
+.miniCardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.miniCardId {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #2d3748;
+}
+
+.miniCardTimer {
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: #fed7d7;
+    color: #9b2c2c;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.miniCardRestName {
+    font-size: 0.85rem;
+    color: #4a5568;
+    margin: 0 0 10px 0;
+}
+
+.miniCardActions {
+    display: flex;
+    gap: 8px;
+}
+
+.miniActionBtn {
+    flex: 1;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 8px;
+    border-radius: 6px;
+    text-align: center;
+    text-decoration: none;
+    color: white !important;
+}
+
+.miniActionBtn.rest {
+    background-color: #e53e3e;
+}
+
+.miniActionBtn.boy {
+    background-color: #dd6b20;
+}
+
+.noDelayText {
+    text-align: center;
+    color: #718096;
+    font-size: 0.9rem;
+    font-style: italic;
+    padding: 20px 0;
+}
+
+.noBoyText {
+    font-size: 0.8rem;
+    font-style: italic;
+    color: #a0aec0;
+}
+
+@media (max-width: 768px) {
+    .delayColumns {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+}
+
+/* Delay analysis page header navigation */
+.deliveryBoyHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    border-bottom: 2px solid #edf2f7;
+    padding-bottom: 15px;
+}
+
+.backBtn {
+    background: #ffffff;
+    border: 1px solid #dfe6e9;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    color: #2d3436;
+    transition: all 0.2s;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.backBtn:hover {
+    background: #f1f2f6;
+    transform: translateY(-1px);
+}
+
+.paymentsTitle {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #2d3748;
+}
+
+.miniActionBtn.user {
+    background-color: #007bff;
+}
+
+

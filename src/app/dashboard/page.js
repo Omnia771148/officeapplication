@@ -73,27 +73,37 @@ export default function Dashboard() {
         <div className="dashboardContainer">
             <h1 className="dashboardTitle">Management Dashboard</h1>
 
-            <div style={{ width: '90%', maxWidth: '800px' }}>
+            <div style={{ width: '90%', maxWidth: '800px', marginBottom: '20px' }}>
                 <button
                     className="branchButton"
-                    style={{ '--btn-color': '#009688', marginBottom: '20px' }}
-                    onClick={() => router.push('/restaurants')}
+                    style={{ '--btn-color': '#E91E63' }}
+                    onClick={() => router.push('/live')}
                 >
-                    Restaurants
+                    Live Orders
                 </button>
             </div>
 
-            <div style={{ width: '90%', maxWidth: '800px' }}>
+            <div style={{ width: '90%', maxWidth: '800px', marginBottom: '20px' }}>
                 <button
                     className="branchButton"
-                    style={{ '--btn-color': '#8e44ad', marginBottom: '20px' }}
+                    style={{ '--btn-color': '#8e44ad' }}
                     onClick={() => router.push('/viewdeliveryboys')}
                 >
                     New Delivery Boys
                 </button>
             </div>
 
-            <div style={{ width: '90%', maxWidth: '800px' }}>
+            <div style={{ width: '90%', maxWidth: '800px', marginBottom: '20px' }}>
+                <button
+                    className="branchButton"
+                    style={{ '--btn-color': '#009688' }}
+                    onClick={() => router.push('/restaurants')}
+                >
+                    Restaurants
+                </button>
+            </div>
+
+            <div style={{ width: '90%', maxWidth: '800px', marginBottom: '20px' }}>
                 <button
                     className="branchButton"
                     style={{ '--btn-color': '#9b59b6' }}
@@ -103,100 +113,61 @@ export default function Dashboard() {
                 </button>
             </div>
 
-            <button
-                className="branchButton"
-                style={{
-                    marginTop: '30px',
-                    width: '90%',
-                    maxWidth: '400px',
-                    backgroundColor: '#E91E63'
-                }}
-                onClick={() => router.push('/live')}
-            >
-                Live Orders
-            </button>
+            <div style={{ width: '90%', maxWidth: '800px', marginBottom: '20px' }}>
+                <button
+                    className="branchButton"
+                    style={{ '--btn-color': '#3F51B5' }}
+                    onClick={() => router.push('/restaurant-timings')}
+                >
+                    Manage Restaurant Timings & Status
+                </button>
+            </div>
 
-            <button
-                className="branchButton"
-                style={{
-                    marginTop: '20px',
-                    width: '90%',
-                    maxWidth: '400px',
-                    backgroundColor: '#FF9800', // Orange
-                    height: 'auto', 
-                    padding: '15px' 
-                }}
-                onClick={() => router.push('/restaurant-register')}
-            >
-                Register New Restaurant
-            </button>
+            <div style={{ width: '90%', maxWidth: '800px', marginBottom: '20px' }}>
+                <button
+                    className="branchButton"
+                    style={{ '--btn-color': '#009688' }}
+                    onClick={() => router.push('/customers')}
+                >
+                    CUSTOMERS AND DETAILS
+                </button>
+            </div>
 
-            <button
-                className="branchButton"
-                style={{
-                    marginTop: '20px',
-                    width: '90%',
-                    maxWidth: '400px',
-                    backgroundColor: '#3F51B5', // Indigo
-                    height: 'auto', 
-                    padding: '15px' 
-                }}
-                onClick={() => router.push('/restaurant-timings')}
-            >
-                Manage Restaurant Timings & Status
-            </button>
+            <div style={{ width: '90%', maxWidth: '800px', marginBottom: '20px' }}>
+                <button
+                    className="branchButton"
+                    style={{ '--btn-color': '#673AB7' }}
+                    onClick={() => router.push('/deliveryboypendingpayments')}
+                >
+                    Delivery Boy Pending Payments
+                </button>
+            </div>
 
-            <button
-                className="branchButton"
-                style={{
-                    marginTop: '20px',
-                    width: '90%',
-                    maxWidth: '400px',
-                    backgroundColor: '#673AB7', // Deep Purple
-                    height: 'auto', // Allow height to adjust for potentially long text
-                    padding: '15px' // Add padding since height is auto
-                }}
-                onClick={() => router.push('/deliveryboypendingpayments')}
-            >
-                Delivery Boy Pending Payments
-            </button>
+            <div style={{ width: '90%', maxWidth: '800px', marginBottom: '20px' }}>
+                <button
+                    className="branchButton"
+                    style={{ '--btn-color': '#FF9800' }}
+                    onClick={() => router.push('/restaurant-register')}
+                >
+                    Register New Restaurant
+                </button>
+            </div>
 
-            <button
-                className="branchButton"
-                style={{
-                    marginTop: '20px',
-                    width: '90%',
-                    maxWidth: '400px',
-                    backgroundColor: '#009688', // Teal
-                    height: 'auto',
-                    padding: '15px'
-                }}
-                onClick={() => router.push('/customers')}
-            >
-                CUSTOMERS AND DETAILS
-            </button>
-
-            <button
-                className="branchButton"
-                style={{
-                    marginTop: '20px',
-                    width: '90%',
-                    maxWidth: '400px',
-                    backgroundColor: '#607D8B', // Blue Grey
-                    height: 'auto',
-                    padding: '15px'
-                }}
-                onClick={() => setShowMoreOptions(!showMoreOptions)}
-            >
-                {showMoreOptions ? 'Hide Options ▲' : 'More Options ▼'}
-            </button>
+            <div style={{ width: '90%', maxWidth: '800px', marginBottom: '20px' }}>
+                <button
+                    className="branchButton"
+                    style={{ '--btn-color': '#607D8B' }}
+                    onClick={() => setShowMoreOptions(!showMoreOptions)}
+                >
+                    {showMoreOptions ? 'Hide Options ▲' : 'More Options ▼'}
+                </button>
+            </div>
 
             {showMoreOptions && (
-                <div style={{ marginTop: '20px', width: '90%', maxWidth: '400px', display: 'flex', flexDirection: 'column', gap: '15px', alignItems: 'center' }}>
-             
+                <div style={{ width: '90%', maxWidth: '800px', display: 'flex', flexDirection: 'column', gap: '15px', alignItems: 'center' }}>
                     <button
                         className="branchButton"
-                        style={{ width: '100%', backgroundColor: '#9C27B0', color: '#fff', height: 'auto', padding: '15px' }}
+                        style={{ '--btn-color': '#9C27B0' }}
                         onClick={() => router.push('/influencer-coupons')}
                     >
                         Coupon Codes for Influencers
