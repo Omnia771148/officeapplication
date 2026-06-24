@@ -13,34 +13,43 @@ export default function RestaurantTimingsPage() {
   // Local state to keep track of edited timings for each restaurant
   const [editedTimings, setEditedTimings] = useState({});
 
-  const fetchRestaurants = async () => {
+  const fetchRestaurants = async (showLoading = true) => {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       const res = await fetch("/api/restaurant-timings");
       const data = await res.json();
       if (data.success) {
         setRestaurants(data.restaurants);
-        // Initialize edited timings state
-        const initialTimings = {};
-        data.restaurants.forEach(rest => {
-          initialTimings[rest.restId] = {
-            openTime: rest.openTime,
-            closeTime: rest.closeTime
-          };
-        });
-        setEditedTimings(initialTimings);
+        // Only initialize or update edited timings state on initial load
+        if (showLoading) {
+          const initialTimings = {};
+          data.restaurants.forEach(rest => {
+            initialTimings[rest.restId] = {
+              openTime: rest.openTime,
+              closeTime: rest.closeTime
+            };
+          });
+          setEditedTimings(initialTimings);
+        }
       } else {
         setError(data.error || "Failed to fetch restaurants");
       }
     } catch (err) {
       setError("Failed to fetch restaurants: " + err.message);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchRestaurants();
+    fetchRestaurants(true);
+
+    // Automatically poll every 15 seconds to update the UI status without page reload
+    const intervalId = setInterval(() => {
+      fetchRestaurants(false);
+    }, 15000);
+
+    return () => clearInterval(intervalId);
   }, []);
 
   const handleTimingChange = (restId, field, value) => {
