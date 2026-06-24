@@ -7,6 +7,7 @@ import '../dashboard/dashboard.css';
 export default function AddItemPage() {
     const router = useRouter();
     const [itemName, setItemName] = useState('');
+    const [itemId, setItemId] = useState('');
     const [price, setPrice] = useState('');
     const [restaurantId, setRestaurantId] = useState('');
 
@@ -34,6 +35,7 @@ export default function AddItemPage() {
                 },
                 body: JSON.stringify({
                     itemName,
+                    itemId,
                     price: Number(price),
                     restaurantId,
                 }),
@@ -43,6 +45,7 @@ export default function AddItemPage() {
             if (res.ok) {
                 setMessage('Item added successfully!');
                 setItemName('');
+                setItemId('');
                 setPrice('');
                 setRestaurantId('');
             } else {
@@ -174,6 +177,31 @@ export default function AddItemPage() {
                             placeholder="Enter price (e.g. 12.99)"
                             value={price}
                             onChange={(e) => setPrice(e.target.value)}
+                            style={{
+                                width: '100%',
+                                padding: '12px 15px',
+                                border: '1.5px solid #ddd',
+                                borderRadius: '8px',
+                                fontSize: '1rem',
+                                outline: 'none',
+                                boxSizing: 'border-box',
+                                transition: 'border-color 0.2s',
+                                fontFamily: 'inherit'
+                            }}
+                        />
+                    </div>
+
+                    <div style={{ marginBottom: '20px' }}>
+                        <label style={{ display: 'block', fontWeight: '600', color: '#555', marginBottom: '8px' }}>
+                            Item ID
+                        </label>
+                        <input
+                            type="text"
+                            required
+                            className="formInput"
+                            placeholder="Enter item ID (e.g. 1001)"
+                            value={itemId}
+                            onChange={(e) => setItemId(e.target.value)}
                             style={{
                                 width: '100%',
                                 padding: '12px 15px',

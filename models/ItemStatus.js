@@ -5,6 +5,10 @@ const ItemStatusSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    itemId: {
+        type: String,
+        required: true
+    },
     price: {
         type: Number,
         required: true

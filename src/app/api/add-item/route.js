@@ -6,17 +6,18 @@ export async function POST(req) {
   try {
     await dbConnect();
 
-    const { itemName, price, restaurantId, itemStatus, itemtodisplayintherestuarentapp } = await req.json();
+    const { itemName, itemId, price, restaurantId, itemStatus, itemtodisplayintherestuarentapp } = await req.json();
 
-    if (!itemName || price === undefined || !restaurantId) {
+    if (!itemName || !itemId || price === undefined || !restaurantId) {
       return NextResponse.json(
-        { message: "Item name, price, and restaurant ID are required" },
+        { message: "Item name, Item ID, price, and restaurant ID are required" },
         { status: 400 }
       );
     }
 
     const newItem = await ItemStatus.create({
       itemName,
+      itemId,
       price: Number(price),
       restaurantId,
       itemStatus: itemStatus !== undefined ? itemStatus : true,

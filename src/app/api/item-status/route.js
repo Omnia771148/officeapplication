@@ -37,9 +37,15 @@ export async function PATCH(request) {
         const updateData = {};
         if (itemStatus !== undefined) {
             updateData.itemStatus = itemStatus;
+            if (itemStatus === true) {
+                updateData.itemtodisplayintherestuarentapp = true;
+            }
         }
         if (itemtodisplayintherestuarentapp !== undefined) {
             updateData.itemtodisplayintherestuarentapp = itemtodisplayintherestuarentapp;
+            if (itemtodisplayintherestuarentapp === false) {
+                updateData.itemStatus = false;
+            }
         }
 
         const updatedItem = await ItemStatus.findByIdAndUpdate(

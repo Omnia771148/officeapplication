@@ -54,7 +54,7 @@ export default function BranchItemsPage() {
             if (data.success) {
                 setItems(prevItems => 
                     prevItems.map(item => 
-                        item._id === itemId ? { ...item, [propertyName]: nextStatus } : item
+                        item._id === itemId ? { ...item, ...data.data } : item
                     )
                 );
             } else {
@@ -431,6 +431,11 @@ export default function BranchItemsPage() {
                             <div>
                                 <h3 className="itemName">{item.itemName}</h3>
                                 <div className="itemPrice">₹{item.price}</div>
+                                {item.itemId && (
+                                    <div style={{ fontSize: '0.9rem', color: '#7f8c8d', fontWeight: '500', marginBottom: '15px' }}>
+                                        Item ID: {item.itemId}
+                                    </div>
+                                )}
                             </div>
                             
                             <div className="itemControlArea">
