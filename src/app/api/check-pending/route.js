@@ -13,12 +13,12 @@ export async function GET() {
 
         // Find ALL current orders in the collection
         const allOrders = await Order.find({});
-        
+
         // Filter those older than 30 seconds using createdAt or _id timestamp
         const staleOrders = allOrders.filter(order => {
             // Priority 1: createdAt field
             if (order.createdAt && new Date(order.createdAt) < thirtySecondsAgo) return true;
-            
+
             // Priority 2: Extract timestamp from ObjectId
             try {
                 const idTimestamp = new Date(parseInt(order._id.toString().substring(0, 8), 16) * 1000);
@@ -26,7 +26,7 @@ export async function GET() {
             } catch (e) {
                 console.error('Failed to parse _id for order:', order._id);
             }
-            
+
             return false;
         });
 
@@ -51,7 +51,7 @@ export async function GET() {
                 try {
                     const response = await admin.messaging().sendMulticast(message);
                     console.log('Firebase notifications sent:', response.successCount);
-                    
+
                     // Cleanup invalid tokens if any (optional but good practice)
                     if (response.failureCount > 0) {
                         const failedTokens = [];
@@ -70,9 +70,9 @@ export async function GET() {
             }
         }
 
-        return NextResponse.json({ 
-            success: true, 
-            count: staleOrders.length, 
+        return NextResponse.json({
+            success: true,
+            count: staleOrders.length,
             status: staleOrders.length > 0 ? 'ALERT' : 'OK',
             orders: staleOrders.map(o => ({ id: o._id, restaurantId: o.restaurantId }))
         });
