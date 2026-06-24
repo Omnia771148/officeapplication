@@ -6,7 +6,7 @@ export async function POST(req) {
   try {
     await dbConnect();
 
-    const { itemName, price, restaurantId, itemStatus } = await req.json();
+    const { itemName, price, restaurantId, itemStatus, itemtodisplayintherestuarentapp } = await req.json();
 
     if (!itemName || price === undefined || !restaurantId) {
       return NextResponse.json(
@@ -20,6 +20,7 @@ export async function POST(req) {
       price: Number(price),
       restaurantId,
       itemStatus: itemStatus !== undefined ? itemStatus : true,
+      itemtodisplayintherestuarentapp: itemtodisplayintherestuarentapp !== undefined ? itemtodisplayintherestuarentapp : true,
     });
 
     return NextResponse.json(

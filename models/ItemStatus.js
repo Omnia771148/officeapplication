@@ -16,6 +16,10 @@ const ItemStatusSchema = new mongoose.Schema({
     itemStatus: {
         type: Boolean,
         default: true
+    },
+    itemtodisplayintherestuarentapp: {
+        type: Boolean,
+        default: true
     }
 }, { 
     collection: 'itemstatus',

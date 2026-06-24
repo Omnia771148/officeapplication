@@ -1,0 +1,59 @@
+import dbConnect from '../../../../lib/mongoose';
+import ItemStatus from '../../../../models/ItemStatus';
+import { NextResponse } from 'next/server';
+
+export async function GET(request) {
+    try {
+        await dbConnect();
+        const { searchParams } = new URL(request.url);
+        const restaurantId = searchParams.get('restaurantId');
+
+        if (!restaurantId) {
+            return NextResponse.json({ success: false, error: 'Restaurant ID is required' }, { status: 400 });
+        }
+
+        // Backfill existing database items that don't have the field set yet
+        await ItemStatus.updateMany(
+            { itemtodisplayintherestuarentapp: { $exists: false } },
+            { $set: { itemtodisplayintherestuarentapp: true } }
+        );
+
+        const items = await ItemStatus.find({ restaurantId }).sort({ createdAt: -1 });
+        return NextResponse.json({ success: true, data: items });
+    } catch (error) {
+        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    }
+}
+
+export async function PATCH(request) {
+    try {
+        await dbConnect();
+        const { itemId, itemStatus, itemtodisplayintherestuarentapp } = await request.json();
+
+        if (!itemId) {
+            return NextResponse.json({ success: false, error: 'Item ID is required' }, { status: 400 });
+        }
+
+        const updateData = {};
+        if (itemStatus !== undefined) {
+            updateData.itemStatus = itemStatus;
+        }
+        if (itemtodisplayintherestuarentapp !== undefined) {
+            updateData.itemtodisplayintherestuarentapp = itemtodisplayintherestuarentapp;
+        }
+
+        const updatedItem = await ItemStatus.findByIdAndUpdate(
+            itemId,
+            updateData,
+            { new: true }
+        );
+
+        if (!updatedItem) {
+            return NextResponse.json({ success: false, error: 'Item not found' }, { status: 404 });
+        }
+
+        return NextResponse.json({ success: true, data: updatedItem });
+    } catch (error) {
+        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    }
+}

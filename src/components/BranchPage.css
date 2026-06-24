@@ -279,6 +279,10 @@
     background-color: #8e44ad; /* Premium Purple */
 }
 
+.branchActionButton.items {
+    background-color: #2ecc71; /* Emerald Green */
+}
+
 /* Delivery Boy Details Page Layout */
 .deliveryBoyPageContainer {
     padding: 40px;

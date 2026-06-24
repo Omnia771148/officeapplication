@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import '../dashboard/dashboard.css';
 
 export default function AddItemPage() {
@@ -9,6 +9,13 @@ export default function AddItemPage() {
     const [itemName, setItemName] = useState('');
     const [price, setPrice] = useState('');
     const [restaurantId, setRestaurantId] = useState('');
+
+    useEffect(() => {
+        const storedId = localStorage.getItem('restaurantId');
+        if (storedId) {
+            setRestaurantId(storedId);
+        }
+    }, []);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');

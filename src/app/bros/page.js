@@ -52,6 +52,12 @@ export default function BrosPage() {
                         Delivery Boy Details
                     </button>
                 </Link>
+
+                <Link href="/items">
+                    <button className="branchActionButton items">
+                        Items
+                    </button>
+                </Link>
             </div>
 
             {details && (
