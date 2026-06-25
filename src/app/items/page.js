@@ -13,6 +13,64 @@ export default function BranchItemsPage() {
     const [togglingId, setTogglingId] = useState(null);
     const [errorMessage, setErrorMessage] = useState('');
 
+    // Editing States
+    const [editingId, setEditingId] = useState(null);
+    const [editName, setEditName] = useState('');
+    const [editPrice, setEditPrice] = useState('');
+    const [savingId, setSavingId] = useState(null);
+
+    const startEditing = (item) => {
+        setEditingId(item._id);
+        setEditName(item.itemName);
+        setEditPrice(item.price.toString());
+    };
+
+    const cancelEditing = () => {
+        setEditingId(null);
+        setEditName('');
+        setEditPrice('');
+    };
+
+    const handleSaveEdit = async (itemId) => {
+        if (!editName.trim()) {
+            alert('Item name cannot be empty');
+            return;
+        }
+        const parsedPrice = Number(editPrice);
+        if (isNaN(parsedPrice) || parsedPrice < 0) {
+            alert('Price must be a valid non-negative number');
+            return;
+        }
+
+        setSavingId(itemId);
+        try {
+            const res = await fetch('/api/item-status', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    itemId, 
+                    itemName: editName.trim(), 
+                    price: parsedPrice 
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setItems(prevItems => 
+                    prevItems.map(item => 
+                        item._id === itemId ? { ...item, ...data.data } : item
+                    )
+                );
+                setEditingId(null);
+            } else {
+                alert(data.error || 'Failed to update item.');
+            }
+        } catch (err) {
+            alert('Server communication error.');
+        } finally {
+            setSavingId(null);
+        }
+    };
+
     useEffect(() => {
         const storedId = localStorage.getItem('restaurantId');
         setRestaurantId(storedId);
@@ -366,6 +424,112 @@ export default function BranchItemsPage() {
                     border: 2px dashed #cbd5e1;
                     color: #64748b;
                 }
+                
+                /* Editing UI styles */
+                .editFieldsContainer {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                    margin-bottom: 20px;
+                    animation: fadeIn 0.2s ease-in-out;
+                }
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(-5px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                .editFieldGroup {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                }
+                .editFieldLabel {
+                    font-size: 0.85rem;
+                    font-weight: 700;
+                    color: #64748b;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }
+                .editInputField {
+                    padding: 10px 14px;
+                    border-radius: 8px;
+                    border: 1.5px solid #cbd5e1;
+                    font-size: 1rem;
+                    outline: none;
+                    transition: border-color 0.2s, box-shadow 0.2s;
+                    color: #1e293b !important;
+                    background-color: #f8fafc;
+                }
+                .editInputField:focus {
+                    border-color: #2ecc71;
+                    box-shadow: 0 0 0 3px rgba(46, 204, 113, 0.1);
+                    background-color: #ffffff;
+                }
+                .editActions {
+                    display: flex;
+                    gap: 10px;
+                    margin-top: 15px;
+                }
+                .btnSave {
+                    flex: 1;
+                    background: #2ecc71;
+                    color: white;
+                    border: none;
+                    padding: 10px;
+                    border-radius: 8px;
+                    font-weight: 700;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    gap: 5px;
+                }
+                .btnSave:hover:not(:disabled) {
+                    background-color: #27ae60;
+                }
+                .btnSave:disabled {
+                    opacity: 0.6;
+                    cursor: not-allowed;
+                }
+                .btnCancel {
+                    flex: 1;
+                    background: #f1f5f9;
+                    color: #64748b;
+                    border: 1px solid #e2e8f0;
+                    padding: 10px;
+                    border-radius: 8px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                .btnCancel:hover:not(:disabled) {
+                    background-color: #cbd5e1;
+                    color: #334155;
+                }
+                .btnCancel:disabled {
+                    opacity: 0.6;
+                    cursor: not-allowed;
+                }
+                .btnEditCard {
+                    background: #f8fafc;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 6px;
+                    padding: 6px 12px;
+                    font-size: 0.85rem;
+                    font-weight: 600;
+                    color: #64748b;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                }
+                .btnEditCard:hover {
+                    background: #f1f5f9;
+                    color: #1e293b;
+                    border-color: #cbd5e1;
+                }
+
                 @media (max-width: 600px) {
                     .itemsPageContainer {
                         padding: 20px;
@@ -428,55 +592,112 @@ export default function BranchItemsPage() {
                 {filteredItems.length > 0 ? (
                     filteredItems.map((item) => (
                         <div key={item._id} className="itemCard">
-                            <div>
-                                <h3 className="itemName">{item.itemName}</h3>
-                                <div className="itemPrice">₹{item.price}</div>
-                                {item.itemId && (
-                                    <div style={{ fontSize: '0.9rem', color: '#7f8c8d', fontWeight: '500', marginBottom: '15px' }}>
-                                        Item ID: {item.itemId}
+                            {editingId === item._id ? (
+                                <div className="editFieldsContainer">
+                                    <div className="editFieldGroup">
+                                        <span className="editFieldLabel">Item Name</span>
+                                        <input 
+                                            type="text" 
+                                            className="editInputField" 
+                                            value={editName}
+                                            disabled={savingId === item._id}
+                                            onChange={(e) => setEditName(e.target.value)}
+                                            placeholder="Enter item name"
+                                        />
                                     </div>
-                                )}
-                            </div>
-                            
-                            <div className="itemControlArea">
-                                {/* First Toggle: Item Availability Status */}
-                                <div className="toggleLabelContainer">
-                                    <span className="toggleLabelText">
-                                        Item Availability Status
-                                    </span>
-                                    <label className="switch">
+                                    <div className="editFieldGroup">
+                                        <span className="editFieldLabel">Price (₹)</span>
                                         <input 
-                                            type="checkbox"
-                                            checked={item.itemStatus !== false}
-                                            disabled={togglingId === item._id}
-                                            onChange={() => handleToggleProperty(item._id, 'itemStatus', item.itemStatus !== false)}
+                                            type="number" 
+                                            className="editInputField" 
+                                            value={editPrice}
+                                            disabled={savingId === item._id}
+                                            onChange={(e) => setEditPrice(e.target.value)}
+                                            placeholder="Enter price"
+                                            min="0"
+                                            step="0.01"
                                         />
-                                        <span className={`slider ${togglingId === item._id ? 'disabledSlider' : ''}`}></span>
-                                    </label>
+                                    </div>
+                                    {item.itemId && (
+                                        <div style={{ fontSize: '0.9rem', color: '#7f8c8d', fontWeight: '500' }}>
+                                            Item ID: {item.itemId}
+                                        </div>
+                                    )}
+                                    <div className="editActions">
+                                        <button 
+                                            className="btnSave" 
+                                            disabled={savingId === item._id}
+                                            onClick={() => handleSaveEdit(item._id)}
+                                        >
+                                            {savingId === item._id ? 'Saving...' : '💾 Save'}
+                                        </button>
+                                        <button 
+                                            className="btnCancel" 
+                                            disabled={savingId === item._id}
+                                            onClick={cancelEditing}
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
                                 </div>
-                                <div className={`indicatorText ${item.itemStatus !== false ? 'active' : 'inactive'}`} style={{ marginBottom: '8px' }}>
-                                    {item.itemStatus !== false ? '● Available' : '○ Unavailable'}
-                                </div>
+                            ) : (
+                                <>
+                                    <div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
+                                            <h3 className="itemName" style={{ margin: 0, flex: 1 }}>{item.itemName}</h3>
+                                            <button className="btnEditCard" onClick={() => startEditing(item)}>
+                                                ✏️ Edit
+                                            </button>
+                                        </div>
+                                        <div className="itemPrice" style={{ marginTop: '8px' }}>₹{item.price}</div>
+                                        {item.itemId && (
+                                            <div style={{ fontSize: '0.9rem', color: '#7f8c8d', fontWeight: '500', marginBottom: '15px' }}>
+                                                Item ID: {item.itemId}
+                                            </div>
+                                        )}
+                                    </div>
+                                    
+                                    <div className="itemControlArea">
+                                        {/* First Toggle: Item Availability Status */}
+                                        <div className="toggleLabelContainer">
+                                            <span className="toggleLabelText">
+                                                Item Availability Status
+                                            </span>
+                                            <label className="switch">
+                                                <input 
+                                                    type="checkbox"
+                                                    checked={item.itemStatus !== false}
+                                                    disabled={togglingId === item._id}
+                                                    onChange={() => handleToggleProperty(item._id, 'itemStatus', item.itemStatus !== false)}
+                                                />
+                                                <span className={`slider ${togglingId === item._id ? 'disabledSlider' : ''}`}></span>
+                                            </label>
+                                        </div>
+                                        <div className={`indicatorText ${item.itemStatus !== false ? 'active' : 'inactive'}`} style={{ marginBottom: '8px' }}>
+                                            {item.itemStatus !== false ? '● Available' : '○ Unavailable'}
+                                        </div>
 
-                                {/* Second Toggle: Item to display in the restaurant app */}
-                                <div className="toggleLabelContainer" style={{ borderTop: '1px dashed #cbd5e1', paddingTop: '10px' }}>
-                                    <span className="toggleLabelText">
-                                        Item to display in the restaurant app
-                                    </span>
-                                    <label className="switch">
-                                        <input 
-                                            type="checkbox"
-                                            checked={item.itemtodisplayintherestuarentapp !== false}
-                                            disabled={togglingId === item._id}
-                                            onChange={() => handleToggleProperty(item._id, 'itemtodisplayintherestuarentapp', item.itemtodisplayintherestuarentapp !== false)}
-                                        />
-                                        <span className={`slider ${togglingId === item._id ? 'disabledSlider' : ''}`}></span>
-                                    </label>
-                                </div>
-                                <div className={`indicatorText ${item.itemtodisplayintherestuarentapp !== false ? 'active' : 'inactive'}`}>
-                                    {item.itemtodisplayintherestuarentapp !== false ? '● Displayed' : '○ Hidden'}
-                                </div>
-                            </div>
+                                        {/* Second Toggle: Item to display in the restaurant app */}
+                                        <div className="toggleLabelContainer" style={{ borderTop: '1px dashed #cbd5e1', paddingTop: '10px' }}>
+                                            <span className="toggleLabelText">
+                                                Item to display in the restaurant app
+                                            </span>
+                                            <label className="switch">
+                                                <input 
+                                                    type="checkbox"
+                                                    checked={item.itemtodisplayintherestuarentapp !== false}
+                                                    disabled={togglingId === item._id}
+                                                    onChange={() => handleToggleProperty(item._id, 'itemtodisplayintherestuarentapp', item.itemtodisplayintherestuarentapp !== false)}
+                                                />
+                                                <span className={`slider ${togglingId === item._id ? 'disabledSlider' : ''}`}></span>
+                                            </label>
+                                        </div>
+                                        <div className={`indicatorText ${item.itemtodisplayintherestuarentapp !== false ? 'active' : 'inactive'}`}>
+                                            {item.itemtodisplayintherestuarentapp !== false ? '● Displayed' : '○ Hidden'}
+                                        </div>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     ))
                 ) : (

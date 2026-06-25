@@ -28,7 +28,7 @@ export async function GET(request) {
 export async function PATCH(request) {
     try {
         await dbConnect();
-        const { itemId, itemStatus, itemtodisplayintherestuarentapp } = await request.json();
+        const { itemId, itemStatus, itemtodisplayintherestuarentapp, itemName, price } = await request.json();
 
         if (!itemId) {
             return NextResponse.json({ success: false, error: 'Item ID is required' }, { status: 400 });
@@ -46,6 +46,19 @@ export async function PATCH(request) {
             if (itemtodisplayintherestuarentapp === false) {
                 updateData.itemStatus = false;
             }
+        }
+        if (itemName !== undefined) {
+            if (typeof itemName !== 'string' || !itemName.trim()) {
+                return NextResponse.json({ success: false, error: 'Item name cannot be empty' }, { status: 400 });
+            }
+            updateData.itemName = itemName.trim();
+        }
+        if (price !== undefined) {
+            const parsedPrice = Number(price);
+            if (isNaN(parsedPrice) || parsedPrice < 0) {
+                return NextResponse.json({ success: false, error: 'Price must be a valid non-negative number' }, { status: 400 });
+            }
+            updateData.price = parsedPrice;
         }
 
         const updatedItem = await ItemStatus.findByIdAndUpdate(
