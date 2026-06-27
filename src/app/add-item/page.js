@@ -21,6 +21,41 @@ export default function AddItemPage() {
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
 
+    // Query Recent Entry State
+    const [queryRestaurantId, setQueryRestaurantId] = useState('');
+    const [queryResult, setQueryResult] = useState(null);
+    const [queryError, setQueryError] = useState('');
+    const [queryLoading, setQueryLoading] = useState(false);
+
+    const handleRequestRecentEntry = async (e) => {
+        e.preventDefault();
+        if (!queryRestaurantId.trim()) {
+            setQueryError('Please enter a Restaurant ID first.');
+            setQueryResult(null);
+            return;
+        }
+
+        setQueryLoading(true);
+        setQueryError('');
+        setQueryResult(null);
+
+        try {
+            const res = await fetch(`/api/item-status?restaurantId=${encodeURIComponent(queryRestaurantId.trim())}`);
+            const result = await res.json();
+            if (result.success && result.data && result.data.length > 0) {
+                setQueryResult(result.data[0]);
+            } else if (result.success) {
+                setQueryError(`No recent entry found for Restaurant ID: ${queryRestaurantId}`);
+            } else {
+                setQueryError(result.error || 'Failed to fetch latest entry.');
+            }
+        } catch (err) {
+            setQueryError('Failed to connect to the server.');
+        } finally {
+            setQueryLoading(false);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         
@@ -72,7 +107,7 @@ export default function AddItemPage() {
     };
 
     return (
-        <div className="dashboardContainer" style={{ position: 'relative', paddingTop: '80px', paddingBottom: '40px' }}>
+        <div className="dashboardContainer" style={{ position: 'relative', paddingTop: '80px', paddingBottom: '60px', display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '100vh', boxSizing: 'border-box' }}>
             <style>{`
                 .formInput {
                     background-color: white !important;
@@ -108,173 +143,288 @@ export default function AddItemPage() {
                 </button>
             </div>
             
-            <h1 className="dashboardTitle" style={{ fontSize: '2.5rem', color: '#2ecc71', marginBottom: '20px' }}>
+            <h1 className="dashboardTitle" style={{ fontSize: '2.5rem', color: '#2ecc71', marginBottom: '40px', textAlign: 'center' }}>
                 Add New Item
             </h1>
 
             <div style={{
-                width: '90%',
-                maxWidth: '500px',
-                backgroundColor: 'white',
-                borderRadius: '15px',
-                padding: '30px',
-                boxShadow: '0 10px 30px rgba(0,0,0,0.05)',
-                border: '1px solid #f0f0f0'
+                display: 'flex',
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                justifyContent: 'center',
+                alignItems: 'flex-start',
+                gap: '40px',
+                width: '100%',
+                maxWidth: '1050px',
+                padding: '0 20px',
+                boxSizing: 'border-box'
             }}>
-                <form onSubmit={handleSubmit}>
-                    {message && (
+                {/* Form Card */}
+                <div style={{
+                    flex: '1 1 450px',
+                    maxWidth: '500px',
+                    backgroundColor: 'white',
+                    borderRadius: '15px',
+                    padding: '30px',
+                    boxShadow: '0 10px 30px rgba(0,0,0,0.05)',
+                    border: '1px solid #f0f0f0',
+                    boxSizing: 'border-box'
+                }}>
+                    <form onSubmit={handleSubmit}>
+                        {message && (
+                            <div style={{
+                                padding: '12px',
+                                backgroundColor: '#e6f4ea',
+                                color: '#137333',
+                                borderRadius: '8px',
+                                marginBottom: '20px',
+                                fontSize: '0.95rem',
+                                fontWeight: '500',
+                                textAlign: 'center'
+                            }}>
+                                {message}
+                            </div>
+                        )}
+
+                        {error && (
+                            <div style={{
+                                padding: '12px',
+                                backgroundColor: '#fce8e6',
+                                color: '#c5221f',
+                                borderRadius: '8px',
+                                marginBottom: '20px',
+                                fontSize: '0.95rem',
+                                fontWeight: '500',
+                                textAlign: 'center'
+                            }}>
+                                {error}
+                            </div>
+                        )}
+
+                        <div style={{ marginBottom: '20px' }}>
+                            <label style={{ display: 'block', fontWeight: '600', color: '#555', marginBottom: '8px' }}>
+                                Item Name
+                            </label>
+                            <input
+                                type="text"
+                                required
+                                className="formInput"
+                                placeholder="Enter item name (e.g. Butter Chicken)"
+                                value={itemName}
+                                onChange={(e) => setItemName(e.target.value)}
+                                style={{
+                                    width: '100%',
+                                    padding: '12px 15px',
+                                    border: '1.5px solid #ddd',
+                                    borderRadius: '8px',
+                                    fontSize: '1rem',
+                                    outline: 'none',
+                                    boxSizing: 'border-box',
+                                    transition: 'border-color 0.2s',
+                                    fontFamily: 'inherit'
+                                }}
+                            />
+                        </div>
+
+                        <div style={{ marginBottom: '20px' }}>
+                            <label style={{ display: 'block', fontWeight: '600', color: '#555', marginBottom: '8px' }}>
+                                Price
+                            </label>
+                            <input
+                                type="number"
+                                required
+                                className="formInput"
+                                step="0.01"
+                                min="0"
+                                placeholder="Enter price (e.g. 12.99)"
+                                value={price}
+                                onChange={(e) => setPrice(e.target.value)}
+                                style={{
+                                    width: '100%',
+                                    padding: '12px 15px',
+                                    border: '1.5px solid #ddd',
+                                    borderRadius: '8px',
+                                    fontSize: '1rem',
+                                    outline: 'none',
+                                    boxSizing: 'border-box',
+                                    transition: 'border-color 0.2s',
+                                    fontFamily: 'inherit'
+                                }}
+                            />
+                        </div>
+
+                        <div style={{ marginBottom: '20px' }}>
+                            <label style={{ display: 'block', fontWeight: '600', color: '#555', marginBottom: '8px' }}>
+                                Item ID
+                            </label>
+                            <input
+                                type="text"
+                                required
+                                className="formInput"
+                                placeholder="Enter item ID (e.g. 1001)"
+                                value={itemId}
+                                onChange={(e) => setItemId(e.target.value)}
+                                style={{
+                                    width: '100%',
+                                    padding: '12px 15px',
+                                    border: '1.5px solid #ddd',
+                                    borderRadius: '8px',
+                                    fontSize: '1rem',
+                                    outline: 'none',
+                                    boxSizing: 'border-box',
+                                    transition: 'border-color 0.2s',
+                                    fontFamily: 'inherit'
+                                }}
+                            />
+                        </div>
+
+                        <div style={{ marginBottom: '30px' }}>
+                            <label style={{ display: 'block', fontWeight: '600', color: '#555', marginBottom: '8px' }}>
+                                Restaurant ID
+                            </label>
+                            <input
+                                type="text"
+                                required
+                                className="formInput"
+                                placeholder="Enter restaurant ID"
+                                value={restaurantId}
+                                onChange={(e) => setRestaurantId(e.target.value)}
+                                style={{
+                                    width: '100%',
+                                    padding: '12px 15px',
+                                    border: '1.5px solid #ddd',
+                                    borderRadius: '8px',
+                                    fontSize: '1rem',
+                                    outline: 'none',
+                                    boxSizing: 'border-box',
+                                    transition: 'border-color 0.2s',
+                                    fontFamily: 'inherit'
+                                }}
+                            />
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            style={{
+                                width: '100%',
+                                padding: '14px',
+                                backgroundColor: loading ? '#a8eec1' : '#2ecc71',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '8px',
+                                fontSize: '1.1rem',
+                                fontWeight: 'bold',
+                                cursor: loading ? 'not-allowed' : 'pointer',
+                                transition: 'all 0.2s ease-in-out',
+                                boxShadow: '0 4px 6px rgba(46, 204, 113, 0.2)',
+                                fontFamily: 'inherit'
+                            }}
+                        >
+                            {loading ? 'Adding...' : 'Add Item'}
+                        </button>
+                    </form>
+                </div>
+
+                {/* Query Card */}
+                <div style={{
+                    flex: '1 1 350px',
+                    maxWidth: '450px',
+                    backgroundColor: 'white',
+                    borderRadius: '15px',
+                    padding: '30px',
+                    boxShadow: '0 10px 30px rgba(0,0,0,0.05)',
+                    border: '1px solid #f0f0f0',
+                    boxSizing: 'border-box'
+                }}>
+                    <h2 style={{ fontSize: '1.5rem', color: '#333', marginBottom: '20px', fontWeight: 'bold' }}>
+                        Request Recent Entry
+                    </h2>
+                    
+                    <form onSubmit={handleRequestRecentEntry}>
+                        <div style={{ marginBottom: '20px' }}>
+                            <label style={{ display: 'block', fontWeight: '600', color: '#555', marginBottom: '8px' }}>
+                                Restaurant ID
+                            </label>
+                            <input
+                                type="text"
+                                required
+                                className="formInput"
+                                placeholder="Enter restaurant ID"
+                                value={queryRestaurantId}
+                                onChange={(e) => setQueryRestaurantId(e.target.value)}
+                                style={{
+                                    width: '100%',
+                                    padding: '12px 15px',
+                                    border: '1.5px solid #ddd',
+                                    borderRadius: '8px',
+                                    fontSize: '1rem',
+                                    outline: 'none',
+                                    boxSizing: 'border-box',
+                                    transition: 'border-color 0.2s',
+                                    fontFamily: 'inherit'
+                                }}
+                            />
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={queryLoading}
+                            style={{
+                                width: '100%',
+                                padding: '14px',
+                                backgroundColor: queryLoading ? '#cbd5e1' : '#3498db',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '8px',
+                                fontSize: '1.1rem',
+                                fontWeight: 'bold',
+                                cursor: queryLoading ? 'not-allowed' : 'pointer',
+                                transition: 'all 0.2s ease-in-out',
+                                boxShadow: '0 4px 6px rgba(52, 152, 219, 0.2)',
+                                fontFamily: 'inherit',
+                                marginBottom: '25px'
+                            }}
+                        >
+                            {queryLoading ? 'Requesting...' : 'Request Recent Entry ID'}
+                        </button>
+                    </form>
+
+                    {queryResult && (
                         <div style={{
-                            padding: '12px',
+                            padding: '15px',
                             backgroundColor: '#e6f4ea',
                             color: '#137333',
                             borderRadius: '8px',
-                            marginBottom: '20px',
                             fontSize: '0.95rem',
                             fontWeight: '500',
-                            textAlign: 'center'
+                            border: '1px solid #c3e6cb',
+                            lineHeight: '1.6'
                         }}>
-                            {message}
+                            <div style={{ fontWeight: 'bold', fontSize: '1.05rem', marginBottom: '10px', borderBottom: '1px solid rgba(19, 115, 51, 0.2)', paddingBottom: '6px' }}>
+                                Recent Entry Details
+                            </div>
+                            <div style={{ marginBottom: '4px' }}><strong>Item Name:</strong> {queryResult.itemName}</div>
+                            <div style={{ marginBottom: '4px' }}><strong>Item ID:</strong> {queryResult.itemId}</div>
+                            <div style={{ marginBottom: '4px' }}><strong>Price:</strong> ₹{queryResult.price}</div>
+                            <div><strong>Restaurant ID:</strong> {queryResult.restaurantId}</div>
                         </div>
                     )}
 
-                    {error && (
+                    {queryError && (
                         <div style={{
                             padding: '12px',
                             backgroundColor: '#fce8e6',
                             color: '#c5221f',
                             borderRadius: '8px',
-                            marginBottom: '20px',
                             fontSize: '0.95rem',
                             fontWeight: '500',
                             textAlign: 'center'
                         }}>
-                            {error}
+                            {queryError}
                         </div>
                     )}
-
-                    <div style={{ marginBottom: '20px' }}>
-                        <label style={{ display: 'block', fontWeight: '600', color: '#555', marginBottom: '8px' }}>
-                            Item Name
-                        </label>
-                        <input
-                            type="text"
-                            required
-                            className="formInput"
-                            placeholder="Enter item name (e.g. Butter Chicken)"
-                            value={itemName}
-                            onChange={(e) => setItemName(e.target.value)}
-                            style={{
-                                width: '100%',
-                                padding: '12px 15px',
-                                border: '1.5px solid #ddd',
-                                borderRadius: '8px',
-                                fontSize: '1rem',
-                                outline: 'none',
-                                boxSizing: 'border-box',
-                                transition: 'border-color 0.2s',
-                                fontFamily: 'inherit'
-                            }}
-                        />
-                    </div>
-
-                    <div style={{ marginBottom: '20px' }}>
-                        <label style={{ display: 'block', fontWeight: '600', color: '#555', marginBottom: '8px' }}>
-                            Price
-                        </label>
-                        <input
-                            type="number"
-                            required
-                            className="formInput"
-                            step="0.01"
-                            min="0"
-                            placeholder="Enter price (e.g. 12.99)"
-                            value={price}
-                            onChange={(e) => setPrice(e.target.value)}
-                            style={{
-                                width: '100%',
-                                padding: '12px 15px',
-                                border: '1.5px solid #ddd',
-                                borderRadius: '8px',
-                                fontSize: '1rem',
-                                outline: 'none',
-                                boxSizing: 'border-box',
-                                transition: 'border-color 0.2s',
-                                fontFamily: 'inherit'
-                            }}
-                        />
-                    </div>
-
-                    <div style={{ marginBottom: '20px' }}>
-                        <label style={{ display: 'block', fontWeight: '600', color: '#555', marginBottom: '8px' }}>
-                            Item ID
-                        </label>
-                        <input
-                            type="text"
-                            required
-                            className="formInput"
-                            placeholder="Enter item ID (e.g. 1001)"
-                            value={itemId}
-                            onChange={(e) => setItemId(e.target.value)}
-                            style={{
-                                width: '100%',
-                                padding: '12px 15px',
-                                border: '1.5px solid #ddd',
-                                borderRadius: '8px',
-                                fontSize: '1rem',
-                                outline: 'none',
-                                boxSizing: 'border-box',
-                                transition: 'border-color 0.2s',
-                                fontFamily: 'inherit'
-                            }}
-                        />
-                    </div>
-
-                    <div style={{ marginBottom: '30px' }}>
-                        <label style={{ display: 'block', fontWeight: '600', color: '#555', marginBottom: '8px' }}>
-                            Restaurant ID
-                        </label>
-                        <input
-                            type="text"
-                            required
-                            className="formInput"
-                            placeholder="Enter restaurant ID"
-                            value={restaurantId}
-                            onChange={(e) => setRestaurantId(e.target.value)}
-                            style={{
-                                width: '100%',
-                                padding: '12px 15px',
-                                border: '1.5px solid #ddd',
-                                borderRadius: '8px',
-                                fontSize: '1rem',
-                                outline: 'none',
-                                boxSizing: 'border-box',
-                                transition: 'border-color 0.2s',
-                                fontFamily: 'inherit'
-                            }}
-                        />
-                    </div>
-
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        style={{
-                            width: '100%',
-                            padding: '14px',
-                            backgroundColor: loading ? '#a8eec1' : '#2ecc71',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '8px',
-                            fontSize: '1.1rem',
-                            fontWeight: 'bold',
-                            cursor: loading ? 'not-allowed' : 'pointer',
-                            transition: 'all 0.2s ease-in-out',
-                            boxShadow: '0 4px 6px rgba(46, 204, 113, 0.2)',
-                            fontFamily: 'inherit'
-                        }}
-                    >
-                        {loading ? 'Adding...' : 'Add Item'}
-                    </button>
-                </form>
+                </div>
             </div>
         </div>
     );
