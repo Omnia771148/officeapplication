@@ -4,6 +4,22 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import '../dashboard/dashboard.css';
 
+const incrementItemId = (id) => {
+    if (!id) return '';
+    if (/^\d+$/.test(id)) {
+        return (Number(id) + 1).toString();
+    }
+    const match = id.match(/^(.*?)(\d+)$/);
+    if (match) {
+        const prefix = match[1];
+        const numStr = match[2];
+        const nextNum = Number(numStr) + 1;
+        const paddedNextNum = nextNum.toString().padStart(numStr.length, '0');
+        return prefix + paddedNextNum;
+    }
+    return id + '1';
+};
+
 export default function AddItemPage() {
     const router = useRouter();
     const [itemName, setItemName] = useState('');
@@ -11,15 +27,33 @@ export default function AddItemPage() {
     const [price, setPrice] = useState('');
     const [restaurantId, setRestaurantId] = useState('');
 
+    const [loading, setLoading] = useState(false);
+    const [message, setMessage] = useState('');
+    const [error, setError] = useState('');
+
+    const autoFillNextItemId = async (rId) => {
+        if (!rId || !rId.trim() || !/^\d+$/.test(rId.trim())) return;
+        try {
+            const res = await fetch(`/api/item-status?restaurantId=${encodeURIComponent(rId.trim())}`);
+            const result = await res.json();
+            if (result.success && result.data && result.data.length > 0) {
+                const latestItemId = result.data[0].itemId;
+                setItemId(incrementItemId(latestItemId));
+            } else {
+                setItemId('');
+            }
+        } catch (err) {
+            console.error('Failed to auto-fetch next item ID', err);
+        }
+    };
+
     useEffect(() => {
         const storedId = localStorage.getItem('restaurantId');
         if (storedId) {
             setRestaurantId(storedId);
+            autoFillNextItemId(storedId);
         }
     }, []);
-    const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState('');
-    const [error, setError] = useState('');
 
     // Query Recent Entry State
     const [queryRestaurantId, setQueryRestaurantId] = useState('');
@@ -93,9 +127,8 @@ export default function AddItemPage() {
             if (res.ok) {
                 setMessage('Item added successfully!');
                 setItemName('');
-                setItemId('');
                 setPrice('');
-                setRestaurantId('');
+                setItemId(prevId => incrementItemId(prevId));
             } else {
                 setError(data.message || 'Something went wrong.');
             }
@@ -255,7 +288,7 @@ export default function AddItemPage() {
 
                         <div style={{ marginBottom: '20px' }}>
                             <label style={{ display: 'block', fontWeight: '600', color: '#555', marginBottom: '8px' }}>
-                                Item ID
+                                Item ID for the next entry 
                             </label>
                             <input
                                 type="text"
@@ -288,7 +321,11 @@ export default function AddItemPage() {
                                 className="formInput"
                                 placeholder="Enter restaurant ID"
                                 value={restaurantId}
-                                onChange={(e) => setRestaurantId(e.target.value)}
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    setRestaurantId(val);
+                                    autoFillNextItemId(val);
+                                }}
                                 style={{
                                     width: '100%',
                                     padding: '12px 15px',
