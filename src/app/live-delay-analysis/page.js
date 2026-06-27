@@ -56,7 +56,7 @@ export default function LiveDelayAnalysisPage() {
 
     return (
         <div className="liveContainer">
-            <div className="deliveryBoyHeader" style={{ justifyContent: 'space-between', marginBottom: '30px' }}>
+            <div className="deliveryBoyHeader" st yle={{ justifyContent: 'space-between', marginBottom: '30px' }}>
                 <button className="backBtn" onClick={() => router.back()}>
                     ← Back
                 </button>

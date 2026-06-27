@@ -8,9 +8,14 @@ export async function POST(req) {
 
     const { itemName, itemId, price, restaurantId, itemStatus, itemtodisplayintherestuarentapp } = await req.json();
 
-    if (!itemName || !itemId || price === undefined || !restaurantId) {
+    if (
+      !itemName || !itemName.trim() ||
+      !itemId || !itemId.trim() ||
+      price === undefined || price === null || price === '' || isNaN(Number(price)) ||
+      !restaurantId || !restaurantId.trim()
+    ) {
       return NextResponse.json(
-        { message: "Item name, Item ID, price, and restaurant ID are required" },
+        { message: "Item name, Item ID, price, and restaurant ID are required and must be valid." },
         { status: 400 }
       );
     }

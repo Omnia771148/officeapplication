@@ -23,6 +23,19 @@ export default function AddItemPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        
+        // Client-side validation to ensure all fields are filled
+        if (!itemName.trim() || !itemId.trim() || !price.toString().trim() || !restaurantId.trim()) {
+            setError('All fields (Item Name, Price, Item ID, and Restaurant ID) are mandatory.');
+            return;
+        }
+
+        const parsedPrice = Number(price);
+        if (isNaN(parsedPrice) || parsedPrice < 0) {
+            setError('Please enter a valid positive price.');
+            return;
+        }
+
         setLoading(true);
         setMessage('');
         setError('');
