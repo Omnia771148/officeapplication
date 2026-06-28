@@ -76,3 +76,29 @@ export async function PATCH(request) {
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 }
+
+export async function DELETE(request) {
+    try {
+        await dbConnect();
+        const { searchParams } = new URL(request.url);
+        const itemId = searchParams.get('itemId');
+        const restaurantId = searchParams.get('restaurantId');
+
+        if (itemId) {
+            // Delete a single item
+            const deletedItem = await ItemStatus.findByIdAndDelete(itemId);
+            if (!deletedItem) {
+                return NextResponse.json({ success: false, error: 'Item not found' }, { status: 404 });
+            }
+            return NextResponse.json({ success: true, message: 'Item deleted successfully' });
+        } else if (restaurantId) {
+            // Delete all items for this restaurant
+            const result = await ItemStatus.deleteMany({ restaurantId });
+            return NextResponse.json({ success: true, message: `Deleted ${result.deletedCount} items` });
+        } else {
+            return NextResponse.json({ success: false, error: 'itemId or restaurantId is required' }, { status: 400 });
+        }
+    } catch (error) {
+        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    }
+}

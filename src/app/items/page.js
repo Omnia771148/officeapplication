@@ -12,6 +12,8 @@ export default function BranchItemsPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [togglingId, setTogglingId] = useState(null);
     const [errorMessage, setErrorMessage] = useState('');
+    const [deletingId, setDeletingId] = useState(null);
+    const [deletingAll, setDeletingAll] = useState(false);
 
     // Editing States
     const [editingId, setEditingId] = useState(null);
@@ -122,6 +124,57 @@ export default function BranchItemsPage() {
             alert('Server communication error.');
         } finally {
             setTogglingId(null);
+        }
+    };
+
+    const handleDeleteItem = async (itemId, itemName) => {
+        if (!confirm(`Are you sure you want to delete "${itemName}"?`)) {
+            return;
+        }
+
+        setDeletingId(itemId);
+        try {
+            const res = await fetch(`/api/item-status?itemId=${itemId}`, {
+                method: 'DELETE'
+            });
+            const data = await res.json();
+            if (data.success) {
+                setItems(prevItems => prevItems.filter(item => item._id !== itemId));
+            } else {
+                alert(data.error || 'Failed to delete item.');
+            }
+        } catch (err) {
+            alert('Server communication error.');
+        } finally {
+            setDeletingId(null);
+        }
+    };
+
+    const handleDeleteAllItems = async () => {
+        if (!restaurantId) return;
+
+        const confirmation1 = confirm('WARNING: Are you sure you want to delete ALL items for this restaurant branch? This action cannot be undone.');
+        if (!confirmation1) return;
+
+        const confirmation2 = confirm('Please confirm once more: Do you really want to delete ALL menu items?');
+        if (!confirmation2) return;
+
+        setDeletingAll(true);
+        try {
+            const res = await fetch(`/api/item-status?restaurantId=${restaurantId}`, {
+                method: 'DELETE'
+            });
+            const data = await res.json();
+            if (data.success) {
+                setItems([]);
+                alert('All items deleted successfully.');
+            } else {
+                alert(data.error || 'Failed to delete all items.');
+            }
+        } catch (err) {
+            alert('Server communication error.');
+        } finally {
+            setDeletingAll(false);
         }
     };
 
@@ -260,6 +313,29 @@ export default function BranchItemsPage() {
                     background-color: #27ae60;
                     transform: translateY(-2px);
                     box-shadow: 0 6px 12px rgba(46, 204, 113, 0.3);
+                }
+                .btnDeleteAll {
+                    background: #e74c3c;
+                    color: white;
+                    border: none;
+                    padding: 12px 24px;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-weight: 700;
+                    box-shadow: 0 4px 6px rgba(231, 76, 60, 0.2);
+                    transition: all 0.2s;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                }
+                .btnDeleteAll:hover:not(:disabled) {
+                    background-color: #c0392b;
+                    transform: translateY(-2px);
+                    box-shadow: 0 6px 12px rgba(231, 76, 60, 0.3);
+                }
+                .btnDeleteAll:disabled {
+                    opacity: 0.6;
+                    cursor: not-allowed;
                 }
                 .itemsTitle {
                     text-align: center;
@@ -529,6 +605,29 @@ export default function BranchItemsPage() {
                     color: #1e293b;
                     border-color: #cbd5e1;
                 }
+                .btnDeleteCard {
+                    background: #fff5f5;
+                    border: 1px solid #fed7d7;
+                    border-radius: 6px;
+                    padding: 6px 12px;
+                    font-size: 0.85rem;
+                    font-weight: 600;
+                    color: #e53e3e;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                }
+                .btnDeleteCard:hover:not(:disabled) {
+                    background: #fed7d7;
+                    color: #c53030;
+                    border-color: #feb2b2;
+                }
+                .btnDeleteCard:disabled {
+                    opacity: 0.6;
+                    cursor: not-allowed;
+                }
 
                 @media (max-width: 600px) {
                     .itemsPageContainer {
@@ -538,7 +637,7 @@ export default function BranchItemsPage() {
                         flex-direction: column;
                         align-items: stretch;
                     }
-                    .btnBackHeader, .btnAddItem {
+                    .btnBackHeader, .btnAddItem, .btnDeleteAll {
                         width: 100%;
                         text-align: center;
                     }
@@ -555,9 +654,20 @@ export default function BranchItemsPage() {
                 <button onClick={() => window.history.back()} className="btnBackHeader">
                     ← Back to Branch
                 </button>
-                <Link href="/add-item" className="btnAddItem">
-                    + Add New Item
-                </Link>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    <Link href="/add-item" className="btnAddItem">
+                        + Add New Item
+                    </Link>
+                    {items.length > 0 && (
+                        <button 
+                            onClick={handleDeleteAllItems} 
+                            className="btnDeleteAll"
+                            disabled={deletingAll}
+                        >
+                            {deletingAll ? 'Deleting All...' : '🗑️ Delete All Items'}
+                        </button>
+                    )}
+                </div>
             </div>
 
             <h1 className="itemsTitle">🍴 Menu Item Status</h1>
@@ -645,9 +755,18 @@ export default function BranchItemsPage() {
                                     <div>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
                                             <h3 className="itemName" style={{ margin: 0, flex: 1 }}>{item.itemName}</h3>
-                                            <button className="btnEditCard" onClick={() => startEditing(item)}>
-                                                ✏️ Edit
-                                            </button>
+                                            <div style={{ display: 'flex', gap: '6px' }}>
+                                                <button className="btnEditCard" onClick={() => startEditing(item)}>
+                                                    ✏️ Edit
+                                                </button>
+                                                <button 
+                                                    className="btnDeleteCard" 
+                                                    onClick={() => handleDeleteItem(item._id, item.itemName)}
+                                                    disabled={deletingId === item._id}
+                                                >
+                                                    {deletingId === item._id ? '...' : '🗑️ Delete'}
+                                                </button>
+                                            </div>
                                         </div>
                                         <div className="itemPrice" style={{ marginTop: '8px' }}>₹{item.price}</div>
                                         {item.itemId && (
