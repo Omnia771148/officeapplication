@@ -6,7 +6,7 @@ import { useState } from 'react';
 import BranchStats from '@/components/BranchStats';
 import '@/components/BranchPage.css';
 
-export default function KnlPage() {
+export default function AmigosPage() {
     const router = useRouter();
     const [details, setDetails] = useState(null);
     const [showPassword, setShowPassword] = useState(false);
@@ -17,9 +17,9 @@ export default function KnlPage() {
                 <button className="branchBackButton" onClick={() => router.back()}>← Back</button>
             </div>
 
-            <h1 className="branchTitle" style={{ color: '#009688' }}>KNL Branch</h1>
+            <h1 className="branchTitle" style={{ color: '#009688' }}>Amigos Branch</h1>
             <p className="branchSubtitle">
-                Welcome to the KNL management page.
+                Welcome to the Amigos management page.
             </p>
 
             <div className="branchButtonContainer">

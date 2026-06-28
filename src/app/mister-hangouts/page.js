@@ -6,7 +6,7 @@ import { useState } from 'react';
 import BranchStats from '@/components/BranchStats';
 import '@/components/BranchPage.css';
 
-export default function MayuriPage() {
+export default function MisterHangoutsPage() {
     const router = useRouter();
     const [details, setDetails] = useState(null);
     const [showPassword, setShowPassword] = useState(false);
@@ -17,9 +17,9 @@ export default function MayuriPage() {
                 <button className="branchBackButton" onClick={() => router.back()}>← Back</button>
             </div>
 
-            <h1 className="branchTitle" style={{ color: '#009688' }}>Mayuri Branch</h1>
+            <h1 className="branchTitle" style={{ color: '#009688' }}>Mister Hangouts Branch</h1>
             <p className="branchSubtitle">
-                Welcome to the Mayuri management page.
+                Welcome to the Mister Hangouts management page.
             </p>
 
             <div className="branchButtonContainer">
@@ -131,7 +131,7 @@ export default function MayuriPage() {
                 </div>
             )}
 
-            <BranchStats restaurantId="5" onDetailsLoaded={setDetails} />
+            <BranchStats restaurantId="3" onDetailsLoaded={setDetails} />
         </div>
     );
 }

@@ -6,7 +6,7 @@ import { useState } from 'react';
 import BranchStats from '@/components/BranchStats';
 import '@/components/BranchPage.css';
 
-export default function SnofieldPage() {
+export default function ReddyFamliyRestaurentPage() {
     const router = useRouter();
     const [details, setDetails] = useState(null);
     const [showPassword, setShowPassword] = useState(false);
@@ -17,9 +17,9 @@ export default function SnofieldPage() {
                 <button className="branchBackButton" onClick={() => router.back()}>← Back</button>
             </div>
 
-            <h1 className="branchTitle" style={{ color: '#009688' }}>Snofield Branch</h1>
+            <h1 className="branchTitle" style={{ color: '#009688' }}>Reddy Famliy Restaurent Branch</h1>
             <p className="branchSubtitle">
-                Welcome to the Snofield management page.
+                Welcome to the Reddy Famliy Restaurent management page.
             </p>
 
             <div className="branchButtonContainer">
@@ -131,7 +131,7 @@ export default function SnofieldPage() {
                 </div>
             )}
 
-            <BranchStats restaurantId="3" onDetailsLoaded={setDetails} />
+            <BranchStats restaurantId="4" onDetailsLoaded={setDetails} />
         </div>
     );
 }

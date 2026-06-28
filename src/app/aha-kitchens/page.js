@@ -6,7 +6,7 @@ import { useState } from 'react';
 import BranchStats from '@/components/BranchStats';
 import '@/components/BranchPage.css';
 
-export default function KushasPage() {
+export default function AhaKitchensPage() {
     const router = useRouter();
     const [details, setDetails] = useState(null);
     const [showPassword, setShowPassword] = useState(false);
@@ -17,9 +17,9 @@ export default function KushasPage() {
                 <button className="branchBackButton" onClick={() => router.back()}>← Back</button>
             </div>
 
-            <h1 className="branchTitle" style={{ color: '#009688' }}>Kushas Branch</h1>
+            <h1 className="branchTitle" style={{ color: '#009688' }}>Aha Kitchens Branch</h1>
             <p className="branchSubtitle">
-                Welcome to the Kushas management page.
+                Welcome to the Aha Kitchens management page.
             </p>
 
             <div className="branchButtonContainer">
@@ -131,7 +131,7 @@ export default function KushasPage() {
                 </div>
             )}
 
-            <BranchStats restaurantId="1" onDetailsLoaded={setDetails} />
+            <BranchStats restaurantId="5" onDetailsLoaded={setDetails} />
         </div>
     );
 }

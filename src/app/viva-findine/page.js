@@ -6,7 +6,7 @@ import { useState } from 'react';
 import BranchStats from '@/components/BranchStats';
 import '@/components/BranchPage.css';
 
-export default function BrosPage() {
+export default function VivaFindinePage() {
     const router = useRouter();
     const [details, setDetails] = useState(null);
     const [showPassword, setShowPassword] = useState(false);
@@ -17,9 +17,9 @@ export default function BrosPage() {
                 <button className="branchBackButton" onClick={() => router.back()}>← Back</button>
             </div>
 
-            <h1 className="branchTitle" style={{ color: '#009688' }}>Bros Branch</h1>
+            <h1 className="branchTitle" style={{ color: '#009688' }}>Viva Findine Branch</h1>
             <p className="branchSubtitle">
-                Welcome to the Bros management page.
+                Welcome to the Viva Findine management page.
             </p>
 
             <div className="branchButtonContainer">
@@ -131,7 +131,7 @@ export default function BrosPage() {
                 </div>
             )}
 
-            <BranchStats restaurantId="4" onDetailsLoaded={setDetails} />
+            <BranchStats restaurantId="1" onDetailsLoaded={setDetails} />
         </div>
     );
 }

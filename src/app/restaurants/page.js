@@ -15,11 +15,11 @@ export default function RestaurantsPage() {
     const [showPassword, setShowPassword] = useState(false);
 
     const branches = [
-        { name: 'Kushas', path: '/kushas', color: '#4ECDC4', id: '1' },
-        { name: 'Knl', path: '/knl', color: '#45B7D1', id: '2' },
-        { name: 'Snofield', path: '/snofield', color: '#FF6B6B', id: '3' },
-        { name: 'Bros', path: '/bros', color: '#FFA07A', id: '4' },
-        { name: 'Mayuri', path: '/mayuri', color: '#98D8C8', id: '5' },
+        { name: 'Viva Findine', path: '/viva-findine', color: '#4ECDC4', id: '1' },
+        { name: 'Amigos', path: '/amigos', color: '#45B7D1', id: '2' },
+        { name: 'Mister Hangouts', path: '/mister-hangouts', color: '#FF6B6B', id: '3' },
+        { name: 'Reddy Famliy Restaurent', path: '/reddy-famliy-restaurent', color: '#FFA07A', id: '4' },
+        { name: 'Aha Kitchens', path: '/aha-kitchens', color: '#98D8C8', id: '5' },
         { name: 'Bro Story', path: '/bro-story', color: '#FF9F43', id: '6' },
         { name: 'Fun & Food', path: '/fun-and-food', color: '#A29BFE', id: '7' },
         { name: 'PR Grand', path: '/pr-grand', color: '#FD79A8', id: '8' },
@@ -71,6 +71,27 @@ export default function RestaurantsPage() {
                     }}
                 >
                     ← Back to Dashboard
+                </button>
+            </div>
+            
+            <div style={{ position: 'absolute', top: '25px', right: '25px' }}>
+                <button 
+                    onClick={() => router.push('/replace-restaurant-id')} 
+                    style={{
+                        background: '#e67e22',
+                        border: 'none',
+                        padding: '10px 20px',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontWeight: 'bold',
+                        color: 'white',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                        transition: 'transform 0.2s, background-color 0.2s'
+                    }}
+                    onMouseOver={(e) => e.target.style.backgroundColor = '#d35400'}
+                    onMouseOut={(e) => e.target.style.backgroundColor = '#e67e22'}
+                >
+                    🔄 Replace Restaurant ID
                 </button>
             </div>
             
