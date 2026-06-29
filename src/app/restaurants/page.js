@@ -210,6 +210,22 @@ export default function RestaurantsPage() {
                     {details && (
                         <div className="branchDetailsCard" style={{ marginTop: '20px', textBehavior: 'left' }}>
                             <h3 className="detailsCardTitle">📋 Restaurant Profile</h3>
+                            {details.logoUrl && (
+                                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+                                    <img 
+                                        src={details.logoUrl} 
+                                        alt={`${details.restLocation} Logo`} 
+                                        style={{ 
+                                            width: '120px', 
+                                            height: '120px', 
+                                            borderRadius: '50%', 
+                                            objectFit: 'cover',
+                                            border: '3px solid #f0f0f0',
+                                            boxShadow: '0 4px 10px rgba(0,0,0,0.08)'
+                                        }} 
+                                    />
+                                </div>
+                            )}
                             <div className="detailsGrid">
                                 <div className="detailItem">
                                     <span className="detailLabel">Restaurant ID</span>

@@ -18,6 +18,7 @@ export async function POST(req) {
       closeTime,
       latitude,
       longitude,
+      logoUrl,
     } = await req.json();
 
     // validation
@@ -65,6 +66,7 @@ export async function POST(req) {
         lat: Number(latitude),
         lng: Number(longitude),
       },
+      logoUrl: logoUrl || "",
     });
 
     return NextResponse.json(

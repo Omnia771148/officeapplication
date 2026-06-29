@@ -2,6 +2,75 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+// Utility to compress and resize image to target size in KB using HTML5 Canvas
+const compressImage = (file, targetSizeKb = 65) => {
+  if (!file || !file.type.startsWith("image/")) {
+    return Promise.resolve(file);
+  }
+
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+
+        // Resize down if image is high-resolution (max 800px width/height)
+        const MAX_DIM = 800;
+        if (width > MAX_DIM || height > MAX_DIM) {
+          if (width > height) {
+            height = Math.round((height * MAX_DIM) / width);
+            width = MAX_DIM;
+          } else {
+            width = Math.round((width * MAX_DIM) / height);
+            height = MAX_DIM;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+
+        let quality = 0.8;
+        const checkQualityAndResolve = () => {
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                resolve(file);
+                return;
+              }
+              const blobSizeKb = blob.size / 1024;
+              if (blobSizeKb > targetSizeKb && quality > 0.15) {
+                quality -= 0.1;
+                checkQualityAndResolve();
+              } else {
+                // Ensure output is named with a .jpg extension matching the jpeg blob
+                const baseName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+                const compressedFile = new File([blob], `${baseName}.jpg`, {
+                  type: "image/jpeg",
+                  lastModified: Date.now(),
+                });
+                resolve(compressedFile);
+              }
+            },
+            "image/jpeg",
+            quality
+          );
+        };
+
+        checkQualityAndResolve();
+      };
+    };
+    reader.onerror = () => resolve(file);
+  });
+};
+
 export default function RestaurantRegisterPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -16,10 +85,44 @@ export default function RestaurantRegisterPage() {
   const [longitude, setLongitude] = useState("");
   const [msg, setMsg] = useState("");
   const [isSuccess, setIsSuccess] = useState(false);
+  const [logoFile, setLogoFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
   const router = useRouter();
 
   const handleRegister = async () => {
     try {
+      setMsg("");
+      if (!restId) {
+        setMsg("Restaurant ID is required before uploading a logo");
+        return;
+      }
+
+      let uploadedLogoUrl = "";
+
+      if (logoFile) {
+        setUploading(true);
+        setMsg("Compressing logo to ~65KB...");
+        const compressedFile = await compressImage(logoFile, 65);
+        setMsg("Uploading compressed logo to S3...");
+        const formData = new FormData();
+        formData.append("file", compressedFile);
+        formData.append("restId", restId);
+
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        const uploadData = await uploadRes.json();
+        if (!uploadRes.ok || !uploadData.success) {
+          throw new Error(uploadData.error || "Failed to upload logo to S3");
+        }
+        uploadedLogoUrl = uploadData.url;
+      }
+
+      setMsg("Registering restaurant...");
+      setUploading(false);
+
       const res = await fetch("/api/restaurant-register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -35,6 +138,7 @@ export default function RestaurantRegisterPage() {
           closeTime,
           latitude,
           longitude,
+          logoUrl: uploadedLogoUrl,
         }),
       });
       const data = await res.json();
@@ -44,6 +148,7 @@ export default function RestaurantRegisterPage() {
       }
     } catch (error) {
       setMsg("Registration failed: " + error.message);
+      setUploading(false);
     }
   };
 
@@ -130,11 +235,22 @@ export default function RestaurantRegisterPage() {
           onChange={(e) => setLongitude(e.target.value)} 
         />
 
+        <div>
+          <label style={labelStyle}>Restaurant Logo</label>
+          <input 
+            style={inputStyle} 
+            type="file" 
+            accept="image/*"
+            onChange={(e) => setLogoFile(e.target.files[0])} 
+          />
+        </div>
+
         <button
           style={buttonStyle}
           onClick={handleRegister}
+          disabled={uploading}
         >
-          Register Restaurant
+          {uploading ? "Uploading logo..." : "Register Restaurant"}
         </button>
       </div>
 

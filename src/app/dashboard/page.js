@@ -182,6 +182,14 @@ export default function Dashboard() {
                     >
                         Coupon Codes for Influencers
                     </button>
+                    
+                    <button
+                        className="branchButton"
+                        style={{ '--btn-color': '#34495e' }}
+                        onClick={() => router.push('/add-carousel')}
+                    >
+                        🖼️ Add Carousel Slide
+                    </button>
                 </div>
             )}
         </div>

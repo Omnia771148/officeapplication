@@ -76,7 +76,8 @@ export async function GET(request) {
                 fssai: restaurant.fssai,
                 openTime: restaurant.openTime,
                 closeTime: restaurant.closeTime,
-                restaurantLocation: restaurant.restaurantLocation
+                restaurantLocation: restaurant.restaurantLocation,
+                logoUrl: restaurant.logoUrl
             } : null
         });
     } catch (error) {

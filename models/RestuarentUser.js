@@ -56,6 +56,9 @@ const RegisterUserSchema = new mongoose.Schema(
     pushSubscription: {
       type: Object, // Store the Web Push subscription object
     },
+    logoUrl: {
+      type: String, // Store the AWS S3 URL of the restaurant logo
+    },
   },
   { timestamps: true }
 );
