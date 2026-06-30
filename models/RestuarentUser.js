@@ -59,6 +59,24 @@ const RegisterUserSchema = new mongoose.Schema(
     logoUrl: {
       type: String, // Store the AWS S3 URL of the restaurant logo
     },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+    isManuallyToggled: {
+      type: Boolean,
+      default: false,
+    },
+    manualStatusUpdatedAt: {
+      type: Date,
+      default: Date.now,
+    },
+    vegOrNonVeg: {
+      type: String,
+      required: true,
+      enum: ["Veg", "Non-Veg", "Both"],
+      default: "Both",
+    },
   },
   { timestamps: true }
 );

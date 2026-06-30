@@ -52,13 +52,14 @@ export default function BranchItemsPage() {
                 body: JSON.stringify({ 
                     itemId, 
                     itemName: editName.trim(), 
-                    price: parsedPrice 
+                    price: parsedPrice,
+                    restaurantId
                 })
             });
             const data = await res.json();
             if (data.success) {
-                setItems(prevItems => 
-                    prevItems.map(item => 
+                setItems(prevItems =>
+                    prevItems.map(item =>
                         item._id === itemId ? { ...item, ...data.data } : item
                     )
                 );
@@ -108,12 +109,16 @@ export default function BranchItemsPage() {
             const res = await fetch('/api/item-status', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ itemId, [propertyName]: nextStatus })
+                body: JSON.stringify({ 
+                    itemId, 
+                    [propertyName]: nextStatus,
+                    restaurantId
+                })
             });
             const data = await res.json();
             if (data.success) {
-                setItems(prevItems => 
-                    prevItems.map(item => 
+                setItems(prevItems =>
+                    prevItems.map(item =>
                         item._id === itemId ? { ...item, ...data.data } : item
                     )
                 );
@@ -134,7 +139,7 @@ export default function BranchItemsPage() {
 
         setDeletingId(itemId);
         try {
-            const res = await fetch(`/api/item-status?itemId=${itemId}`, {
+            const res = await fetch(`/api/item-status?itemId=${itemId}&restaurantId=${restaurantId}`, {
                 method: 'DELETE'
             });
             const data = await res.json();
@@ -659,8 +664,8 @@ export default function BranchItemsPage() {
                         + Add New Item
                     </Link>
                     {items.length > 0 && (
-                        <button 
-                            onClick={handleDeleteAllItems} 
+                        <button
+                            onClick={handleDeleteAllItems}
                             className="btnDeleteAll"
                             disabled={deletingAll}
                         >
@@ -706,9 +711,9 @@ export default function BranchItemsPage() {
                                 <div className="editFieldsContainer">
                                     <div className="editFieldGroup">
                                         <span className="editFieldLabel">Item Name</span>
-                                        <input 
-                                            type="text" 
-                                            className="editInputField" 
+                                        <input
+                                            type="text"
+                                            className="editInputField"
                                             value={editName}
                                             disabled={savingId === item._id}
                                             onChange={(e) => setEditName(e.target.value)}
@@ -717,9 +722,9 @@ export default function BranchItemsPage() {
                                     </div>
                                     <div className="editFieldGroup">
                                         <span className="editFieldLabel">Price (₹)</span>
-                                        <input 
-                                            type="number" 
-                                            className="editInputField" 
+                                        <input
+                                            type="number"
+                                            className="editInputField"
                                             value={editPrice}
                                             disabled={savingId === item._id}
                                             onChange={(e) => setEditPrice(e.target.value)}
@@ -734,15 +739,15 @@ export default function BranchItemsPage() {
                                         </div>
                                     )}
                                     <div className="editActions">
-                                        <button 
-                                            className="btnSave" 
+                                        <button
+                                            className="btnSave"
                                             disabled={savingId === item._id}
                                             onClick={() => handleSaveEdit(item._id)}
                                         >
                                             {savingId === item._id ? 'Saving...' : '💾 Save'}
                                         </button>
-                                        <button 
-                                            className="btnCancel" 
+                                        <button
+                                            className="btnCancel"
                                             disabled={savingId === item._id}
                                             onClick={cancelEditing}
                                         >
@@ -759,8 +764,8 @@ export default function BranchItemsPage() {
                                                 <button className="btnEditCard" onClick={() => startEditing(item)}>
                                                     ✏️ Edit
                                                 </button>
-                                                <button 
-                                                    className="btnDeleteCard" 
+                                                <button
+                                                    className="btnDeleteCard"
                                                     onClick={() => handleDeleteItem(item._id, item.itemName)}
                                                     disabled={deletingId === item._id}
                                                 >
@@ -775,7 +780,7 @@ export default function BranchItemsPage() {
                                             </div>
                                         )}
                                     </div>
-                                    
+
                                     <div className="itemControlArea">
                                         {/* First Toggle: Item Availability Status */}
                                         <div className="toggleLabelContainer">
@@ -783,7 +788,7 @@ export default function BranchItemsPage() {
                                                 Item Availability Status
                                             </span>
                                             <label className="switch">
-                                                <input 
+                                                <input
                                                     type="checkbox"
                                                     checked={item.itemStatus !== false}
                                                     disabled={togglingId === item._id}
@@ -802,7 +807,7 @@ export default function BranchItemsPage() {
                                                 Item to display in the restaurant app
                                             </span>
                                             <label className="switch">
-                                                <input 
+                                                <input
                                                     type="checkbox"
                                                     checked={item.itemtodisplayintherestuarentapp !== false}
                                                     disabled={togglingId === item._id}

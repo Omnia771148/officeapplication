@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
-import dbConnect from "../../../../lib/mongoose";
-import ItemStatus from "../../../../models/ItemStatus";
+import { getRestaurantItemModel } from "../../../../lib/mongoose";
 
 export async function POST(req) {
   try {
-    await dbConnect();
 
-    const { itemName, itemId, price, restaurantId, itemStatus, itemtodisplayintherestuarentapp } = await req.json();
+    const { itemName, itemId, price, restaurantId, rating, photoUrl, itemStatus, itemtodisplayintherestuarentapp, vegOrNonVeg } = await req.json();
 
     if (
       !itemName || !itemName.trim() ||
@@ -20,13 +18,18 @@ export async function POST(req) {
       );
     }
 
-    const newItem = await ItemStatus.create({
+    const RestaurantItem = await getRestaurantItemModel(restaurantId);
+
+    const newItem = await RestaurantItem.create({
       itemName,
       itemId,
       price: Number(price),
       restaurantId,
+      rating: rating !== undefined ? Number(rating) : 0,
+      photoUrl: photoUrl || "",
       itemStatus: itemStatus !== undefined ? itemStatus : true,
       itemtodisplayintherestuarentapp: itemtodisplayintherestuarentapp !== undefined ? itemtodisplayintherestuarentapp : true,
+      vegOrNonVeg: vegOrNonVeg || "Both",
     });
 
     return NextResponse.json(

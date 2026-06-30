@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import './BranchStats.css';
 
 export default function BranchStats({ restaurantId, onFssaiLoaded, onDetailsLoaded }) {
@@ -8,6 +9,39 @@ export default function BranchStats({ restaurantId, onFssaiLoaded, onDetailsLoad
     const [fssai, setFssai] = useState('');
     const [loading, setLoading] = useState(true);
     const [tooltip, setTooltip] = useState({ visible: false, x: 0, y: 0, title: '', value: '' });
+    const pathname = usePathname();
+    const showDelete = pathname !== '/restaurants';
+
+    const handleDeleteRestaurant = async () => {
+        const confirm1 = confirm("Are you sure you want to delete this restaurant branch? This will delete the restaurant profile and its entire item collection. This action cannot be undone!");
+        if (!confirm1) return;
+
+        const confirm2 = confirm("Please confirm once again: Do you really want to delete this restaurant?");
+        if (!confirm2) return;
+
+        try {
+            const res = await fetch('/api/restaurant-register', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ restId: restaurantId })
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                alert("Restaurant deleted successfully!");
+                localStorage.removeItem('restaurantId');
+                localStorage.removeItem('registeredRestaurantsCache');
+                window.location.href = '/restaurants';
+            } else {
+                alert(data.message || "Failed to delete restaurant");
+            }
+        } catch (err) {
+            console.error("Error deleting restaurant:", err);
+            alert("An error occurred while deleting the restaurant.");
+        }
+    };
 
     useEffect(() => {
         const fetchStats = async () => {
@@ -257,6 +291,33 @@ export default function BranchStats({ restaurantId, onFssaiLoaded, onDetailsLoad
                 >
                     <div className="tooltipDate">{tooltip.title}</div>
                     <div style={{ fontWeight: 'bold' }}>{tooltip.value}</div>
+                </div>
+            )}
+            {/* Delete Restaurant Button (only shown on the full dashboard page) */}
+            {showDelete && (
+                <div style={{ marginTop: '40px', borderTop: '1px solid #eee', paddingTop: '30px', textAlign: 'center', width: '100%' }}>
+                    <button 
+                        onClick={handleDeleteRestaurant}
+                        style={{
+                            backgroundColor: '#e74c3c',
+                            color: 'white',
+                            border: 'none',
+                            padding: '14px 28px',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            fontWeight: 'bold',
+                            fontSize: '1rem',
+                            boxShadow: '0 4px 6px rgba(231, 76, 60, 0.2)',
+                            transition: 'all 0.2s ease-in-out',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                        }}
+                        onMouseOver={(e) => e.target.style.backgroundColor = '#c0392b'}
+                        onMouseOut={(e) => e.target.style.backgroundColor = '#e74c3c'}
+                    >
+                        🗑️ Delete Restaurant Branch
+                    </button>
                 </div>
             )}
         </div>

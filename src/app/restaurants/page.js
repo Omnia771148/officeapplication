@@ -14,33 +14,85 @@ export default function RestaurantsPage() {
     const [details, setDetails] = useState(null);
     const [showPassword, setShowPassword] = useState(false);
 
-    const branches = [
-        { name: 'Viva Findine', path: '/viva-findine', color: '#4ECDC4', id: '1' },
-        { name: 'Amigos', path: '/amigos', color: '#45B7D1', id: '2' },
-        { name: 'Mister Hangouts', path: '/mister-hangouts', color: '#FF6B6B', id: '3' },
-        { name: 'Reddy Famliy Restaurent', path: '/reddy-famliy-restaurent', color: '#FFA07A', id: '4' },
-        { name: 'Aha Kitchens', path: '/aha-kitchens', color: '#98D8C8', id: '5' },
-        { name: 'Bro Story', path: '/bro-story', color: '#FF9F43', id: '6' },
-        { name: 'Fun & Food', path: '/fun-and-food', color: '#A29BFE', id: '7' },
-        { name: 'PR Grand', path: '/pr-grand', color: '#FD79A8', id: '8' },
-        { name: 'Food Land', path: '/food-land', color: '#FDCB6E', id: '9' },
-        { name: 'Talimpu', path: '/talimpu', color: '#1dd1a1', id: '10' },
-        { name: 'Taj Darbar', path: '/taj-darbar', color: '#ff6b6b', id: '11' },
-        { name: 'Ruchi Vedhika', path: '/ruchivedhika', color: '#feca57', id: '12' },
-        { name: 'Hindustan', path: '/hindustan', color: '#5f27cd', id: '13' },
-        { name: 'Lassi', path: '/lassi', color: '#ff9ff3', id: '14' },
-        { name: 'Mandi 9R', path: '/mandi9r', color: '#48dbfb', id: '15' },
-    ];
+    const [branches, setBranches] = useState([]);
+    const [loadingBranches, setLoadingBranches] = useState(true);
 
-    // Load active restaurant from localStorage on page load if one was selected
+    const colors = ['#4ECDC4', '#45B7D1', '#FF6B6B', '#FFA07A', '#98D8C8', '#FF9F43', '#A29BFE', '#FD79A8', '#FDCB6E', '#1dd1a1', '#ff6b6b', '#feca57', '#5f27cd', '#ff9ff3', '#48dbfb'];
+
+    const fetchFromDb = async () => {
+        setLoadingBranches(true);
+        try {
+            const res = await fetch('/api/restaurant-timings');
+            const data = await res.json();
+            if (data.success && data.restaurants) {
+                const mappedBranches = data.restaurants.map((r, index) => {
+                    const hardcodedPaths = {
+                        '1': '/viva-findine',
+                        '2': '/amigos',
+                        '3': '/mister-hangouts',
+                        '4': '/reddy-famliy-restaurent',
+                        '5': '/aha-kitchens',
+                        '6': '/bro-story',
+                        '7': '/fun-and-food',
+                        '8': '/pr-grand',
+                        '9': '/food-land',
+                        '10': '/talimpu',
+                        '11': '/taj-darbar',
+                        '12': '/ruchivedhika',
+                        '13': '/hindustan',
+                        '14': '/lassi',
+                        '15': '/mandi9r'
+                    };
+                    const phoneName = r.phone || r.name;
+                    const sanitizedName = phoneName ? phoneName.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_') : r.restId;
+                    
+                    return {
+                        name: phoneName || `Restaurant ${r.restId}`,
+                        collectionName: sanitizedName,
+                        id: r.restId,
+                        color: colors[index % colors.length],
+                        path: hardcodedPaths[r.restId] || null
+                    };
+                });
+                setBranches(mappedBranches);
+                localStorage.setItem('registeredRestaurantsCache', JSON.stringify(mappedBranches));
+
+                const storedId = localStorage.getItem('restaurantId');
+                if (storedId) {
+                    const found = mappedBranches.find(b => b.id === storedId);
+                    if (found) {
+                        setSelectedBranch(found);
+                    }
+                }
+            }
+        } catch (err) {
+            console.error("Failed to load dynamic branches:", err);
+        } finally {
+            setLoadingBranches(false);
+        }
+    };
+
     useEffect(() => {
-        const storedId = localStorage.getItem('restaurantId');
-        if (storedId) {
-            const foundBranch = branches.find(b => b.id === storedId);
-            if (foundBranch) {
-                setSelectedBranch(foundBranch);
+        const cachedData = localStorage.getItem('registeredRestaurantsCache');
+        if (cachedData) {
+            try {
+                const parsed = JSON.parse(cachedData);
+                setBranches(parsed);
+                setLoadingBranches(false);
+                
+                const storedId = localStorage.getItem('restaurantId');
+                if (storedId) {
+                    const found = parsed.find(b => b.id === storedId);
+                    if (found) {
+                        setSelectedBranch(found);
+                    }
+                }
+                return;
+            } catch (cacheErr) {
+                console.error("Error reading cache, reloading from DB:", cacheErr);
             }
         }
+        fetchFromDb();
     }, []);
 
     const handleBranchClick = (branch) => {
@@ -97,18 +149,43 @@ export default function RestaurantsPage() {
             
             <h1 className="dashboardTitle">Select a Restaurant Branch</h1>
 
-            <div className="searchContainer">
+            <div className="searchContainer" style={{ display: 'flex', gap: '15px', alignItems: 'center', justifyContent: 'center' }}>
                 <input
                     type="text"
                     placeholder="Search restaurant by name..."
                     className="searchInput"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
+                    style={{ margin: 0 }}
                 />
+                <button
+                    onClick={fetchFromDb}
+                    style={{
+                        background: '#3498db',
+                        color: 'white',
+                        border: 'none',
+                        padding: '12px 20px',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontWeight: 'bold',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                        transition: 'transform 0.2s, background-color 0.2s',
+                        height: '46px',
+                        whiteSpace: 'nowrap'
+                    }}
+                    onMouseOver={(e) => e.target.style.backgroundColor = '#2980b9'}
+                    onMouseOut={(e) => e.target.style.backgroundColor = '#3498db'}
+                >
+                    🔄 Sync List
+                </button>
             </div>
             
             <div className="buttonGrid">
-                {filteredBranches.length > 0 ? (
+                {loadingBranches ? (
+                    <div style={{ gridColumn: '1 / -1', textAlign: 'center', color: '#666', padding: '20px', fontSize: '1.1rem' }}>
+                        Loading branches...
+                    </div>
+                ) : filteredBranches.length > 0 ? (
                     filteredBranches.map((branch) => {
                         const isSelected = selectedBranch?.id === branch.id;
                         return (
@@ -200,7 +277,9 @@ export default function RestaurantsPage() {
                             </button>
                         </Link>
 
-                        <Link href={selectedBranch.path}>
+
+
+                        <Link href={`/restaurant-dashboard/${selectedBranch.id}`}>
                             <button className="branchActionButton dashboardRedirect" style={{ backgroundColor: '#34495e', minWidth: '220px' }}>
                                 View Full Dashboard Page →
                             </button>

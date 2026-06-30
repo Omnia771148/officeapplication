@@ -17,9 +17,11 @@ export default function PrGrandPage() {
                 <button className="branchBackButton" onClick={() => router.back()}>← Back</button>
             </div>
 
-            <h1 className="branchTitle" style={{ color: '#FD79A8' }}>PR Grand Branch</h1>
+            <h1 className="branchTitle" style={{ color: '#FD79A8' }}>
+                {details ? (details.phone || details.name || 'PR Grand') : 'PR Grand'} Branch
+            </h1>
             <p className="branchSubtitle">
-                Welcome to the PR Grand management page.
+                Welcome to the {details ? (details.phone || details.name || 'PR Grand') : 'PR Grand'} management page.
             </p>
 
             <div className="branchButtonContainer">
@@ -56,6 +58,12 @@ export default function PrGrandPage() {
                 <Link href="/items">
                     <button className="branchActionButton items">
                         Items
+                    </button>
+                </Link>
+
+                <Link href={`/add-item-customer?restaurantId=${details ? details.restId : '8'}`}>
+                    <button className="branchActionButton customerItem" style={{ backgroundColor: '#e67e22', color: 'white' }}>
+                        Add Customer Item
                     </button>
                 </Link>
             </div>

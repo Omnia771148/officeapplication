@@ -17,9 +17,11 @@ export default function TajDarbarPage() {
                 <button className="branchBackButton" onClick={() => router.back()}>← Back</button>
             </div>
 
-            <h1 className="branchTitle" style={{ color: '#ff6b6b' }}>Taj Darbar Branch</h1>
+            <h1 className="branchTitle" style={{ color: '#ff6b6b' }}>
+                {details ? (details.phone || details.name || 'Taj Darbar') : 'Taj Darbar'} Branch
+            </h1>
             <p className="branchSubtitle">
-                Welcome to the Taj Darbar management page.
+                Welcome to the {details ? (details.phone || details.name || 'Taj Darbar') : 'Taj Darbar'} management page.
             </p>
 
             <div className="branchButtonContainer">
@@ -56,6 +58,12 @@ export default function TajDarbarPage() {
                 <Link href="/items">
                     <button className="branchActionButton items">
                         Items
+                    </button>
+                </Link>
+
+                <Link href={`/add-item-customer?restaurantId=${details ? details.restId : '11'}`}>
+                    <button className="branchActionButton customerItem" style={{ backgroundColor: '#e67e22', color: 'white' }}>
+                        Add Customer Item
                     </button>
                 </Link>
             </div>

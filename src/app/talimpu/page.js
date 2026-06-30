@@ -17,9 +17,11 @@ export default function TalimpuPage() {
                 <button className="branchBackButton" onClick={() => router.back()}>← Back</button>
             </div>
 
-            <h1 className="branchTitle" style={{ color: '#1dd1a1' }}>Talimpu Branch</h1>
+            <h1 className="branchTitle" style={{ color: '#1dd1a1' }}>
+                {details ? (details.phone || details.name || 'Talimpu') : 'Talimpu'} Branch
+            </h1>
             <p className="branchSubtitle">
-                Welcome to the Talimpu management page.
+                Welcome to the {details ? (details.phone || details.name || 'Talimpu') : 'Talimpu'} management page.
             </p>
 
             <div className="branchButtonContainer">
@@ -56,6 +58,12 @@ export default function TalimpuPage() {
                 <Link href="/items">
                     <button className="branchActionButton items">
                         Items
+                    </button>
+                </Link>
+
+                <Link href={`/add-item-customer?restaurantId=${details ? details.restId : '10'}`}>
+                    <button className="branchActionButton customerItem" style={{ backgroundColor: '#e67e22', color: 'white' }}>
+                        Add Customer Item
                     </button>
                 </Link>
             </div>

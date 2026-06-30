@@ -87,6 +87,7 @@ export default function RestaurantRegisterPage() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [logoFile, setLogoFile] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [vegOrNonVeg, setVegOrNonVeg] = useState("Both");
   const router = useRouter();
 
   const handleRegister = async () => {
@@ -139,6 +140,7 @@ export default function RestaurantRegisterPage() {
           latitude,
           longitude,
           logoUrl: uploadedLogoUrl,
+          vegOrNonVeg,
         }),
       });
       const data = await res.json();
@@ -170,7 +172,7 @@ export default function RestaurantRegisterPage() {
         
         <input 
           style={inputStyle} 
-          placeholder="Phone" 
+          placeholder="Name" 
           onChange={(e) => setPhone(e.target.value)} 
         />
 
@@ -234,6 +236,19 @@ export default function RestaurantRegisterPage() {
           placeholder="Longitude (e.g. 78.0352)" 
           onChange={(e) => setLongitude(e.target.value)} 
         />
+
+        <div>
+          <label style={labelStyle}>Restaurant Type</label>
+          <select 
+            style={inputStyle} 
+            value={vegOrNonVeg} 
+            onChange={(e) => setVegOrNonVeg(e.target.value)}
+          >
+            <option value="Both">Both (Veg & Non-Veg)</option>
+            <option value="Veg">Veg</option>
+            <option value="Non-Veg">Non-Veg</option>
+          </select>
+        </div>
 
         <div>
           <label style={labelStyle}>Restaurant Logo</label>

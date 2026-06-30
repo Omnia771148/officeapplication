@@ -77,7 +77,8 @@ export async function GET(request) {
                 openTime: restaurant.openTime,
                 closeTime: restaurant.closeTime,
                 restaurantLocation: restaurant.restaurantLocation,
-                logoUrl: restaurant.logoUrl
+                logoUrl: restaurant.logoUrl,
+                vegOrNonVeg: restaurant.vegOrNonVeg || "Both"
             } : null
         });
     } catch (error) {

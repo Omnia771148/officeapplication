@@ -17,9 +17,11 @@ export default function RuchiVedhikaPage() {
                 <button className="branchBackButton" onClick={() => router.back()}>← Back</button>
             </div>
 
-            <h1 className="branchTitle" style={{ color: '#feca57' }}>Ruchi Vedhika Branch</h1>
+            <h1 className="branchTitle" style={{ color: '#feca57' }}>
+                {details ? (details.phone || details.name || 'Ruchi Vedhika') : 'Ruchi Vedhika'} Branch
+            </h1>
             <p className="branchSubtitle">
-                Welcome to the Ruchi Vedhika management page.
+                Welcome to the {details ? (details.phone || details.name || 'Ruchi Vedhika') : 'Ruchi Vedhika'} management page.
             </p>
 
             <div className="branchButtonContainer">
@@ -56,6 +58,12 @@ export default function RuchiVedhikaPage() {
                 <Link href="/items">
                     <button className="branchActionButton items">
                         Items
+                    </button>
+                </Link>
+
+                <Link href={`/add-item-customer?restaurantId=${details ? details.restId : '12'}`}>
+                    <button className="branchActionButton customerItem" style={{ backgroundColor: '#e67e22', color: 'white' }}>
+                        Add Customer Item
                     </button>
                 </Link>
             </div>

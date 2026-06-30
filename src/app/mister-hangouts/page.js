@@ -17,9 +17,11 @@ export default function MisterHangoutsPage() {
                 <button className="branchBackButton" onClick={() => router.back()}>← Back</button>
             </div>
 
-            <h1 className="branchTitle" style={{ color: '#009688' }}>Mister Hangouts Branch</h1>
+            <h1 className="branchTitle" style={{ color: '#009688' }}>
+                {details ? (details.phone || details.name || 'Mister Hangouts') : 'Mister Hangouts'} Branch
+            </h1>
             <p className="branchSubtitle">
-                Welcome to the Mister Hangouts management page.
+                Welcome to the {details ? (details.phone || details.name || 'Mister Hangouts') : 'Mister Hangouts'} management page.
             </p>
 
             <div className="branchButtonContainer">
@@ -56,6 +58,12 @@ export default function MisterHangoutsPage() {
                 <Link href="/items">
                     <button className="branchActionButton items">
                         Items
+                    </button>
+                </Link>
+
+                <Link href={`/add-item-customer?restaurantId=${details ? details.restId : '3'}`}>
+                    <button className="branchActionButton customerItem" style={{ backgroundColor: '#e67e22', color: 'white' }}>
+                        Add Customer Item
                     </button>
                 </Link>
             </div>

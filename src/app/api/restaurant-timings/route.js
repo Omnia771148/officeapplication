@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import dbConnect from "../../../../lib/mongoose";
 import RestuarentUser from "../../../../models/RestuarentUser";
-import RestaurantStatus from "../../../../models/RestaurantStatus";
 
 function getKolkataTime(now) {
   const formatter = new Intl.DateTimeFormat('en-US', {
@@ -71,27 +70,21 @@ export async function GET() {
     await dbConnect();
 
     const restaurants = await RestuarentUser.find({});
-    const statuses = await RestaurantStatus.find({});
-
-    const statusMap = new Map();
-    statuses.forEach(s => statusMap.set(s.restaurantId, s));
-
     const now = new Date();
     const kolkataTime = getKolkataTime(now);
     const result = [];
 
     for (const rest of restaurants) {
-      const statusDoc = statusMap.get(rest.restId);
-      let isActive = statusDoc ? statusDoc.isActive : false;
-      let isManuallyToggled = statusDoc ? statusDoc.isManuallyToggled : false;
+      let isActive = rest.isActive !== undefined ? rest.isActive : true;
+      let isManuallyToggled = rest.isManuallyToggled || false;
 
       const hasSchedule = rest.openTime && rest.closeTime;
 
       if (hasSchedule) {
         // Scheduled Mode
         let isExpired = false;
-        if (isManuallyToggled && statusDoc && statusDoc.manualStatusUpdatedAt) {
-          if (!isSameDayInKolkata(statusDoc.manualStatusUpdatedAt, now)) {
+        if (isManuallyToggled && rest.manualStatusUpdatedAt) {
+          if (!isSameDayInKolkata(rest.manualStatusUpdatedAt, now)) {
             isExpired = true;
           }
         }
@@ -100,25 +93,23 @@ export async function GET() {
           isManuallyToggled = false;
           isActive = isRestaurantOpen(rest.openTime, rest.closeTime, kolkataTime.hour, kolkataTime.minute);
 
-          await RestaurantStatus.findOneAndUpdate(
-            { restaurantId: rest.restId },
+          await RestuarentUser.findOneAndUpdate(
+            { restId: rest.restId },
             {
               isActive,
               isManuallyToggled: false
-            },
-            { upsert: true }
+            }
           );
         } else if (!isManuallyToggled) {
           const computedActive = isRestaurantOpen(rest.openTime, rest.closeTime, kolkataTime.hour, kolkataTime.minute);
-          if (computedActive !== isActive || !statusDoc) {
+          if (computedActive !== isActive) {
             isActive = computedActive;
-            await RestaurantStatus.findOneAndUpdate(
-              { restaurantId: rest.restId },
+            await RestuarentUser.findOneAndUpdate(
+              { restId: rest.restId },
               {
                 isActive,
                 isManuallyToggled: false
-              },
-              { upsert: true }
+              }
             );
           }
         }
@@ -133,6 +124,7 @@ export async function GET() {
         closeTime: rest.closeTime || "",
         isActive,
         isManuallyToggled,
+        vegOrNonVeg: rest.vegOrNonVeg || "Both",
       });
     }
 
@@ -154,18 +146,16 @@ export async function PATCH(request) {
 
     // Update operational hours if provided in request
     if (openTime !== undefined && closeTime !== undefined) {
-      await RestuarentUser.findOneAndUpdate(
-        { restId },
-        { openTime, closeTime },
-        { new: true }
-      );
-
       if (openTime === "" && closeTime === "") {
         // Clearing timings puts the restaurant back in manual mode
-        await RestaurantStatus.findOneAndUpdate(
-          { restaurantId: restId },
-          { isManuallyToggled: true },
-          { upsert: true }
+        await RestuarentUser.findOneAndUpdate(
+          { restId },
+          { 
+            openTime, 
+            closeTime,
+            isManuallyToggled: true 
+          },
+          { new: true }
         );
       } else {
         // Setting timings: calculate initial status based on schedule and reset manual toggle
@@ -173,28 +163,30 @@ export async function PATCH(request) {
         const kolkataTime = getKolkataTime(now);
         const calculatedActive = isRestaurantOpen(openTime, closeTime, kolkataTime.hour, kolkataTime.minute);
 
-        await RestaurantStatus.findOneAndUpdate(
-          { restaurantId: restId },
+        await RestuarentUser.findOneAndUpdate(
+          { restId },
           {
+            openTime,
+            closeTime,
             isActive: calculatedActive,
             isManuallyToggled: false,
             manualStatusUpdatedAt: now,
           },
-          { upsert: true }
+          { new: true }
         );
       }
     }
 
     // Update active override status if provided in request
     if (isActive !== undefined) {
-      await RestaurantStatus.findOneAndUpdate(
-        { restaurantId: restId },
+      await RestuarentUser.findOneAndUpdate(
+        { restId },
         {
           isActive,
           isManuallyToggled: true,
           manualStatusUpdatedAt: new Date(),
         },
-        { upsert: true }
+        { new: true }
       );
     }
 

@@ -1,13 +1,16 @@
 'use client';
 
+import React, { useState, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 import BranchStats from '@/components/BranchStats';
 import '@/components/BranchPage.css';
 
-export default function LassiPage() {
+export default function RestaurantDashboardPage({ params }) {
     const router = useRouter();
+    // Resolve params using React.use()
+    const resolvedParams = use(params);
+    const id = resolvedParams.id;
     const [details, setDetails] = useState(null);
     const [showPassword, setShowPassword] = useState(false);
 
@@ -17,9 +20,11 @@ export default function LassiPage() {
                 <button className="branchBackButton" onClick={() => router.back()}>← Back</button>
             </div>
 
-            <h1 className="branchTitle" style={{ color: '#ff9ff3' }}>Lassi Branch</h1>
+            <h1 className="branchTitle" style={{ color: '#009688' }}>
+                {details ? (details.phone || details.name || `Restaurant ${id}`) : `Restaurant ${id}`} Branch
+            </h1>
             <p className="branchSubtitle">
-                Welcome to the Lassi management page.
+                Welcome to the {details ? (details.phone || details.name || `Restaurant ${id}`) : `Restaurant ${id}`} management page.
             </p>
 
             <div className="branchButtonContainer">
@@ -56,6 +61,12 @@ export default function LassiPage() {
                 <Link href="/items">
                     <button className="branchActionButton items">
                         Items
+                    </button>
+                </Link>
+
+                <Link href={`/add-item-customer?restaurantId=${id}`}>
+                    <button className="branchActionButton customerItem" style={{ backgroundColor: '#e67e22', color: 'white' }}>
+                        Add Customer Item
                     </button>
                 </Link>
             </div>
@@ -131,7 +142,7 @@ export default function LassiPage() {
                 </div>
             )}
 
-            <BranchStats restaurantId="14" onDetailsLoaded={setDetails} />
+            <BranchStats restaurantId={id} onDetailsLoaded={setDetails} />
         </div>
     );
 }

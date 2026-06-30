@@ -17,9 +17,11 @@ export default function Mandi9rPage() {
                 <button className="branchBackButton" onClick={() => router.back()}>← Back</button>
             </div>
 
-            <h1 className="branchTitle" style={{ color: '#48dbfb' }}>Mandi 9R Branch</h1>
+            <h1 className="branchTitle" style={{ color: '#48dbfb' }}>
+                {details ? (details.phone || details.name || 'Mandi 9R') : 'Mandi 9R'} Branch
+            </h1>
             <p className="branchSubtitle">
-                Welcome to the Mandi 9R management page.
+                Welcome to the {details ? (details.phone || details.name || 'Mandi 9R') : 'Mandi 9R'} management page.
             </p>
 
             <div className="branchButtonContainer">
@@ -56,6 +58,12 @@ export default function Mandi9rPage() {
                 <Link href="/items">
                     <button className="branchActionButton items">
                         Items
+                    </button>
+                </Link>
+
+                <Link href={`/add-item-customer?restaurantId=${details ? details.restId : '15'}`}>
+                    <button className="branchActionButton customerItem" style={{ backgroundColor: '#e67e22', color: 'white' }}>
+                        Add Customer Item
                     </button>
                 </Link>
             </div>

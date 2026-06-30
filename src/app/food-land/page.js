@@ -17,9 +17,11 @@ export default function FoodLandPage() {
                 <button className="branchBackButton" onClick={() => router.back()}>← Back</button>
             </div>
 
-            <h1 className="branchTitle" style={{ color: '#FDCB6E' }}>Food Land Branch</h1>
+            <h1 className="branchTitle" style={{ color: '#FDCB6E' }}>
+                {details ? (details.phone || details.name || 'Food Land') : 'Food Land'} Branch
+            </h1>
             <p className="branchSubtitle">
-                Welcome to the Food Land management page.
+                Welcome to the {details ? (details.phone || details.name || 'Food Land') : 'Food Land'} management page.
             </p>
 
             <div className="branchButtonContainer">
@@ -56,6 +58,12 @@ export default function FoodLandPage() {
                 <Link href="/items">
                     <button className="branchActionButton items">
                         Items
+                    </button>
+                </Link>
+
+                <Link href={`/add-item-customer?restaurantId=${details ? details.restId : '9'}`}>
+                    <button className="branchActionButton customerItem" style={{ backgroundColor: '#e67e22', color: 'white' }}>
+                        Add Customer Item
                     </button>
                 </Link>
             </div>
