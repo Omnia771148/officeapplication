@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 
 const incrementItemId = (id) => {
@@ -98,7 +98,8 @@ export default function AddItemCustomerPage() {
     const [photoFile, setPhotoFile] = useState(null);
     const [photoPreview, setPhotoPreview] = useState(null);
     const [itemId, setItemId] = useState('');
-    const [vegOrNonVeg, setVegOrNonVeg] = useState('Both');
+    const [vegOrNonVeg, setVegOrNonVeg] = useState('Veg');
+    const fileInputRef = useRef(null);
 
     const [loading, setLoading] = useState(false);
     const [fetchingRestaurants, setFetchingRestaurants] = useState(true);
@@ -255,9 +256,12 @@ export default function AddItemCustomerPage() {
                 setMessage('Success! Item uploaded and added to MongoDB collection.');
                 setItemName('');
                 setPrice('');
-                setVegOrNonVeg('Both');
+                setVegOrNonVeg('Veg');
                 setPhotoFile(null);
                 setPhotoPreview(null);
+                if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                }
                 // Pre-increment Item ID for next addition
                 setItemId(prev => incrementItemId(prev));
             } else {
@@ -571,7 +575,6 @@ export default function AddItemCustomerPage() {
                             onChange={(e) => setVegOrNonVeg(e.target.value)}
                             required
                         >
-                            <option value="Both">Both (Veg & Non-Veg)</option>
                             <option value="Veg">Veg</option>
                             <option value="Non-Veg">Non-Veg</option>
                         </select>
@@ -589,6 +592,7 @@ export default function AddItemCustomerPage() {
                                 accept="image/*" 
                                 className="fileInputHidden"
                                 onChange={handleFileChange}
+                                ref={fileInputRef}
                             />
                         </div>
                         {photoPreview && (
