@@ -12,6 +12,10 @@ const CarouselSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    title: {
+      type: String,
+      required: false,
+    },
   },
   {
     timestamps: true,

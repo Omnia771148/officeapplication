@@ -190,7 +190,7 @@ export default function RestaurantsPage() {
                         const isSelected = selectedBranch?.id === branch.id;
                         return (
                             <button
-                                key={branch.name}
+                                key={branch.id}
                                 className="branchButton"
                                 style={{ 
                                     '--btn-color': branch.color,

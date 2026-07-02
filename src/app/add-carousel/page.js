@@ -73,6 +73,7 @@ const compressImage = (file, targetSizeKb = 65) => {
 
 export default function AddCarouselPage() {
   const [carouselId, setCarouselId] = useState("");
+  const [carouselTitle, setCarouselTitle] = useState("");
   const [logoFile, setLogoFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [msg, setMsg] = useState("");
@@ -125,6 +126,7 @@ export default function AddCarouselPage() {
         body: JSON.stringify({
           carouselId: carouselId.trim(),
           imageUrl: s3Url,
+          title: carouselTitle.trim(),
         }),
       });
 
@@ -136,6 +138,7 @@ export default function AddCarouselPage() {
       setMsg("Carousel slide added successfully!");
       setIsSuccess(true);
       setCarouselId("");
+      setCarouselTitle("");
       setLogoFile(null);
       // Reset the file input field
       const fileInput = document.getElementById("carousel-file-input");
@@ -167,6 +170,18 @@ export default function AddCarouselPage() {
             placeholder="e.g. slide_1, main_banner"
             value={carouselId}
             onChange={(e) => setCarouselId(e.target.value)}
+            disabled={uploading}
+          />
+        </div>
+
+        <div style={styles.formGroup}>
+          <label style={styles.label}>Carousel Title</label>
+          <input
+            style={styles.input}
+            type="text"
+            placeholder="e.g. Special Discount Slide"
+            value={carouselTitle}
+            onChange={(e) => setCarouselTitle(e.target.value)}
             disabled={uploading}
           />
         </div>

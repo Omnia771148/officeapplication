@@ -6,7 +6,7 @@ export async function POST(req) {
   try {
     await dbConnect();
 
-    const { carouselId, imageUrl } = await req.json();
+    const { carouselId, imageUrl, title } = await req.json();
 
     if (!carouselId || !imageUrl) {
       return NextResponse.json(
@@ -28,6 +28,7 @@ export async function POST(req) {
     const newCarousel = await Carousel.create({
       carouselId,
       imageUrl,
+      title,
     });
 
     return NextResponse.json({
