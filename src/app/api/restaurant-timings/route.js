@@ -125,6 +125,7 @@ export async function GET() {
         isActive,
         isManuallyToggled,
         vegOrNonVeg: rest.vegOrNonVeg || "Both",
+        offerTitle: rest.offerTitle || "",
       });
     }
 

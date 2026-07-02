@@ -18,10 +18,10 @@ export default function MisterHangoutsPage() {
             </div>
 
             <h1 className="branchTitle" style={{ color: '#009688' }}>
-                {details ? (details.phone || details.name || 'Mister Hangouts') : 'Mister Hangouts'} Branch
+                {details ? (details.name || details.phone || 'Mister Hangouts') : 'Mister Hangouts'} Branch
             </h1>
             <p className="branchSubtitle">
-                Welcome to the {details ? (details.phone || details.name || 'Mister Hangouts') : 'Mister Hangouts'} management page.
+                Welcome to the {details ? (details.name || details.phone || 'Mister Hangouts') : 'Mister Hangouts'} management page.
             </p>
 
             <div className="branchButtonContainer">

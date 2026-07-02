@@ -18,10 +18,10 @@ export default function HindustanPage() {
             </div>
 
             <h1 className="branchTitle" style={{ color: '#5f27cd' }}>
-                {details ? (details.phone || details.name || 'Hindustan') : 'Hindustan'} Branch
+                {details ? (details.name || details.phone || 'Hindustan') : 'Hindustan'} Branch
             </h1>
             <p className="branchSubtitle">
-                Welcome to the {details ? (details.phone || details.name || 'Hindustan') : 'Hindustan'} management page.
+                Welcome to the {details ? (details.name || details.phone || 'Hindustan') : 'Hindustan'} management page.
             </p>
 
             <div className="branchButtonContainer">

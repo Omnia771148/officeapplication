@@ -10,6 +10,8 @@ export async function POST(req) {
     const {
       email,
       phone,
+      name,
+      offerTitle,
       password,
       restId,
       restLocation,
@@ -27,6 +29,7 @@ export async function POST(req) {
     if (
       !email ||
       !phone ||
+      !name ||
       !password ||
       !restId ||
       !restLocation ||
@@ -58,6 +61,8 @@ export async function POST(req) {
     await RestuarentUser.create({
       email,
       phone,
+      name,
+      offerTitle,
       password,
       restId,
       restLocation,

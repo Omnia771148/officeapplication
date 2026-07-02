@@ -18,10 +18,10 @@ export default function TalimpuPage() {
             </div>
 
             <h1 className="branchTitle" style={{ color: '#1dd1a1' }}>
-                {details ? (details.phone || details.name || 'Talimpu') : 'Talimpu'} Branch
+                {details ? (details.name || details.phone || 'Talimpu') : 'Talimpu'} Branch
             </h1>
             <p className="branchSubtitle">
-                Welcome to the {details ? (details.phone || details.name || 'Talimpu') : 'Talimpu'} management page.
+                Welcome to the {details ? (details.name || details.phone || 'Talimpu') : 'Talimpu'} management page.
             </p>
 
             <div className="branchButtonContainer">

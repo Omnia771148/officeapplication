@@ -21,10 +21,10 @@ export default function RestaurantDashboardPage({ params }) {
             </div>
 
             <h1 className="branchTitle" style={{ color: '#009688' }}>
-                {details ? (details.phone || details.name || `Restaurant ${id}`) : `Restaurant ${id}`} Branch
+                {details ? (details.name || details.phone || `Restaurant ${id}`) : `Restaurant ${id}`} Branch
             </h1>
             <p className="branchSubtitle">
-                Welcome to the {details ? (details.phone || details.name || `Restaurant ${id}`) : `Restaurant ${id}`} management page.
+                Welcome to the {details ? (details.name || details.phone || `Restaurant ${id}`) : `Restaurant ${id}`} management page.
             </p>
 
             <div className="branchButtonContainer">
@@ -78,6 +78,14 @@ export default function RestaurantDashboardPage({ params }) {
                         <div className="detailItem">
                             <span className="detailLabel">Restaurant ID</span>
                             <span className="detailValue">{details.restId}</span>
+                        </div>
+                        <div className="detailItem">
+                            <span className="detailLabel">Restaurant Name</span>
+                            <span className="detailValue">{details.name || 'N/A'}</span>
+                        </div>
+                        <div className="detailItem">
+                            <span className="detailLabel">Offer Title</span>
+                            <span className="detailValue">{details.offerTitle || 'N/A'}</span>
                         </div>
                         <div className="detailItem">
                             <span className="detailLabel">Location Name</span>

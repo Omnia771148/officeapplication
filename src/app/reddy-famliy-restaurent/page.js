@@ -18,10 +18,10 @@ export default function ReddyFamliyRestaurentPage() {
             </div>
 
             <h1 className="branchTitle" style={{ color: '#009688' }}>
-                {details ? (details.phone || details.name || 'Reddy Famliy Restaurent') : 'Reddy Famliy Restaurent'} Branch
+                {details ? (details.name || details.phone || 'Reddy Famliy Restaurent') : 'Reddy Famliy Restaurent'} Branch
             </h1>
             <p className="branchSubtitle">
-                Welcome to the {details ? (details.phone || details.name || 'Reddy Famliy Restaurent') : 'Reddy Famliy Restaurent'} management page.
+                Welcome to the {details ? (details.name || details.phone || 'Reddy Famliy Restaurent') : 'Reddy Famliy Restaurent'} management page.
             </p>
 
             <div className="branchButtonContainer">

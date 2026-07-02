@@ -18,10 +18,10 @@ export default function VivaFindinePage() {
             </div>
 
             <h1 className="branchTitle" style={{ color: '#009688' }}>
-                {details ? (details.phone || details.name || 'Viva Findine') : 'Viva Findine'} Branch
+                {details ? (details.name || details.phone || 'Viva Findine') : 'Viva Findine'} Branch
             </h1>
             <p className="branchSubtitle">
-                Welcome to the {details ? (details.phone || details.name || 'Viva Findine') : 'Viva Findine'} management page.
+                Welcome to the {details ? (details.name || details.phone || 'Viva Findine') : 'Viva Findine'} management page.
             </p>
 
             <div className="branchButtonContainer">

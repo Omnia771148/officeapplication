@@ -43,7 +43,7 @@ export default function RestaurantsPage() {
                         '14': '/lassi',
                         '15': '/mandi9r'
                     };
-                    const phoneName = r.phone || r.name;
+                    const phoneName = r.name || r.phone;
                     const sanitizedName = phoneName ? phoneName.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_') : r.restId;
                     
                     return {
@@ -309,6 +309,14 @@ export default function RestaurantsPage() {
                                 <div className="detailItem">
                                     <span className="detailLabel">Restaurant ID</span>
                                     <span className="detailValue">{details.restId}</span>
+                                </div>
+                                <div className="detailItem">
+                                    <span className="detailLabel">Restaurant Name</span>
+                                    <span className="detailValue">{details.name || 'N/A'}</span>
+                                </div>
+                                <div className="detailItem">
+                                    <span className="detailLabel">Offer Title</span>
+                                    <span className="detailValue">{details.offerTitle || 'N/A'}</span>
                                 </div>
                                 <div className="detailItem">
                                     <span className="detailLabel">Location Name</span>

@@ -18,10 +18,10 @@ export default function AhaKitchensPage() {
             </div>
 
             <h1 className="branchTitle" style={{ color: '#009688' }}>
-                {details ? (details.phone || details.name || 'Aha Kitchens') : 'Aha Kitchens'} Branch
+                {details ? (details.name || details.phone || 'Aha Kitchens') : 'Aha Kitchens'} Branch
             </h1>
             <p className="branchSubtitle">
-                Welcome to the {details ? (details.phone || details.name || 'Aha Kitchens') : 'Aha Kitchens'} management page.
+                Welcome to the {details ? (details.name || details.phone || 'Aha Kitchens') : 'Aha Kitchens'} management page.
             </p>
 
             <div className="branchButtonContainer">

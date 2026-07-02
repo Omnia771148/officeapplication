@@ -18,10 +18,10 @@ export default function PrGrandPage() {
             </div>
 
             <h1 className="branchTitle" style={{ color: '#FD79A8' }}>
-                {details ? (details.phone || details.name || 'PR Grand') : 'PR Grand'} Branch
+                {details ? (details.name || details.phone || 'PR Grand') : 'PR Grand'} Branch
             </h1>
             <p className="branchSubtitle">
-                Welcome to the {details ? (details.phone || details.name || 'PR Grand') : 'PR Grand'} management page.
+                Welcome to the {details ? (details.name || details.phone || 'PR Grand') : 'PR Grand'} management page.
             </p>
 
             <div className="branchButtonContainer">

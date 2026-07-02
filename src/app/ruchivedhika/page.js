@@ -18,10 +18,10 @@ export default function RuchiVedhikaPage() {
             </div>
 
             <h1 className="branchTitle" style={{ color: '#feca57' }}>
-                {details ? (details.phone || details.name || 'Ruchi Vedhika') : 'Ruchi Vedhika'} Branch
+                {details ? (details.name || details.phone || 'Ruchi Vedhika') : 'Ruchi Vedhika'} Branch
             </h1>
             <p className="branchSubtitle">
-                Welcome to the {details ? (details.phone || details.name || 'Ruchi Vedhika') : 'Ruchi Vedhika'} management page.
+                Welcome to the {details ? (details.name || details.phone || 'Ruchi Vedhika') : 'Ruchi Vedhika'} management page.
             </p>
 
             <div className="branchButtonContainer">

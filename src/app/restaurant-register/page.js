@@ -74,6 +74,8 @@ const compressImage = (file, targetSizeKb = 65) => {
 export default function RestaurantRegisterPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [name, setName] = useState("");
+  const [offerTitle, setOfferTitle] = useState("");
   const [password, setPassword] = useState("");
   const [restId, setRestId] = useState("");
   const [restLocation, setRestLocation] = useState("");
@@ -130,6 +132,8 @@ export default function RestaurantRegisterPage() {
         body: JSON.stringify({
           email,
           phone,
+          name,
+          offerTitle,
           password,
           restId,
           restLocation,
@@ -174,6 +178,18 @@ export default function RestaurantRegisterPage() {
           style={inputStyle} 
           placeholder="Name" 
           onChange={(e) => setPhone(e.target.value)} 
+        />
+
+        <input 
+          style={inputStyle} 
+          placeholder="Name of the Restaurant" 
+          onChange={(e) => setName(e.target.value)} 
+        />
+
+        <input 
+          style={inputStyle} 
+          placeholder="Offer Title" 
+          onChange={(e) => setOfferTitle(e.target.value)} 
         />
 
         <input 

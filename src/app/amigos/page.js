@@ -18,10 +18,10 @@ export default function AmigosPage() {
             </div>
 
             <h1 className="branchTitle" style={{ color: '#009688' }}>
-                {details ? (details.phone || details.name || 'Amigos') : 'Amigos'} Branch
+                {details ? (details.name || details.phone || 'Amigos') : 'Amigos'} Branch
             </h1>
             <p className="branchSubtitle">
-                Welcome to the {details ? (details.phone || details.name || 'Amigos') : 'Amigos'} management page.
+                Welcome to the {details ? (details.name || details.phone || 'Amigos') : 'Amigos'} management page.
             </p>
 
             <div className="branchButtonContainer">

@@ -18,10 +18,10 @@ export default function Mandi9rPage() {
             </div>
 
             <h1 className="branchTitle" style={{ color: '#48dbfb' }}>
-                {details ? (details.phone || details.name || 'Mandi 9R') : 'Mandi 9R'} Branch
+                {details ? (details.name || details.phone || 'Mandi 9R') : 'Mandi 9R'} Branch
             </h1>
             <p className="branchSubtitle">
-                Welcome to the {details ? (details.phone || details.name || 'Mandi 9R') : 'Mandi 9R'} management page.
+                Welcome to the {details ? (details.name || details.phone || 'Mandi 9R') : 'Mandi 9R'} management page.
             </p>
 
             <div className="branchButtonContainer">

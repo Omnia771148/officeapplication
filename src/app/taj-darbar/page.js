@@ -18,10 +18,10 @@ export default function TajDarbarPage() {
             </div>
 
             <h1 className="branchTitle" style={{ color: '#ff6b6b' }}>
-                {details ? (details.phone || details.name || 'Taj Darbar') : 'Taj Darbar'} Branch
+                {details ? (details.name || details.phone || 'Taj Darbar') : 'Taj Darbar'} Branch
             </h1>
             <p className="branchSubtitle">
-                Welcome to the {details ? (details.phone || details.name || 'Taj Darbar') : 'Taj Darbar'} management page.
+                Welcome to the {details ? (details.name || details.phone || 'Taj Darbar') : 'Taj Darbar'} management page.
             </p>
 
             <div className="branchButtonContainer">
