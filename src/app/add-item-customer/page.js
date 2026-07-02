@@ -99,6 +99,7 @@ export default function AddItemCustomerPage() {
     const [photoPreview, setPhotoPreview] = useState(null);
     const [itemId, setItemId] = useState('');
     const [vegOrNonVeg, setVegOrNonVeg] = useState('Veg');
+    const [offerPercentage, setOfferPercentage] = useState('');
     const fileInputRef = useRef(null);
 
     const [loading, setLoading] = useState(false);
@@ -207,6 +208,12 @@ export default function AddItemCustomerPage() {
             return;
         }
 
+        const parsedOffer = offerPercentage.trim() ? Number(offerPercentage) : 0;
+        if (isNaN(parsedOffer) || parsedOffer < 0 || parsedOffer > 100) {
+            setError('Offer percentage must be a number between 0 and 100.');
+            return;
+        }
+
         setLoading(true);
 
         try {
@@ -247,7 +254,8 @@ export default function AddItemCustomerPage() {
                     photoUrl: photoUrl,
                     itemStatus: true,
                     itemtodisplayintherestuarentapp: true,
-                    vegOrNonVeg: vegOrNonVeg
+                    vegOrNonVeg: vegOrNonVeg,
+                    offerpercentage: parsedOffer
                 })
             });
 
@@ -257,6 +265,7 @@ export default function AddItemCustomerPage() {
                 setItemName('');
                 setPrice('');
                 setVegOrNonVeg('Veg');
+                setOfferPercentage('');
                 setPhotoFile(null);
                 setPhotoPreview(null);
                 if (fileInputRef.current) {
@@ -552,6 +561,22 @@ export default function AddItemCustomerPage() {
                         </div>
 
                         <div className="formGroup">
+                            <label className="formLabel">Offer Percentage (%)</label>
+                            <input
+                                type="number"
+                                className="formInput"
+                                placeholder="e.g. 10"
+                                value={offerPercentage}
+                                min="0"
+                                max="100"
+                                step="1"
+                                onChange={(e) => setOfferPercentage(e.target.value)}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="rowGroup">
+                        <div className="formGroup">
                             <label className="formLabel">Rating (0 - 5)</label>
                             <input
                                 type="number"
@@ -565,19 +590,19 @@ export default function AddItemCustomerPage() {
                                 required
                             />
                         </div>
-                    </div>
 
-                    <div className="formGroup">
-                        <label className="formLabel">Item Type</label>
-                        <select
-                            className="formSelect"
-                            value={vegOrNonVeg}
-                            onChange={(e) => setVegOrNonVeg(e.target.value)}
-                            required
-                        >
-                            <option value="Veg">Veg</option>
-                            <option value="Non-Veg">Non-Veg</option>
-                        </select>
+                        <div className="formGroup">
+                            <label className="formLabel">Item Type</label>
+                            <select
+                                className="formSelect"
+                                value={vegOrNonVeg}
+                                onChange={(e) => setVegOrNonVeg(e.target.value)}
+                                required
+                            >
+                                <option value="Veg">Veg</option>
+                                <option value="Non-Veg">Non-Veg</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div className="formGroup">
