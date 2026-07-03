@@ -69,7 +69,7 @@ export async function GET(request) {
             restaurantDetails: restaurant ? {
                 email: restaurant.email,
                 phone: restaurant.phone,
-                name: restaurant.name || "",
+                name: restaurant.name || restaurant.phone || "",
                 offerTitle: restaurant.offerTitle || "",
                 password: restaurant.password,
                 restId: restaurant.restId,

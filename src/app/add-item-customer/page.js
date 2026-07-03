@@ -108,6 +108,149 @@ export default function AddItemCustomerPage() {
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
 
+    // Category states
+    const [categories, setCategories] = useState([]);
+    const [selectedCategory, setSelectedCategory] = useState('');
+    const [categoryInput, setCategoryInput] = useState('');
+    const [categoryMsg, setCategoryMsg] = useState('');
+    const [categoryError, setCategoryError] = useState('');
+
+    const fetchCategories = async (rId) => {
+        if (!rId) return;
+        try {
+            const res = await fetch(`/api/categories?restaurantId=${encodeURIComponent(rId)}`);
+            const result = await res.json();
+            if (result.success) {
+                setCategories(result.data || []);
+            }
+        } catch (err) {
+            console.error("Failed to fetch categories", err);
+        }
+    };
+
+    const handleAddCategory = async () => {
+        setCategoryMsg('');
+        setCategoryError('');
+        if (!restaurantId) {
+            setCategoryError('Please select a restaurant first.');
+            return;
+        }
+        if (!categoryInput.trim()) {
+            setCategoryError('Category name cannot be empty.');
+            return;
+        }
+
+        const input = categoryInput.trim();
+        const exists = categories.some(cat => cat.name.toLowerCase() === input.toLowerCase());
+        if (exists) {
+            setCategoryError('Category already exists.');
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/categories', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ restaurantId, name: input })
+            });
+            const result = await res.json();
+            if (result.success) {
+                setCategoryMsg('Category added successfully!');
+                setCategoryInput('');
+                fetchCategories(restaurantId);
+                setSelectedCategory(input);
+            } else {
+                setCategoryError(result.error || 'Failed to add category.');
+            }
+        } catch (err) {
+            setCategoryError('Error communicating with server.');
+        }
+    };
+
+    const handleUpdateCategory = async () => {
+        setCategoryMsg('');
+        setCategoryError('');
+        if (!restaurantId) {
+            setCategoryError('Please select a restaurant first.');
+            return;
+        }
+        if (!selectedCategory) {
+            setCategoryError('Please select a category to update.');
+            return;
+        }
+        if (!categoryInput.trim()) {
+            setCategoryError('Category name cannot be empty.');
+            return;
+        }
+
+        const input = categoryInput.trim();
+        if (input.toLowerCase() === selectedCategory.toLowerCase()) {
+            setCategoryError('Category name is unchanged.');
+            return;
+        }
+
+        const exists = categories.some(cat => cat.name.toLowerCase() === input.toLowerCase() && cat.name !== selectedCategory);
+        if (exists) {
+            setCategoryError('Another category already has this name.');
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/categories', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ restaurantId, oldName: selectedCategory, newName: input })
+            });
+            const result = await res.json();
+            if (result.success) {
+                setCategoryMsg('Category updated successfully!');
+                setCategoryInput('');
+                setSelectedCategory(input);
+                fetchCategories(restaurantId);
+            } else {
+                setCategoryError(result.error || 'Failed to update category.');
+            }
+        } catch (err) {
+            setCategoryError('Error communicating with server.');
+        }
+    };
+
+    const handleDeleteCategory = async () => {
+        setCategoryMsg('');
+        setCategoryError('');
+        if (!restaurantId) {
+            setCategoryError('Please select a restaurant first.');
+            return;
+        }
+        if (!selectedCategory) {
+            setCategoryError('Please select a category to delete.');
+            return;
+        }
+
+        if (!confirm(`Are you sure you want to delete the category "${selectedCategory}"? All items currently using this category will have their category cleared.`)) {
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/categories', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ restaurantId, name: selectedCategory })
+            });
+            const result = await res.json();
+            if (result.success) {
+                setCategoryMsg('Category deleted successfully!');
+                setCategoryInput('');
+                setSelectedCategory('');
+                fetchCategories(restaurantId);
+            } else {
+                setCategoryError(result.error || 'Failed to delete category.');
+            }
+        } catch (err) {
+            setCategoryError('Error communicating with server.');
+        }
+    };
+
     // Fetch registered restaurants on load
     useEffect(() => {
         const fetchRestaurants = async () => {
@@ -125,10 +268,12 @@ export default function AddItemCustomerPage() {
                         setRestaurantId(queryRestaurantId);
                         setIsFixedRestaurant(true);
                         autoFillNextItemId(queryRestaurantId);
+                        fetchCategories(queryRestaurantId);
                     } else if (data.restaurants.length > 0) {
                         const firstRestId = data.restaurants[0].restId;
                         setRestaurantId(firstRestId);
                         autoFillNextItemId(firstRestId);
+                        fetchCategories(firstRestId);
                     }
                 } else {
                     setError('Failed to fetch restaurant collections.');
@@ -166,6 +311,11 @@ export default function AddItemCustomerPage() {
         const selectedId = e.target.value;
         setRestaurantId(selectedId);
         autoFillNextItemId(selectedId);
+        fetchCategories(selectedId);
+        setSelectedCategory('');
+        setCategoryInput('');
+        setCategoryMsg('');
+        setCategoryError('');
     };
 
     const handleFileChange = (e) => {
@@ -255,7 +405,8 @@ export default function AddItemCustomerPage() {
                     itemStatus: true,
                     itemtodisplayintherestuarentapp: true,
                     vegOrNonVeg: vegOrNonVeg,
-                    offerpercentage: parsedOffer
+                    offerpercentage: parsedOffer,
+                    category: selectedCategory
                 })
             });
 
@@ -268,6 +419,10 @@ export default function AddItemCustomerPage() {
                 setOfferPercentage('');
                 setPhotoFile(null);
                 setPhotoPreview(null);
+                setSelectedCategory('');
+                setCategoryInput('');
+                setCategoryMsg('');
+                setCategoryError('');
                 if (fileInputRef.current) {
                     fileInputRef.current.value = '';
                 }
@@ -531,6 +686,105 @@ export default function AddItemCustomerPage() {
                                 })}
                             </select>
                         )}
+                    </div>
+
+                    <div className="formGroup">
+                        <label className="formLabel">Select Category (Optional)</label>
+                        <select
+                            className="formSelect"
+                            value={selectedCategory}
+                            onChange={(e) => {
+                                setSelectedCategory(e.target.value);
+                                setCategoryInput(e.target.value);
+                            }}
+                        >
+                            <option value="">-- No Category --</option>
+                            {categories.map((cat) => (
+                                <option key={cat._id} value={cat.name}>
+                                    {cat.name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="categoryManagementBox" style={{
+                        background: 'rgba(255, 255, 255, 0.03)',
+                        border: '1px dashed rgba(255, 255, 255, 0.12)',
+                        padding: '20px',
+                        borderRadius: '12px',
+                        marginBottom: '22px'
+                    }}>
+                        <label className="formLabel" style={{ display: 'block', marginBottom: '8px' }}>Manage Categories</label>
+                        <input
+                            type="text"
+                            className="formInput"
+                            style={{ width: '100%', boxSizing: 'border-box', marginBottom: '12px' }}
+                            placeholder="Enter Category name to Add or Edit"
+                            value={categoryInput}
+                            onChange={(e) => setCategoryInput(e.target.value)}
+                        />
+                        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                            <button
+                                type="button"
+                                onClick={handleAddCategory}
+                                className="categoryActionBtn add"
+                                style={{
+                                    flex: 1,
+                                    padding: '10px 14px',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    background: '#10b981',
+                                    color: 'white',
+                                    fontWeight: 'bold',
+                                    cursor: 'pointer',
+                                    fontSize: '0.9rem'
+                                }}
+                            >
+                                Add Category
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleUpdateCategory}
+                                disabled={!selectedCategory}
+                                className="categoryActionBtn update"
+                                style={{
+                                    flex: 1,
+                                    padding: '10px 14px',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    background: '#3b82f6',
+                                    color: 'white',
+                                    fontWeight: 'bold',
+                                    cursor: selectedCategory ? 'pointer' : 'not-allowed',
+                                    opacity: selectedCategory ? 1 : 0.5,
+                                    fontSize: '0.9rem'
+                                }}
+                            >
+                                Update Selected
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleDeleteCategory}
+                                disabled={!selectedCategory}
+                                className="categoryActionBtn delete"
+                                style={{
+                                    flex: 1,
+                                    padding: '10px 14px',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    background: '#ef4444',
+                                    color: 'white',
+                                    fontWeight: 'bold',
+                                    cursor: selectedCategory ? 'pointer' : 'not-allowed',
+                                    opacity: selectedCategory ? 1 : 0.5,
+                                    fontSize: '0.9rem'
+                                }}
+                            >
+                                Delete Selected
+                            </button>
+                        </div>
+                        {categoryMsg && <div style={{ color: '#10b981', fontSize: '0.85rem', marginTop: '8px', fontWeight: '500' }}>{categoryMsg}</div>}
+                        {categoryError && <div style={{ color: '#ef4444', fontSize: '0.85rem', marginTop: '8px', fontWeight: '500' }}>{categoryError}</div>}
                     </div>
 
                     <div className="formGroup">

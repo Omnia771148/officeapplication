@@ -117,7 +117,7 @@ export async function GET() {
 
       result.push({
         restId: rest.restId,
-        name: rest.name || `Restaurant ${rest.restId}`,
+        name: rest.name || rest.phone || `Restaurant ${rest.restId}`,
         email: rest.email,
         phone: rest.phone,
         openTime: rest.openTime || "",
