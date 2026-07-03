@@ -167,6 +167,16 @@ export default function Dashboard() {
             <div style={{ width: '90%', maxWidth: '800px', marginBottom: '20px' }}>
                 <button
                     className="branchButton"
+                    style={{ '--btn-color': '#e67e22' }}
+                    onClick={() => router.push('/catagoryfilterinmainpage')}
+                >
+                    📁 Add Main Page Category Filter
+                </button>
+            </div>
+
+            <div style={{ width: '90%', maxWidth: '800px', marginBottom: '20px' }}>
+                <button
+                    className="branchButton"
                     style={{ '--btn-color': '#607D8B' }}
                     onClick={() => setShowMoreOptions(!showMoreOptions)}
                 >
