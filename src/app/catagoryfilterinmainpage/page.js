@@ -86,12 +86,14 @@ const compressImage = (file, targetSizeKb = 65) => {
 
 export default function CatagoryFilterPage() {
   const [name, setName] = useState("");
+  const [catId, setCatId] = useState("");
   const [imageFile, setImageFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [msg, setMsg] = useState("");
   const [isSuccess, setIsSuccess] = useState(false);
   const [items, setItems] = useState([]);
   const [loadingItems, setLoadingItems] = useState(true);
+  const [editingItem, setEditingItem] = useState(null);
   const router = useRouter();
 
   // Fetch existing filters
@@ -116,6 +118,14 @@ export default function CatagoryFilterPage() {
     fetchFilters();
   }, []);
 
+  const handleSelectEdit = (item) => {
+    setEditingItem(item);
+    setName(item.name || "");
+    setCatId(item.id ? item.id.toString() : "");
+    setMsg(`Selected "${item.name}" (ID: ${item.id}) for editing. Update details or choose a new photo to replace.`);
+    setIsSuccess(true);
+  };
+
   const handleUpload = async () => {
     try {
       setMsg("");
@@ -125,44 +135,59 @@ export default function CatagoryFilterPage() {
         setMsg("Category name is required");
         return;
       }
-      if (!imageFile) {
+      if (!catId.trim()) {
+        setMsg("Category ID is required");
+        return;
+      }
+
+      // Check if this ID already exists in the system
+      const existingFilter = items.find(
+        (item) => item.id && item.id.toString().trim().toLowerCase() === catId.trim().toLowerCase()
+      );
+
+      // If new category, an image is required
+      if (!existingFilter && !imageFile) {
         setMsg("Please choose a category picture to upload");
         return;
       }
 
       setUploading(true);
 
-      // Step 1: Compress the image in-browser to target ~65KB
-      setMsg("Compressing picture to ~65KB...");
-      const compressedFile = await compressImage(imageFile, 65);
+      let s3Url = existingFilter ? existingFilter.imageUrl : "";
 
-      // Step 2: Upload image to S3 (under catagoryfilterinmainpage/ folder)
-      setMsg("Uploading compressed image to S3...");
-      const formData = new FormData();
-      formData.append("file", compressedFile);
-      
-      const s3Id = slugify(name);
-      formData.append("id", s3Id);
-      formData.append("folder", "catagoryfilterinmainpage"); // upload directory
+      // Step 1: Compress and upload picture to S3 only if a new image is provided
+      if (imageFile) {
+        setMsg("Compressing picture to ~65KB...");
+        const compressedFile = await compressImage(imageFile, 65);
 
-      const uploadRes = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
+        setMsg("Uploading compressed image to S3...");
+        const formData = new FormData();
+        formData.append("file", compressedFile);
+        
+        const s3Id = slugify(catId);
+        formData.append("id", s3Id);
+        formData.append("folder", "catagoryfilterinmainpage"); // upload directory
 
-      const uploadData = await uploadRes.json();
-      if (!uploadRes.ok || !uploadData.success) {
-        throw new Error(uploadData.error || "Failed to upload picture to S3");
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        const uploadData = await uploadRes.json();
+        if (!uploadRes.ok || !uploadData.success) {
+          throw new Error(uploadData.error || "Failed to upload picture to S3");
+        }
+        s3Url = uploadData.url;
       }
-      const s3Url = uploadData.url;
 
-      // Step 3: Save category filter record in MongoDB
-      setMsg("Saving category filter configuration...");
+      // Step 2: Save category filter record in MongoDB (updates if ID exists)
+      setMsg(existingFilter ? "Updating category filter configuration..." : "Saving category filter configuration...");
       const dbRes = await fetch("/api/catagoryfilterinmainpage", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: name.trim(),
+          id: catId.trim(),
           imageUrl: s3Url,
         }),
       });
@@ -172,9 +197,11 @@ export default function CatagoryFilterPage() {
         throw new Error(dbData.error || "Failed to save category filter in database");
       }
 
-      setMsg("Category filter added successfully!");
+      setMsg(existingFilter ? "Category filter updated successfully!" : "Category filter added successfully!");
       setIsSuccess(true);
       setName("");
+      setCatId("");
+      setEditingItem(null);
       setImageFile(null);
       
       // Reset the file input field
@@ -231,8 +258,22 @@ export default function CatagoryFilterPage() {
       <div style={styles.layoutGrid}>
         {/* Form Card */}
         <div style={styles.card}>
-          <h3 style={styles.cardTitle}>Add New Category Filter</h3>
+          <h3 style={styles.cardTitle}>
+            {editingItem ? "Update Category Filter" : "Add New Category Filter"}
+          </h3>
           
+          <div style={styles.formGroup}>
+            <label style={styles.label}>Category ID (e.g. 123)</label>
+            <input
+              style={styles.input}
+              type="text"
+              placeholder="e.g. 123"
+              value={catId}
+              onChange={(e) => setCatId(e.target.value)}
+              disabled={uploading}
+            />
+          </div>
+
           <div style={styles.formGroup}>
             <label style={styles.label}>Category Name</label>
             <input
@@ -246,7 +287,9 @@ export default function CatagoryFilterPage() {
           </div>
 
           <div style={styles.formGroup}>
-            <label style={styles.label}>Upload Category Picture</label>
+            <label style={styles.label}>
+              {editingItem ? "Upload New Category Picture (Optional)" : "Upload Category Picture"}
+            </label>
             <input
               id="category-file-input"
               style={styles.input}
@@ -266,8 +309,32 @@ export default function CatagoryFilterPage() {
             onClick={handleUpload}
             disabled={uploading}
           >
-            {uploading ? "Processing..." : "Add Category Filter"}
+            {uploading ? "Processing..." : editingItem ? "Update Category Filter" : "Add Category Filter"}
           </button>
+
+          {editingItem && (
+            <button
+              style={{
+                ...styles.button,
+                backgroundColor: "#EDF2F7",
+                color: "#4A5568",
+                cursor: uploading ? "not-allowed" : "pointer",
+                marginTop: "10px",
+              }}
+              onClick={() => {
+                setEditingItem(null);
+                setName("");
+                setCatId("");
+                setImageFile(null);
+                setMsg("");
+                const fileInput = document.getElementById("category-file-input");
+                if (fileInput) fileInput.value = "";
+              }}
+              disabled={uploading}
+            >
+              Cancel Edit
+            </button>
+          )}
 
           {msg && (
             <div
@@ -301,13 +368,26 @@ export default function CatagoryFilterPage() {
                     style={styles.itemImage}
                   />
                   <div style={styles.itemDetails}>
-                    <div style={styles.itemName}>{item.name}</div>
-                    <button
-                      style={styles.deleteBtn}
-                      onClick={() => handleDelete(item._id)}
-                    >
-                      Delete
-                    </button>
+                    <div style={{ display: "flex", flexDirection: "column" }}>
+                      <div style={styles.itemName}>{item.name}</div>
+                      <div style={{ fontSize: "12px", color: "#718096", marginTop: "2px", fontWeight: "600" }}>
+                        ID: {item.id || "N/A"}
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <button
+                        style={styles.editBtn}
+                        onClick={() => handleSelectEdit(item)}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        style={styles.deleteBtn}
+                        onClick={() => handleDelete(item._id)}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -457,6 +537,17 @@ const styles = {
     padding: "6px 12px",
     backgroundColor: "#FED7D7",
     color: "#C53030",
+    border: "none",
+    borderRadius: "4px",
+    cursor: "pointer",
+    fontSize: "14px",
+    fontWeight: "600",
+    transition: "background-color 0.2s",
+  },
+  editBtn: {
+    padding: "6px 12px",
+    backgroundColor: "#EDF2F7",
+    color: "#4A5568",
     border: "none",
     borderRadius: "4px",
     cursor: "pointer",

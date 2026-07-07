@@ -19,18 +19,47 @@ export async function GET(req) {
 export async function POST(req) {
   try {
     await dbConnect();
-    const { name, imageUrl } = await req.json();
+    const { name, imageUrl, id } = await req.json();
 
-    if (!name || !imageUrl) {
+    if (!name || !imageUrl || !id) {
       return NextResponse.json(
-        { success: false, error: "Name and Image URL are required" },
+        { success: false, error: "Name, Image URL, and Category ID are required" },
         { status: 400 }
       );
     }
 
     const sanitizedName = name.trim();
+    const sanitizedId = id.toString().trim();
 
-    // Check if category filter with this name already exists (case-insensitive)
+    // Check if category filter with this ID already exists
+    const existing = await Catagoryfilterinmainpage.findOne({ id: sanitizedId });
+
+    if (existing) {
+      // Check if the name is already taken by a different category
+      const nameExists = await Catagoryfilterinmainpage.findOne({
+        id: { $ne: sanitizedId },
+        name: { $regex: new RegExp(`^${sanitizedName.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}$`, 'i') }
+      });
+      if (nameExists) {
+        return NextResponse.json(
+          { success: false, error: "A category filter with this name already exists on another category" },
+          { status: 409 }
+        );
+      }
+
+      // Update existing document
+      existing.name = sanitizedName;
+      existing.imageUrl = imageUrl;
+      await existing.save();
+
+      return NextResponse.json({
+        success: true,
+        message: "Category filter updated successfully",
+        data: existing,
+      }, { status: 200 });
+    }
+
+    // Check if category filter with this name already exists (case-insensitive) for new categories
     const exists = await Catagoryfilterinmainpage.findOne({
       name: { $regex: new RegExp(`^${sanitizedName.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}$`, 'i') }
     });
@@ -45,6 +74,7 @@ export async function POST(req) {
     // Create the document
     const newEntry = await Catagoryfilterinmainpage.create({
       name: sanitizedName,
+      id: sanitizedId,
       imageUrl,
     });
 
