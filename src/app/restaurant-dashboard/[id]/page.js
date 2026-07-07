@@ -14,6 +14,45 @@ export default function RestaurantDashboardPage({ params }) {
     const [details, setDetails] = useState(null);
     const [showPassword, setShowPassword] = useState(false);
 
+    // Restaurant name edit states
+    const [isEditingName, setIsEditingName] = useState(false);
+    const [editName, setEditName] = useState('');
+    const [updatingName, setUpdatingName] = useState(false);
+
+    const handleSaveName = async () => {
+        if (!editName.trim()) {
+            alert('Restaurant name cannot be empty');
+            return;
+        }
+        setUpdatingName(true);
+        try {
+            const res = await fetch('/api/restaurant-register', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    restId: id,
+                    newName: editName.trim()
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setDetails(prev => ({
+                    ...prev,
+                    name: data.data.name,
+                    phone: data.data.phone
+                }));
+                setIsEditingName(false);
+                alert('Restaurant name and collection updated successfully!');
+            } else {
+                alert(data.error || 'Failed to update restaurant name.');
+            }
+        } catch (err) {
+            alert('Error updating restaurant name.');
+        } finally {
+            setUpdatingName(false);
+        }
+    };
+
     return (
         <div className="branchPageContainer">
             <div className="branchHeader">
@@ -87,7 +126,71 @@ export default function RestaurantDashboardPage({ params }) {
                         </div>
                         <div className="detailItem">
                             <span className="detailLabel">Restaurant Name</span>
-                            <span className="detailValue">{details.name || 'N/A'}</span>
+                            {isEditingName ? (
+                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '4px' }}>
+                                    <input
+                                        type="text"
+                                        style={{
+                                            padding: '6px 10px',
+                                            borderRadius: '6px',
+                                            border: '1px solid #cbd5e1',
+                                            fontSize: '0.95rem',
+                                            color: '#1e293b',
+                                            backgroundColor: '#ffffff',
+                                            flex: 1,
+                                            boxSizing: 'border-box'
+                                        }}
+                                        value={editName}
+                                        onChange={(e) => setEditName(e.target.value)}
+                                        disabled={updatingName}
+                                    />
+                                    <button 
+                                        onClick={handleSaveName}
+                                        disabled={updatingName}
+                                        style={{
+                                            backgroundColor: '#2ecc71',
+                                            color: 'white',
+                                            border: 'none',
+                                            padding: '6px 12px',
+                                            borderRadius: '6px',
+                                            cursor: 'pointer',
+                                            fontWeight: '600',
+                                            fontSize: '0.85rem'
+                                        }}
+                                    >
+                                        {updatingName ? '...' : 'Save'}
+                                    </button>
+                                    <button 
+                                        onClick={() => setIsEditingName(false)}
+                                        disabled={updatingName}
+                                        style={{
+                                            backgroundColor: '#e74c3c',
+                                            color: 'white',
+                                            border: 'none',
+                                            padding: '6px 12px',
+                                            borderRadius: '6px',
+                                            cursor: 'pointer',
+                                            fontWeight: '600',
+                                            fontSize: '0.85rem'
+                                        }}
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            ) : (
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                                    <span className="detailValue">{details.name || 'N/A'}</span>
+                                    <button 
+                                        className="passwordToggleBtn" 
+                                        onClick={() => {
+                                            setEditName(details.name || '');
+                                            setIsEditingName(true);
+                                        }}
+                                    >
+                                        ✏️ Edit
+                                    </button>
+                                </div>
+                            )}
                         </div>
                         <div className="detailItem">
                             <span className="detailLabel">Offer Title</span>
