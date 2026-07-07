@@ -277,7 +277,11 @@ export default function RestaurantsPage() {
                             </button>
                         </Link>
 
-
+                        <Link href="/offers">
+                            <button className="branchActionButton offers" style={{ backgroundColor: '#f39c12' }}>
+                                Offers
+                            </button>
+                        </Link>
 
                         <Link href={`/restaurant-dashboard/${selectedBranch.id}`}>
                             <button className="branchActionButton dashboardRedirect" style={{ backgroundColor: '#34495e', minWidth: '220px' }}>

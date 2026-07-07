@@ -61,6 +61,12 @@ export default function FoodLandPage() {
                     </button>
                 </Link>
 
+                <Link href="/offers">
+                    <button className="branchActionButton offers" style={{ backgroundColor: '#f39c12', color: 'white' }}>
+                        Offers
+                    </button>
+                </Link>
+
                 <Link href={`/add-item-customer?restaurantId=${details ? details.restId : '9'}`}>
                     <button className="branchActionButton customerItem" style={{ backgroundColor: '#e67e22', color: 'white' }}>
                         Add Customer Item

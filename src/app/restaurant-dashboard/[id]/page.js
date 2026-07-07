@@ -64,6 +64,12 @@ export default function RestaurantDashboardPage({ params }) {
                     </button>
                 </Link>
 
+                <Link href="/offers">
+                    <button className="branchActionButton offers" style={{ backgroundColor: '#f39c12', color: 'white' }}>
+                        Offers
+                    </button>
+                </Link>
+
                 <Link href={`/add-item-customer?restaurantId=${id}`}>
                     <button className="branchActionButton customerItem" style={{ backgroundColor: '#e67e22', color: 'white' }}>
                         Add Customer Item

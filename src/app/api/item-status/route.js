@@ -27,13 +27,27 @@ export async function GET(request) {
 
 export async function PATCH(request) {
     try {
-        const { itemId, itemStatus, itemtodisplayintherestuarentapp, itemName, price, restaurantId } = await request.json();
+        const { itemId, itemStatus, itemtodisplayintherestuarentapp, itemName, price, offerpercentage, restaurantId, applyToAll } = await request.json();
+
+        if (!restaurantId) {
+            return NextResponse.json({ success: false, error: 'Restaurant ID is required' }, { status: 400 });
+        }
+
+        if (applyToAll) {
+            if (offerpercentage === undefined) {
+                return NextResponse.json({ success: false, error: 'Offer percentage is required' }, { status: 400 });
+            }
+            const parsedOffer = Number(offerpercentage);
+            if (isNaN(parsedOffer) || parsedOffer < 0 || parsedOffer > 100) {
+                return NextResponse.json({ success: false, error: 'Offer percentage must be a number between 0 and 100' }, { status: 400 });
+            }
+            const RestaurantItem = await getRestaurantItemModel(restaurantId);
+            await RestaurantItem.updateMany({}, { offerpercentage: parsedOffer });
+            return NextResponse.json({ success: true, message: `Applied ${parsedOffer}% offer to all items` });
+        }
 
         if (!itemId) {
             return NextResponse.json({ success: false, error: 'Item ID is required' }, { status: 400 });
-        }
-        if (!restaurantId) {
-            return NextResponse.json({ success: false, error: 'Restaurant ID is required to update an item' }, { status: 400 });
         }
 
         const updateData = {};
@@ -61,6 +75,13 @@ export async function PATCH(request) {
                 return NextResponse.json({ success: false, error: 'Price must be a valid non-negative number' }, { status: 400 });
             }
             updateData.price = parsedPrice;
+        }
+        if (offerpercentage !== undefined) {
+            const parsedOffer = Number(offerpercentage);
+            if (isNaN(parsedOffer) || parsedOffer < 0 || parsedOffer > 100) {
+                return NextResponse.json({ success: false, error: 'Offer percentage must be a number between 0 and 100' }, { status: 400 });
+            }
+            updateData.offerpercentage = parsedOffer;
         }
 
         const RestaurantItem = await getRestaurantItemModel(restaurantId);
