@@ -80,7 +80,8 @@ export async function GET(request) {
                 closeTime: restaurant.closeTime,
                 restaurantLocation: restaurant.restaurantLocation,
                 logoUrl: restaurant.logoUrl,
-                vegOrNonVeg: restaurant.vegOrNonVeg || "Both"
+                vegOrNonVeg: restaurant.vegOrNonVeg || "Both",
+                commission: restaurant.commission !== undefined ? restaurant.commission : 0
             } : null
         });
     } catch (error) {

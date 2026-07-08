@@ -381,6 +381,10 @@ export default function RestaurantsPage() {
                                     <span className="detailLabel">Close Time</span>
                                     <span className="detailValue">{details.closeTime || 'N/A'}</span>
                                 </div>
+                                <div className="detailItem">
+                                    <span className="detailLabel">Commission (%)</span>
+                                    <span className="detailValue">{details.commission !== undefined && details.commission !== null ? `${details.commission}%` : '0%'}</span>
+                                </div>
                             </div>
                         </div>
                     )}

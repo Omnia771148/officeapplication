@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import "./register.css";
 
 // Utility to compress and resize image to target size in KB using HTML5 Canvas
 const compressImage = (file, targetSizeKb = 65) => {
@@ -90,6 +91,7 @@ export default function RestaurantRegisterPage() {
   const [logoFile, setLogoFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [vegOrNonVeg, setVegOrNonVeg] = useState("Both");
+  const [commission, setCommission] = useState("");
   const router = useRouter();
 
   const handleRegister = async () => {
@@ -145,6 +147,7 @@ export default function RestaurantRegisterPage() {
           longitude,
           logoUrl: uploadedLogoUrl,
           vegOrNonVeg,
+          commission,
         }),
       });
       const data = await res.json();
@@ -159,184 +162,220 @@ export default function RestaurantRegisterPage() {
   };
 
   return (
-    <div style={{ 
-      padding: '40px', 
-      maxWidth: '600px', 
-      margin: '0 auto', 
-      fontFamily: 'system-ui, -apple-system, sans-serif'
-    }}>
-      <h2 style={{ marginBottom: '20px', color: '#333' }}>Office Panel - Register Restaurant</h2>
+    <div className="register-page-wrapper">
+      <button onClick={() => router.push('/dashboard')} className="back-btn">
+        ← Back to Dashboard
+      </button>
 
-      <div style={{ display: 'grid', gap: '15px' }}>
-        <input 
-          style={inputStyle} 
-          placeholder="Email" 
-          onChange={(e) => setEmail(e.target.value)} 
-        />
-        
-        <input 
-          style={inputStyle} 
-          placeholder="Name" 
-          onChange={(e) => setPhone(e.target.value)} 
-        />
+      <div className="register-card">
+        <h2 className="register-title">Register Restaurant</h2>
+        <p className="register-subtitle">Configure a new branch profile and register it to the office panel</p>
 
-        <input 
-          style={inputStyle} 
-          placeholder="Name of the Restaurant" 
-          onChange={(e) => setName(e.target.value)} 
-        />
+        <div className="form-grid">
+          <div className="form-group">
+            <label className="form-label">Email Address</label>
+            <input 
+              className="input-field" 
+              type="email"
+              placeholder="e.g., contact@restaurant.com" 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)} 
+            />
+          </div>
+          
+          <div className="form-group">
+            <label className="form-label">Username / Phone</label>
+            <input 
+              className="input-field" 
+              placeholder="e.g., owner_username or phone" 
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)} 
+            />
+          </div>
 
-        <input 
-          style={inputStyle} 
-          placeholder="Offer Title" 
-          onChange={(e) => setOfferTitle(e.target.value)} 
-        />
+          <div className="form-group">
+            <label className="form-label">Restaurant Name</label>
+            <input 
+              className="input-field" 
+              placeholder="e.g., Viva Findine" 
+              value={name}
+              onChange={(e) => setName(e.target.value)} 
+            />
+          </div>
 
-        <input 
-          style={inputStyle} 
-          type="password" 
-          placeholder="Password" 
-          onChange={(e) => setPassword(e.target.value)} 
-        />
+          <div className="form-group">
+            <label className="form-label">Offer Title</label>
+            <input 
+              className="input-field" 
+              placeholder="e.g., 20% OFF on all items" 
+              value={offerTitle}
+              onChange={(e) => setOfferTitle(e.target.value)} 
+            />
+          </div>
 
-        <input 
-          style={inputStyle} 
-          placeholder="Restaurant ID" 
-          onChange={(e) => setRestId(e.target.value)} 
-        />
+          <div className="form-group">
+            <label className="form-label">Password</label>
+            <input 
+              className="input-field" 
+              type="password" 
+              placeholder="••••••••" 
+              value={password}
+              onChange={(e) => setPassword(e.target.value)} 
+            />
+          </div>
 
-        <input 
-          style={inputStyle} 
-          placeholder="Restaurant Location (City/Area)" 
-          onChange={(e) => setRestLocation(e.target.value)} 
-        />
+          <div className="form-group">
+            <label className="form-label">Restaurant ID</label>
+            <input 
+              className="input-field" 
+              placeholder="e.g., 16" 
+              value={restId}
+              onChange={(e) => setRestId(e.target.value)} 
+            />
+          </div>
 
-        <input 
-          style={inputStyle} 
-          placeholder="Full Restaurant Address" 
-          onChange={(e) => setAddress(e.target.value)} 
-        />
+          <div className="form-group">
+            <label className="form-label">Location (City/Area)</label>
+            <input 
+              className="input-field" 
+              placeholder="e.g., Bengaluru" 
+              value={restLocation}
+              onChange={(e) => setRestLocation(e.target.value)} 
+            />
+          </div>
 
-        <input 
-          style={inputStyle} 
-          placeholder="Restaurant FSSAI Number" 
-          onChange={(e) => setFssai(e.target.value)} 
-        />
+          <div className="form-group">
+            <label className="form-label">FSSAI License Number</label>
+            <input 
+              className="input-field" 
+              placeholder="14-digit FSSAI number" 
+              value={fssai}
+              onChange={(e) => setFssai(e.target.value)} 
+            />
+          </div>
 
-        <div>
-          <label style={labelStyle}>Opening Time</label>
-          <input 
-            style={inputStyle} 
-            type="time" 
-            onChange={(e) => setOpenTime(e.target.value)} 
-          />
-        </div>
+          <div className="form-group full-width">
+            <label className="form-label">Full Address</label>
+            <input 
+              className="input-field" 
+              placeholder="e.g., Ground Floor, Sector 3, HSR Layout" 
+              value={address}
+              onChange={(e) => setAddress(e.target.value)} 
+            />
+          </div>
 
-        <div>
-          <label style={labelStyle}>Closing Time</label>
-          <input 
-            style={inputStyle} 
-            type="time" 
-            onChange={(e) => setCloseTime(e.target.value)} 
-          />
-        </div>
+          <div className="form-group">
+            <label className="form-label">Opening Time</label>
+            <input 
+              className="input-field" 
+              type="time" 
+              value={openTime}
+              onChange={(e) => setOpenTime(e.target.value)} 
+            />
+          </div>
 
-        <input 
-          style={inputStyle} 
-          placeholder="Latitude (e.g. 15.8223)" 
-          onChange={(e) => setLatitude(e.target.value)} 
-        />
+          <div className="form-group">
+            <label className="form-label">Closing Time</label>
+            <input 
+              className="input-field" 
+              type="time" 
+              value={closeTime}
+              onChange={(e) => setCloseTime(e.target.value)} 
+            />
+          </div>
 
-        <input 
-          style={inputStyle} 
-          placeholder="Longitude (e.g. 78.0352)" 
-          onChange={(e) => setLongitude(e.target.value)} 
-        />
+          <div className="form-group">
+            <label className="form-label">Latitude</label>
+            <input 
+              className="input-field" 
+              placeholder="e.g., 12.9716" 
+              value={latitude}
+              onChange={(e) => setLatitude(e.target.value)} 
+            />
+          </div>
 
-        <div>
-          <label style={labelStyle}>Restaurant Type</label>
-          <select 
-            style={inputStyle} 
-            value={vegOrNonVeg} 
-            onChange={(e) => setVegOrNonVeg(e.target.value)}
+          <div className="form-group">
+            <label className="form-label">Longitude</label>
+            <input 
+              className="input-field" 
+              placeholder="e.g., 77.5946" 
+              value={longitude}
+              onChange={(e) => setLongitude(e.target.value)} 
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Commission from Restaurant (%)</label>
+            <input 
+              className="input-field" 
+              type="number"
+              step="0.01"
+              placeholder="e.g., 12.5" 
+              value={commission}
+              onChange={(e) => setCommission(e.target.value)} 
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Restaurant Type</label>
+            <select 
+              className="input-field" 
+              value={vegOrNonVeg} 
+              onChange={(e) => setVegOrNonVeg(e.target.value)}
+            >
+              <option value="Both">Both (Veg & Non-Veg)</option>
+              <option value="Veg">Veg Only</option>
+              <option value="Non-Veg">Non-Veg Only</option>
+            </select>
+          </div>
+
+          <div className="form-group full-width">
+            <label className="form-label">Restaurant Logo</label>
+            <div className="file-upload-wrapper">
+              <div className="file-upload-trigger">
+                {logoFile ? `Selected: ${logoFile.name}` : "📁 Choose restaurant logo image..."}
+              </div>
+              <input 
+                className="file-upload-input" 
+                type="file" 
+                accept="image/*"
+                onChange={(e) => setLogoFile(e.target.files[0])} 
+              />
+            </div>
+          </div>
+
+          <button
+            className="submit-btn"
+            onClick={handleRegister}
+            disabled={uploading}
           >
-            <option value="Both">Both (Veg & Non-Veg)</option>
-            <option value="Veg">Veg</option>
-            <option value="Non-Veg">Non-Veg</option>
-          </select>
+            {uploading ? (
+              <>⏳ Uploading logo & registering...</>
+            ) : (
+              <>🚀 Register Restaurant Branch</>
+            )}
+          </button>
         </div>
 
-        <div>
-          <label style={labelStyle}>Restaurant Logo</label>
-          <input 
-            style={inputStyle} 
-            type="file" 
-            accept="image/*"
-            onChange={(e) => setLogoFile(e.target.files[0])} 
-          />
-        </div>
+        {msg && (
+          <div className={`message-box ${isSuccess ? 'success' : 'error'}`}>
+            <span>{isSuccess ? '✅' : '❌'}</span>
+            <span>{msg}</span>
+          </div>
+        )}
 
-        <button
-          style={buttonStyle}
-          onClick={handleRegister}
-          disabled={uploading}
-        >
-          {uploading ? "Uploading logo..." : "Register Restaurant"}
-        </button>
+        {isSuccess && (
+          <div className="success-container">
+            <p>Restaurant has been successfully registered and added to the database.</p>
+            <button 
+              onClick={() => window.location.href = `http://localhost:3000/?autoLogin=true&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`}
+              className="secondary-btn"
+            >
+              🔑 Login Directly to Restaurant App
+            </button>
+          </div>
+        )}
       </div>
-
-      {msg && (
-        <p style={{ 
-          marginTop: '20px', 
-          padding: '10px', 
-          backgroundColor: isSuccess ? '#e6fffa' : '#fff5f5',
-          color: isSuccess ? '#2c7a7b' : '#c53030',
-          borderRadius: '4px',
-          border: `1px solid ${isSuccess ? '#b2f5ea' : '#feb2b2'}`
-        }}>
-          {msg}
-        </p>
-      )}
-
-      {isSuccess && (
-        <div style={{ marginTop: '20px' }}>
-             <p>Restaurant has been successfully registered and added to the database.</p>
-             <button 
-                onClick={() => window.location.href = `http://localhost:3000/?autoLogin=true&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`}
-                style={{...buttonStyle, backgroundColor: '#4a5568', marginTop: '10px'}}
-             >
-                Login Directly to Restaurant App
-             </button>
-        </div>
-      )}
     </div>
   );
 }
-
-const inputStyle = {
-  width: '100%',
-  padding: '12px',
-  borderRadius: '6px',
-  border: '1px solid #ddd',
-  fontSize: '16px'
-};
-
-const labelStyle = {
-  display: 'block',
-  marginBottom: '5px',
-  fontWeight: '600',
-  color: '#555'
-};
-
-const buttonStyle = {
-  width: '100%',
-  padding: '14px',
-  borderRadius: '6px',
-  border: 'none',
-  backgroundColor: '#3182ce',
-  color: 'white',
-  fontSize: '16px',
-  fontWeight: '600',
-  cursor: 'pointer',
-  transition: 'background-color 0.2s'
-};

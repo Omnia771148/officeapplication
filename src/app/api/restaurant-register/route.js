@@ -23,6 +23,7 @@ export async function POST(req) {
       longitude,
       logoUrl,
       vegOrNonVeg,
+      commission,
     } = await req.json();
 
     // validation
@@ -79,6 +80,7 @@ export async function POST(req) {
       isManuallyToggled: true,
       manualStatusUpdatedAt: new Date(),
       vegOrNonVeg,
+      commission: commission ? Number(commission) : 0,
     });
 
     // Automatically create a collection for this restaurant in the 'restuarents' database

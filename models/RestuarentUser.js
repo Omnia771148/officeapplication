@@ -80,6 +80,10 @@ const RegisterUserSchema = new mongoose.Schema(
       enum: ["Veg", "Non-Veg", "Both"],
       default: "Both",
     },
+    commission: {
+      type: Number,
+      default: 0,
+    },
   },
   { timestamps: true }
 );
