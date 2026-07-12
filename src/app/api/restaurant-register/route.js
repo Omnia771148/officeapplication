@@ -86,7 +86,7 @@ export async function POST(req) {
     // Automatically create a collection for this restaurant in the 'restuarents' database
     try {
       const restDb = mongoose.connection.useDb('restuarents', { useCache: true });
-      const collectionName = phone.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+      const collectionName = name.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
       
       const collections = await restDb.db.listCollections({ name: collectionName }).toArray();
       if (collections.length === 0) {
@@ -128,16 +128,16 @@ export async function DELETE(req) {
       );
     }
 
-    const phone = restaurant.phone;
+    const name = restaurant.name;
 
     // Delete restaurant user document
     await RestuarentUser.deleteOne({ restId });
 
     // Try to drop the restaurant's menu items collection in 'restuarents' database
     try {
-      if (phone) {
+      if (name) {
         const restDb = mongoose.connection.useDb('restuarents', { useCache: true });
-        const collectionName = phone.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+        const collectionName = name.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
         
         const collections = await restDb.db.listCollections({ name: collectionName }).toArray();
         if (collections.length > 0) {
@@ -187,9 +187,12 @@ export async function PUT(req) {
     // Derive the new phone (since phone is used as the unique name/login identifier in this app)
     const newPhone = sanitizedNewName;
 
+    const oldName = restaurant.name;
+    const newNameVal = sanitizedNewName;
+
     // Generate sanitized collection names
-    const oldCollectionName = oldPhone.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
-    const newCollectionName = newPhone.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+    const oldCollectionName = (oldName || oldPhone || "").trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+    const newCollectionName = newNameVal.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
 
     // Check if new name/phone is already taken by another user
     const exists = await RestuarentUser.findOne({

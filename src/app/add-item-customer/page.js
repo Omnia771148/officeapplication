@@ -677,7 +677,8 @@ export default function AddItemCustomerPage() {
                                 required
                             >
                                 {restaurants.map((r) => {
-                                    const collectionName = r.phone ? r.phone.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_') : r.restId;
+                                    const phoneOrName = r.name || r.phone;
+                                    const collectionName = phoneOrName ? phoneOrName.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_') : r.restId;
                                     return (
                                         <option key={r.restId} value={r.restId}>
                                             {collectionName}

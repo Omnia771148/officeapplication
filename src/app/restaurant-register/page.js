@@ -94,6 +94,27 @@ export default function RestaurantRegisterPage() {
   const [commission, setCommission] = useState("");
   const router = useRouter();
 
+  const handleResetForm = () => {
+    setEmail("");
+    setPhone("");
+    setName("");
+    setOfferTitle("");
+    setPassword("");
+    setRestId("");
+    setRestLocation("");
+    setAddress("");
+    setFssai("");
+    setOpenTime("");
+    setCloseTime("");
+    setLatitude("");
+    setLongitude("");
+    setLogoFile(null);
+    setVegOrNonVeg("Both");
+    setCommission("");
+    setMsg("");
+    setIsSuccess(false);
+  };
+
   const handleRegister = async () => {
     try {
       setMsg("");
@@ -336,6 +357,7 @@ export default function RestaurantRegisterPage() {
                 {logoFile ? `Selected: ${logoFile.name}` : "📁 Choose restaurant logo image..."}
               </div>
               <input 
+                key={logoFile ? 'logo-selected' : 'logo-empty'}
                 className="file-upload-input" 
                 type="file" 
                 accept="image/*"
@@ -367,12 +389,21 @@ export default function RestaurantRegisterPage() {
         {isSuccess && (
           <div className="success-container">
             <p>Restaurant has been successfully registered and added to the database.</p>
-            <button 
-              onClick={() => window.location.href = `http://localhost:3000/?autoLogin=true&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`}
-              className="secondary-btn"
-            >
-              🔑 Login Directly to Restaurant App
-            </button>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button 
+                onClick={() => window.location.href = `http://localhost:3000/?autoLogin=true&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`}
+                className="secondary-btn"
+              >
+                🔑 Login Directly to Restaurant App
+              </button>
+              <button 
+                onClick={handleResetForm}
+                className="secondary-btn"
+                style={{ background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', borderColor: 'transparent' }}
+              >
+                🆕 Register Another Restaurant
+              </button>
+            </div>
           </div>
         )}
       </div>
