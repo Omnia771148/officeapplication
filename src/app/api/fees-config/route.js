@@ -12,7 +12,14 @@ export async function GET(request) {
                 deliveryFeeBase: 20,
                 deliveryFeePerKm: 10,
                 surgeFee: 0,
-                isSurgeActive: false
+                isSurgeActive: false,
+                isCoinsActive: true,
+                coinMinOrderAmount: 200,
+                coinBaseAmount: 10,
+                coinStepAmount: 100,
+                coinStepValue: 5,
+                coinMaxLimit: 100,
+                coinMaxThreshold: 1000
             });
         }
         return NextResponse.json({ success: true, data: config });
@@ -25,7 +32,19 @@ export async function POST(request) {
     try {
         await dbConnect();
         const body = await request.json();
-        const { deliveryFeeBase, deliveryFeePerKm, surgeFee, isSurgeActive } = body;
+        const { 
+            deliveryFeeBase, 
+            deliveryFeePerKm, 
+            surgeFee, 
+            isSurgeActive,
+            isCoinsActive,
+            coinMinOrderAmount,
+            coinBaseAmount,
+            coinStepAmount,
+            coinStepValue,
+            coinMaxLimit,
+            coinMaxThreshold
+        } = body;
 
         let config = await FeesConfig.findOne({ key: 'global' });
         if (!config) {
@@ -36,6 +55,13 @@ export async function POST(request) {
         if (deliveryFeePerKm !== undefined) config.deliveryFeePerKm = Number(deliveryFeePerKm);
         if (surgeFee !== undefined) config.surgeFee = Number(surgeFee);
         if (isSurgeActive !== undefined) config.isSurgeActive = Boolean(isSurgeActive);
+        if (isCoinsActive !== undefined) config.isCoinsActive = Boolean(isCoinsActive);
+        if (coinMinOrderAmount !== undefined) config.coinMinOrderAmount = Number(coinMinOrderAmount);
+        if (coinBaseAmount !== undefined) config.coinBaseAmount = Number(coinBaseAmount);
+        if (coinStepAmount !== undefined) config.coinStepAmount = Number(coinStepAmount);
+        if (coinStepValue !== undefined) config.coinStepValue = Number(coinStepValue);
+        if (coinMaxLimit !== undefined) config.coinMaxLimit = Number(coinMaxLimit);
+        if (coinMaxThreshold !== undefined) config.coinMaxThreshold = Number(coinMaxThreshold);
 
         await config.save();
         return NextResponse.json({ success: true, data: config });

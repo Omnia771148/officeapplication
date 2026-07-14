@@ -21,7 +21,7 @@ export async function POST(req) {
     // Extract file extension and build standard filename
     const originalName = file.name || "image.png";
     const fileExtension = originalName.split(".").pop();
-    const fileName = `${id}.${fileExtension}`;
+    const fileName = `${id}_${Date.now()}.${fileExtension}`;
     const key = `${folder}/${fileName}`;
 
     // Upload params
