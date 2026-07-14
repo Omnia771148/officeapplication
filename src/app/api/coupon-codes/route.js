@@ -7,21 +7,25 @@ export async function POST(req) {
         await dbConnect();
         
         const data = await req.json();
-        const { influencerName, couponCode } = data;
+        const { influencerName, couponCode, discountType, discountValue } = data;
         
         if (!influencerName || !couponCode) {
             return NextResponse.json({ success: false, message: 'All fields are required' }, { status: 400 });
         }
+
+        const normalizedCode = couponCode.trim().toUpperCase();
         
         // Check if coupon code already exists
-        const existingCoupon = await CouponCode.findOne({ couponCode });
+        const existingCoupon = await CouponCode.findOne({ couponCode: normalizedCode });
         if (existingCoupon) {
             return NextResponse.json({ success: false, message: 'Coupon code already exists' }, { status: 400 });
         }
         
         const newCoupon = new CouponCode({
-            influencerName,
-            couponCode
+            influencerName: influencerName.trim(),
+            couponCode: normalizedCode,
+            discountType: discountType || 'flat',
+            discountValue: discountValue !== undefined ? Number(discountValue) : 50
         });
         
         await newCoupon.save();

@@ -157,6 +157,16 @@ export default function Dashboard() {
             <div style={{ width: '90%', maxWidth: '800px', marginBottom: '20px' }}>
                 <button
                     className="branchButton"
+                    style={{ '--btn-color': '#d35400' }}
+                    onClick={() => router.push('/settings-fees')}
+                >
+                    ⚙️ Delivery & Surge Fee Settings
+                </button>
+            </div>
+
+            <div style={{ width: '90%', maxWidth: '800px', marginBottom: '20px' }}>
+                <button
+                    className="branchButton"
                     style={{ '--btn-color': '#FF9800' }}
                     onClick={() => router.push('/restaurant-register')}
                 >
@@ -171,6 +181,16 @@ export default function Dashboard() {
                     onClick={() => router.push('/catagoryfilterinmainpage')}
                 >
                     📁 Add Main Page Category Filter
+                </button>
+            </div>
+
+            <div style={{ width: '90%', maxWidth: '800px', marginBottom: '20px' }}>
+                <button
+                    className="branchButton"
+                    style={{ '--btn-color': '#2196F3' }}
+                    onClick={() => router.push('/send-notification')}
+                >
+                    🔔 Send Customer Notification
                 </button>
             </div>
 
