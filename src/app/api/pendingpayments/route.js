@@ -1,5 +1,6 @@
 import dbConnect from '../../../../lib/mongoose';
 import PendingPayment from '../../../../models/PendingPayment';
+import RestuarentUser from '../../../../models/RestuarentUser';
 import { NextResponse } from 'next/server';
 
 export async function GET(request) {
@@ -13,12 +14,33 @@ export async function GET(request) {
         }
 
         const payment = await PendingPayment.findOne({ restaurantId });
+        const restaurantUser = await RestuarentUser.findOne({ restId: restaurantId });
+
+        const commissionRate = restaurantUser?.commission ?? payment?.commissionRate ?? payment?.commission ?? 0;
 
         if (!payment) {
-            return NextResponse.json({ success: true, data: { grandTotal: 0 } });
+            return NextResponse.json({
+                success: true,
+                data: {
+                    grossTotal: 0,
+                    grandTotal: 0,
+                    commissionRate,
+                    transactions: []
+                }
+            });
         }
 
-        return NextResponse.json({ success: true, data: payment });
+        const paymentObj = payment.toObject ? payment.toObject() : { ...payment };
+
+        return NextResponse.json({
+            success: true,
+            data: {
+                ...paymentObj,
+                grossTotal: paymentObj.grossTotal !== undefined ? paymentObj.grossTotal : (paymentObj.grandTotal || 0),
+                grandTotal: paymentObj.grandTotal || 0,
+                commissionRate
+            }
+        });
     } catch (error) {
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
@@ -36,7 +58,7 @@ export async function POST(request) {
         const updatedPayment = await PendingPayment.findOneAndUpdate(
             { restaurantId },
             {
-                $set: { grandTotal: 0 },
+                $set: { grandTotal: 0, grossTotal: 0 },
                 $push: {
                     transactions: {
                         transactionId,

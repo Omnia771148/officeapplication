@@ -37,26 +37,44 @@ export default function LiveDelayAnalysisPage() {
         return () => clearInterval(intervalId);
     }, []);
 
-    const getMinutesElapsed = (createdAt) => {
-        if (!createdAt) return 0;
-        const diffMs = new Date() - new Date(createdAt);
+    const getMinutesElapsed = (dateVal) => {
+        if (!dateVal) return 0;
+        const d = new Date(dateVal);
+        if (isNaN(d.getTime())) return 0;
+        const diffMs = new Date() - d;
         return Math.floor(diffMs / 60000);
     };
 
     const delayedByRestaurant = orderStatuses.filter(status => {
-        const elapsed = getMinutesElapsed(status.createdAt);
-        return elapsed > 5 && !status.restaurantAcceptedAt;
+        const orderTime = status.createdAt || status.created_at || status.date || status.orderDate;
+        const elapsed = getMinutesElapsed(orderTime);
+        
+        const hasAcceptedTime = Boolean(status.restaurantAcceptedAt);
+        const statusStr = String(status.status || '').toLowerCase();
+        const isAcceptedByStatus = statusStr.includes('accept') || statusStr.includes('prepar') || statusStr.includes('dispatch') || statusStr.includes('complete') || statusStr.includes('deliver');
+        const isRejected = statusStr.includes('reject') || statusStr.includes('cancel');
+
+        return elapsed > 5 && !hasAcceptedTime && !isAcceptedByStatus && !isRejected;
     });
 
     const delayedByDeliveryBoy = orderStatuses.filter(status => {
-        if (!status.restaurantAcceptedAt) return false;
-        const elapsed = getMinutesElapsed(status.restaurantAcceptedAt);
-        return elapsed > 5 && !status.deliveryBoyAcceptedAt;
+        const hasRestaurantAccepted = Boolean(status.restaurantAcceptedAt) || String(status.status || '').toLowerCase().includes('accept');
+        if (!hasRestaurantAccepted) return false;
+        
+        const acceptTime = status.restaurantAcceptedAt || status.createdAt;
+        const elapsed = getMinutesElapsed(acceptTime);
+
+        const hasDeliveryAccepted = Boolean(status.deliveryBoyAcceptedAt);
+        const statusStr = String(status.status || '').toLowerCase();
+        const isDeliveredOrComplete = statusStr.includes('complete') || statusStr.includes('deliver') || statusStr.includes('pickup') || statusStr.includes('dispatched');
+        const isRejected = statusStr.includes('reject') || statusStr.includes('cancel');
+
+        return elapsed > 5 && !hasDeliveryAccepted && !isDeliveredOrComplete && !isRejected;
     });
 
     return (
         <div className="liveContainer">
-            <div className="deliveryBoyHeader" st yle={{ justifyContent: 'space-between', marginBottom: '30px' }}>
+            <div className="deliveryBoyHeader" style={{ justifyContent: 'space-between', marginBottom: '30px' }}>
                 <button className="backBtn" onClick={() => router.back()}>
                     ← Back
                 </button>
@@ -81,11 +99,11 @@ export default function LiveDelayAnalysisPage() {
                                     <p className="noDelayText">No restaurant delays detected (all accepted within 5 minutes).</p>
                                 ) : (
                                     delayedByRestaurant.map(order => {
-                                        const elapsed = getMinutesElapsed(order.createdAt);
+                                        const elapsed = getMinutesElapsed(order.createdAt || order.date || order.orderDate);
                                         return (
                                             <div key={order._id} className="delayMiniCard restaurant">
                                                 <div className="miniCardHeader">
-                                                    <span className="miniCardId">Order ID: {order.orderId || 'N/A'}</span>
+                                                    <span className="miniCardId">Order ID: {order.orderId || order._id || 'N/A'}</span>
                                                     <span className="miniCardTimer">{elapsed} mins ago</span>
                                                 </div>
                                                 <div className="miniCardBody">
@@ -113,27 +131,27 @@ export default function LiveDelayAnalysisPage() {
                                     <p className="noDelayText">No delivery boy delays detected (all accepted within 5 minutes).</p>
                                 ) : (
                                     delayedByDeliveryBoy.map(order => {
-                                        const elapsed = getMinutesElapsed(order.restaurantAcceptedAt);
+                                        const elapsed = getMinutesElapsed(order.restaurantAcceptedAt || order.createdAt);
                                         return (
                                             <div key={order._id} className="delayMiniCard delivery">
                                                 <div className="miniCardHeader">
-                                                    <span className="miniCardId">Order ID: {order.orderId || 'N/A'}</span>
+                                                    <span className="miniCardId">Order ID: {order.orderId || order._id || 'N/A'}</span>
                                                     <span className="miniCardTimer">{elapsed} mins ago</span>
                                                 </div>
                                                 <div className="miniCardBody">
                                                     <p className="miniCardRestName"><strong>Restaurant:</strong> {order.restaurantName || 'N/A'}</p>
-                                                     <div className="miniCardActions" style={{ display: 'flex', gap: '8px' }}>
-                                                         {order.deliveryBoyPhone || order.deliveryboyPhone ? (
-                                                             <a href={`tel:${order.deliveryBoyPhone || order.deliveryboyPhone}`} className="miniActionBtn boy" style={{ flex: 1 }}>
-                                                                 📞 Delivery Boy
-                                                             </a>
-                                                         ) : (
-                                                             <span className="noBoyText" style={{ flex: 1, alignSelf: 'center' }}>No Boy Assigned</span>
-                                                         )}
-                                                         <a href={order.userPhone ? `tel:${order.userPhone}` : '#'} className="miniActionBtn user" style={{ flex: 1 }}>
-                                                             📞 Customer
-                                                         </a>
-                                                     </div>
+                                                    <div className="miniCardActions" style={{ display: 'flex', gap: '8px' }}>
+                                                        {order.deliveryBoyPhone || order.deliveryboyPhone ? (
+                                                            <a href={`tel:${order.deliveryBoyPhone || order.deliveryboyPhone}`} className="miniActionBtn boy" style={{ flex: 1 }}>
+                                                                📞 Delivery Boy
+                                                            </a>
+                                                        ) : (
+                                                            <span className="noBoyText" style={{ flex: 1, alignSelf: 'center' }}>No Boy Assigned</span>
+                                                        )}
+                                                        <a href={order.userPhone ? `tel:${order.userPhone}` : '#'} className="miniActionBtn user" style={{ flex: 1 }}>
+                                                            📞 Customer
+                                                        </a>
+                                                    </div>
                                                 </div>
                                             </div>
                                         );

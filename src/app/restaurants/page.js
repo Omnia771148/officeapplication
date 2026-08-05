@@ -26,23 +26,6 @@ export default function RestaurantsPage() {
             const data = await res.json();
             if (data.success && data.restaurants) {
                 const mappedBranches = data.restaurants.map((r, index) => {
-                    const hardcodedPaths = {
-                        '1': '/viva-findine',
-                        '2': '/amigos',
-                        '3': '/mister-hangouts',
-                        '4': '/reddy-famliy-restaurent',
-                        '5': '/aha-kitchens',
-                        '6': '/bro-story',
-                        '7': '/fun-and-food',
-                        '8': '/pr-grand',
-                        '9': '/food-land',
-                        '10': '/talimpu',
-                        '11': '/taj-darbar',
-                        '12': '/ruchivedhika',
-                        '13': '/hindustan',
-                        '14': '/lassi',
-                        '15': '/mandi9r'
-                    };
                     const phoneName = r.name || r.phone;
                     const sanitizedName = phoneName ? phoneName.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_') : r.restId;
                     
@@ -50,8 +33,7 @@ export default function RestaurantsPage() {
                         name: phoneName || `Restaurant ${r.restId}`,
                         collectionName: sanitizedName,
                         id: r.restId,
-                        color: colors[index % colors.length],
-                        path: hardcodedPaths[r.restId] || null
+                        color: colors[index % colors.length]
                     };
                 });
                 setBranches(mappedBranches);

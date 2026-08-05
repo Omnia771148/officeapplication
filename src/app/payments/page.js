@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 export default function PaymentsPage() {
     const router = useRouter();
     const [restaurantId, setRestaurantId] = useState(null);
-    const [payments, setPayments] = useState({ grandTotal: 0, pendingAmount: 0 });
+    const [payments, setPayments] = useState({ grossTotal: 0, grandTotal: 0, commissionRate: 0 });
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
@@ -29,12 +29,15 @@ export default function PaymentsPage() {
             const response = await fetch(`/api/pendingpayments?restaurantId=${id}`);
             const data = await response.json();
 
-            if (data.success) {
-                const total = data.data.grandTotal || 0;
-                const pending = total * 0.88;
+            if (data.success && data.data) {
+                const gross = data.data.grossTotal !== undefined ? data.data.grossTotal : (data.data.grandTotal || 0);
+                const grand = data.data.grandTotal !== undefined ? data.data.grandTotal : 0;
+                const commission = data.data.commissionRate !== undefined ? data.data.commissionRate : (data.data.commission || 0);
+
                 setPayments({
-                    grandTotal: total,
-                    pendingAmount: pending
+                    grossTotal: gross,
+                    grandTotal: grand,
+                    commissionRate: commission
                 });
                 setTransactions(data.data.transactions || []);
             } else {
@@ -123,7 +126,7 @@ export default function PaymentsPage() {
                 }}>
                     <h2 style={{ fontSize: '1.5rem', color: '#4CAF50', marginBottom: '15px' }}>Total Payments</h2>
                     <p style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#333' }}>
-                        ₹{payments.grandTotal.toLocaleString()}
+                        ₹{payments.grossTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                 </div>
 
@@ -138,10 +141,10 @@ export default function PaymentsPage() {
                 }}>
                     <h2 style={{ fontSize: '1.5rem', color: '#FF6F61', marginBottom: '15px' }}>Pending Payments</h2>
                     <p style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#333' }}>
-                        ₹{payments.pendingAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        ₹{payments.grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
-                    <p style={{ fontSize: '0.9rem', color: '#888', marginTop: '10px' }}>
-                        (Total - 12%)
+                    <p style={{ fontSize: '1rem', color: '#555', marginTop: '12px', fontWeight: '600' }}>
+                        Commission Rate: {payments.commissionRate}%
                     </p>
                 </div>
             </div>

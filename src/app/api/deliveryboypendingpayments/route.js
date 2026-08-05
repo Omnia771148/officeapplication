@@ -6,8 +6,18 @@ export async function GET(request) {
     try {
         await dbConnect();
 
-        // Use the model to fetch data. The model is now configured with the correct collection name.
-        const payments = await PendingPaymentOfDeliveryBoy.find({});
+        const rawPayments = await PendingPaymentOfDeliveryBoy.find({}).lean();
+
+        const payments = rawPayments.map(p => {
+            const charge = p.deliverycharges !== undefined 
+                ? Number(p.deliverycharges) 
+                : (p.deliveryCharge !== undefined ? Number(p.deliveryCharge) : (p.deliveryCharges !== undefined ? Number(p.deliveryCharges) : 0));
+            return {
+                ...p,
+                deliverycharges: charge,
+                deliveryCharge: charge
+            };
+        });
 
         return NextResponse.json({ success: true, data: payments });
     } catch (error) {
@@ -41,7 +51,14 @@ export async function POST(request) {
             date: new Date()
         });
 
-        paymentRecord.deliveryCharge = Math.max(0, paymentRecord.deliveryCharge - parsedAmount);
+        const currentCharge = paymentRecord.deliverycharges !== undefined 
+            ? Number(paymentRecord.deliverycharges) 
+            : (paymentRecord.deliveryCharge !== undefined ? Number(paymentRecord.deliveryCharge) : 0);
+
+        const newCharge = Math.max(0, currentCharge - parsedAmount);
+        paymentRecord.deliveryCharge = newCharge;
+        paymentRecord.deliverycharges = newCharge;
+
         await paymentRecord.save();
 
         return NextResponse.json({ success: true, data: paymentRecord });
