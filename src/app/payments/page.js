@@ -6,7 +6,13 @@ import { useRouter } from 'next/navigation';
 export default function PaymentsPage() {
     const router = useRouter();
     const [restaurantId, setRestaurantId] = useState(null);
-    const [payments, setPayments] = useState({ grossTotal: 0, grandTotal: 0, commissionRate: 0 });
+    const getCurrentMonthKey = () => {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    };
+
+    const [selectedMonth, setSelectedMonth] = useState(getCurrentMonthKey());
+    const [payments, setPayments] = useState({ grandTotal: 0, grossTotal: 0, pendingAmount: 0, commission: 0, totalPaid: 0 });
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
@@ -20,26 +26,30 @@ export default function PaymentsPage() {
             router.push('/dashboard');
         } else {
             setRestaurantId(id);
-            fetchPayments(id);
+            fetchPayments(id, selectedMonth);
         }
-    }, [router]);
+    }, [router, selectedMonth]);
 
-    const fetchPayments = async (id) => {
+    const fetchPayments = async (id, monthKey = selectedMonth) => {
         try {
-            const response = await fetch(`/api/pendingpayments?restaurantId=${id}`);
+            setLoading(true);
+            const response = await fetch(`/api/pendingpayments?restaurantId=${id}&month=${monthKey}`);
             const data = await response.json();
 
-            if (data.success && data.data) {
-                const gross = data.data.grossTotal !== undefined ? data.data.grossTotal : (data.data.grandTotal || 0);
-                const grand = data.data.grandTotal !== undefined ? data.data.grandTotal : 0;
-                const commission = data.data.commissionRate !== undefined ? data.data.commissionRate : (data.data.commission || 0);
+            if (data.success) {
+                const gross = data.grossTotal !== undefined ? data.grossTotal : (data.data?.grandTotal || 0);
+                const commRate = data.commission !== undefined ? data.commission : 0;
+                const netPending = data.netPending !== undefined ? data.netPending : (gross * ((100 - commRate) / 100));
+                const paidSum = data.totalPaid !== undefined ? data.totalPaid : 0;
 
                 setPayments({
+                    grandTotal: gross,
                     grossTotal: gross,
-                    grandTotal: grand,
-                    commissionRate: commission
+                    pendingAmount: netPending,
+                    commission: commRate,
+                    totalPaid: paidSum
                 });
-                setTransactions(data.data.transactions || []);
+                setTransactions(data.transactions || data.data?.transactions || []);
             } else {
                 console.error('Failed to fetch payments:', data.error);
             }
@@ -63,12 +73,13 @@ export default function PaymentsPage() {
                     restaurantId,
                     transactionId,
                     amount,
+                    month: selectedMonth,
                 }),
             });
 
             const data = await response.json();
             if (data.success) {
-                await fetchPayments(restaurantId);
+                await fetchPayments(restaurantId, selectedMonth);
                 setShowModal(false);
                 setTransactionId('');
                 setAmount('');
@@ -110,41 +121,84 @@ export default function PaymentsPage() {
                 <h1 style={{ fontSize: '2rem', color: '#333', margin: 0 }}>Payments Dashboard</h1>
             </div>
 
-            <p style={{ fontSize: '1.2rem', color: '#555', marginBottom: '40px' }}>
+            <p style={{ fontSize: '1.2rem', color: '#555', marginBottom: '20px' }}>
                 Restaurant ID: {restaurantId}
             </p>
 
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '40px', flexWrap: 'wrap', marginBottom: '40px' }}>
-                {/* Total Payments Card */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '35px' }}>
+                <span style={{ fontSize: '1.05rem', fontWeight: '600', color: '#475569' }}>📅 Select Month:</span>
+                <input
+                    type="month"
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(e.target.value)}
+                    style={{
+                        padding: '8px 14px',
+                        fontSize: '1rem',
+                        borderRadius: '8px',
+                        border: '1px solid #cbd5e1',
+                        fontWeight: '600',
+                        color: '#0f172a',
+                        outline: 'none',
+                        cursor: 'pointer',
+                        backgroundColor: '#ffffff',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.04)'
+                    }}
+                />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '30px', flexWrap: 'wrap', marginBottom: '40px' }}>
+                {/* Gross Orders Amount Card */}
                 <div style={{
                     backgroundColor: 'white',
-                    padding: '30px',
+                    padding: '25px',
                     borderRadius: '12px',
-                    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                    width: '300px',
+                    boxShadow: '0 4px 6px rgba(0,0,0,0.08)',
+                    width: '260px',
                     textAlign: 'center'
                 }}>
-                    <h2 style={{ fontSize: '1.5rem', color: '#4CAF50', marginBottom: '15px' }}>Total Payments</h2>
-                    <p style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#333' }}>
-                        ₹{payments.grossTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    <h2 style={{ fontSize: '1.3rem', color: '#475569', marginBottom: '10px' }}>Gross Orders Total</h2>
+                    <p style={{ fontSize: '2.2rem', fontWeight: 'bold', color: '#1e293b', margin: '10px 0' }}>
+                        ₹{(payments.grandTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                    <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>
+                        Total order value
                     </p>
                 </div>
 
-                {/* Pending Payments Card */}
+                {/* Commission Percentage Card */}
                 <div style={{
                     backgroundColor: 'white',
-                    padding: '30px',
+                    padding: '25px',
                     borderRadius: '12px',
-                    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                    width: '300px',
+                    boxShadow: '0 4px 6px rgba(0,0,0,0.08)',
+                    width: '220px',
                     textAlign: 'center'
                 }}>
-                    <h2 style={{ fontSize: '1.5rem', color: '#FF6F61', marginBottom: '15px' }}>Pending Payments</h2>
-                    <p style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#333' }}>
-                        ₹{payments.grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    <h2 style={{ fontSize: '1.3rem', color: '#0284c7', marginBottom: '10px' }}>Commission</h2>
+                    <p style={{ fontSize: '2.2rem', fontWeight: 'bold', color: '#0369a1', margin: '10px 0' }}>
+                        {payments.commission}%
                     </p>
-                    <p style={{ fontSize: '1rem', color: '#555', marginTop: '12px', fontWeight: '600' }}>
-                        Commission Rate: {payments.commissionRate}%
+                    <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>
+                        Restaurant rate
+                    </p>
+                </div>
+
+                {/* Net Payable Payout Card */}
+                <div style={{
+                    backgroundColor: 'white',
+                    padding: '25px',
+                    borderRadius: '12px',
+                    boxShadow: '0 4px 6px rgba(0,0,0,0.08)',
+                    width: '280px',
+                    textAlign: 'center',
+                    border: '2px solid #FF6F61'
+                }}>
+                    <h2 style={{ fontSize: '1.3rem', color: '#FF6F61', marginBottom: '10px' }}>Net Pending Payout</h2>
+                    <p style={{ fontSize: '2.2rem', fontWeight: 'bold', color: '#b91c1c', margin: '10px 0' }}>
+                        ₹{(payments.pendingAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                    <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>
+                        (Gross - {payments.commission}% Commission)
                     </p>
                 </div>
             </div>

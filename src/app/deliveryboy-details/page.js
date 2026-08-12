@@ -39,9 +39,30 @@ export default function DeliveryBoyDetailsPage() {
         }));
     };
 
+    const handleBlockToggle = async (id, shouldBlock) => {
+        try {
+            const response = await fetch('/api/deliveryboys', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, isBlocked: shouldBlock, isActive: !shouldBlock })
+            });
+            const data = await response.json();
+            if (data.success) {
+                setDeliveryBoys(prev => prev.map(b => 
+                    b._id === id ? { ...b, isBlocked: shouldBlock, isActive: !shouldBlock } : b
+                ));
+            } else {
+                alert('Failed to update status: ' + (data.error || 'Unknown error'));
+            }
+        } catch (err) {
+            console.error('Error toggling block status:', err);
+            alert('Failed to update delivery boy status.');
+        }
+    };
+
     const filteredDeliveryBoys = deliveryBoys.filter(boy => {
-        if (filter === 'active') return boy.isActive === true;
-        if (filter === 'inactive') return boy.isActive !== true;
+        if (filter === 'active') return boy.isActive === true && !boy.isBlocked;
+        if (filter === 'inactive') return boy.isActive !== true || boy.isBlocked;
         return true;
     });
 
@@ -70,13 +91,13 @@ export default function DeliveryBoyDetailsPage() {
                         className={`filterBtn ${filter === 'active' ? 'active' : ''}`}
                         onClick={() => setFilter('active')}
                     >
-                        Active ({deliveryBoys.filter(b => b.isActive === true).length})
+                        Active ({deliveryBoys.filter(b => b.isActive === true && !b.isBlocked).length})
                     </button>
                     <button 
                         className={`filterBtn ${filter === 'inactive' ? 'active' : ''}`}
                         onClick={() => setFilter('inactive')}
                     >
-                        Inactive ({deliveryBoys.filter(b => b.isActive !== true).length})
+                        Inactive/Blocked ({deliveryBoys.filter(b => b.isActive !== true || b.isBlocked).length})
                     </button>
                 </div>
             )}
@@ -105,8 +126,8 @@ export default function DeliveryBoyDetailsPage() {
                             <div key={boy._id} className="deliveryBoyCard">
                                 <div className="deliveryBoyCardHeader">
                                     <h3 className="deliveryBoyName">{boy.name}</h3>
-                                    <span className={`statusBadge ${boy.isActive ? 'active' : 'inactive'}`}>
-                                        {boy.isActive ? 'Active' : 'Inactive'}
+                                    <span className={`statusBadge ${boy.isBlocked || !boy.isActive ? 'inactive' : 'active'}`}>
+                                        {boy.isBlocked ? 'Blocked' : boy.isActive ? 'Active' : 'Inactive'}
                                     </span>
                                 </div>
 
@@ -183,6 +204,43 @@ export default function DeliveryBoyDetailsPage() {
                                                 No document uploads available
                                             </span>
                                         )}
+                                    </div>
+
+                                    <div style={{ display: 'flex', gap: '10px', marginTop: '18px', paddingTop: '15px', borderTop: '1px solid #e2e8f0' }}>
+                                        <button
+                                            style={{
+                                                flex: 1,
+                                                padding: '10px 14px',
+                                                borderRadius: '8px',
+                                                border: '1px solid #cbd5e1',
+                                                fontWeight: '600',
+                                                fontSize: '0.9rem',
+                                                cursor: 'pointer',
+                                                backgroundColor: (boy.isBlocked || !boy.isActive) ? '#22c55e' : '#f8fafc',
+                                                color: (boy.isBlocked || !boy.isActive) ? '#ffffff' : '#64748b',
+                                                transition: 'all 0.2s'
+                                            }}
+                                            onClick={() => handleBlockToggle(boy._id, false)}
+                                        >
+                                            Unblock
+                                        </button>
+                                        <button
+                                            style={{
+                                                flex: 1,
+                                                padding: '10px 14px',
+                                                borderRadius: '8px',
+                                                border: '1px solid #ef4444',
+                                                fontWeight: '600',
+                                                fontSize: '0.9rem',
+                                                cursor: 'pointer',
+                                                backgroundColor: (boy.isBlocked || !boy.isActive) ? '#ef4444' : '#f8fafc',
+                                                color: (boy.isBlocked || !boy.isActive) ? '#ffffff' : '#ef4444',
+                                                transition: 'all 0.2s'
+                                            }}
+                                            onClick={() => handleBlockToggle(boy._id, true)}
+                                        >
+                                            Block
+                                        </button>
                                     </div>
                                 </div>
                             </div>

@@ -49,6 +49,10 @@ const DeliveryBoyUserSchema = new mongoose.Schema({
         type: Boolean,
         default: true,
     },
+    isBlocked: {
+        type: Boolean,
+        default: false,
+    },
 }, { timestamps: true, collection: 'deliveryboyusers' });
 
 export default mongoose.models.DeliveryBoyUser || mongoose.model('DeliveryBoyUser', DeliveryBoyUserSchema);
