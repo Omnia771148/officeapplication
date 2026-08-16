@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import admin from 'firebase-admin';
+import { getApps, initializeApp, cert } from 'firebase-admin/app';
+import { getMessaging } from 'firebase-admin/messaging';
 
 export async function POST(request) {
   try {
@@ -27,16 +28,13 @@ export async function POST(request) {
     const privateKey = privateKeyRaw.replace(/\\n/g, '\n').replace(/"/g, '');
 
     const appName = 'customerApp';
-    let customerApp;
-
-    if (admin.apps.length > 0) {
-      customerApp = admin.apps.find((app) => app && app.name === appName);
-    }
+    const existingApps = getApps();
+    let customerApp = existingApps.find((app) => app && app.name === appName);
 
     if (!customerApp) {
-      customerApp = admin.initializeApp(
+      customerApp = initializeApp(
         {
-          credential: admin.credential.cert({
+          credential: cert({
             projectId,
             clientEmail,
             privateKey,
@@ -55,7 +53,8 @@ export async function POST(request) {
       topic: 'all_customers',
     };
 
-    const response = await customerApp.messaging().send(message);
+    const messaging = getMessaging(customerApp);
+    const response = await messaging.send(message);
     console.log('[FCM Admin] Notification sent successfully:', response);
 
     return NextResponse.json({
