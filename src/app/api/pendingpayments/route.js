@@ -125,7 +125,9 @@ async function getRestaurantData(restaurantId, monthParam) {
 
     // 6. Dynamic Gross Total corresponding to remaining Net Pending Payout
     let monthlyGrossTotal = 0;
-    if (multiplier > 0) {
+    if (payment && payment.grossTotal !== undefined && payment.grossTotal !== null) {
+        monthlyGrossTotal = Number(payment.grossTotal) || 0;
+    } else if (multiplier > 0) {
         monthlyGrossTotal = monthlyNetPending / multiplier;
     } else {
         monthlyGrossTotal = monthlyNetPending;
@@ -160,7 +162,7 @@ export async function GET(request) {
 
         return NextResponse.json({
             success: true,
-            data: data.payment || { grandTotal: data.monthlyNetPending, transactions: [] },
+            data: data.payment || { grandTotal: data.monthlyNetPending, grossTotal: data.monthlyGrossTotal, transactions: [] },
             grossTotal: data.monthlyGrossTotal,
             netPending: data.monthlyNetPending,
             totalPaid: data.monthlyTotalPaid,
@@ -206,7 +208,9 @@ export async function POST(request) {
             currentGrandTotal = initialData.monthlyNetPending || 0;
         }
 
+        const multiplier = initialData.commissionRate < 100 ? (100 - initialData.commissionRate) / 100 : 1;
         const newGrandTotal = Math.max(0, currentGrandTotal - paidAmount);
+        const newGrossTotal = multiplier > 0 ? (newGrandTotal / multiplier) : newGrandTotal;
 
         let updatedPayment;
         if (existingRecord) {
@@ -214,7 +218,8 @@ export async function POST(request) {
                 { _id: existingRecord._id },
                 {
                     $set: {
-                        grandTotal: newGrandTotal
+                        grandTotal: newGrandTotal,
+                        grossTotal: newGrossTotal
                     },
                     $push: {
                         transactions: {
@@ -224,13 +229,14 @@ export async function POST(request) {
                         }
                     }
                 },
-                { new: true }
+                { returnDocument: 'after' }
             );
         } else {
             updatedPayment = await PendingPayment.create({
                 restaurantId: targetRestId,
                 restaurantName: initialData.restaurant?.name || String(restaurantId),
                 grandTotal: newGrandTotal,
+                grossTotal: newGrossTotal,
                 transactions: [{
                     transactionId,
                     amount: paidAmount,
