@@ -4,6 +4,73 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+// Utility to compress and resize image to target size in KB using HTML5 Canvas
+const compressImage = (file, targetSizeKb = 70) => {
+  if (!file || !file.type || !file.type.startsWith("image/")) {
+    return Promise.resolve(file);
+  }
+
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+
+        const MAX_DIM = 800;
+        if (width > MAX_DIM || height > MAX_DIM) {
+          if (width > height) {
+            height = Math.round((height * MAX_DIM) / width);
+            width = MAX_DIM;
+          } else {
+            width = Math.round((width * MAX_DIM) / height);
+            height = MAX_DIM;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+
+        let quality = 0.8;
+        const checkQualityAndResolve = () => {
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                resolve(file);
+                return;
+              }
+              const blobSizeKb = blob.size / 1024;
+              if (blobSizeKb > targetSizeKb && quality > 0.2) {
+                quality -= 0.15;
+                checkQualityAndResolve();
+              } else {
+                const baseName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+                const compressedFile = new File([blob], `${baseName}.jpg`, {
+                  type: "image/jpeg",
+                  lastModified: Date.now(),
+                });
+                resolve(compressedFile);
+              }
+            },
+            "image/jpeg",
+            quality
+          );
+        };
+        checkQualityAndResolve();
+      };
+      img.onerror = () => resolve(file);
+    };
+    reader.onerror = () => resolve(file);
+  });
+};
+
 export default function BranchItemsPage() {
     const router = useRouter();
     const [restaurantId, setRestaurantId] = useState(null);
@@ -19,18 +86,43 @@ export default function BranchItemsPage() {
     const [editingId, setEditingId] = useState(null);
     const [editName, setEditName] = useState('');
     const [editPrice, setEditPrice] = useState('');
+    const [editVegOrNonVeg, setEditVegOrNonVeg] = useState('Both');
+    const [editRating, setEditRating] = useState('0');
+    const [editPhotoUrl, setEditPhotoUrl] = useState('');
+    const [editPhotoFile, setEditPhotoFile] = useState(null);
+    const [photoPreview, setPhotoPreview] = useState('');
+    const [uploadingImage, setUploadingImage] = useState(false);
     const [savingId, setSavingId] = useState(null);
 
     const startEditing = (item) => {
         setEditingId(item._id);
-        setEditName(item.itemName);
-        setEditPrice(item.price.toString());
+        setEditName(item.itemName || '');
+        setEditPrice(item.price !== undefined && item.price !== null ? item.price.toString() : '0');
+        setEditVegOrNonVeg(item.vegOrNonVeg || 'Both');
+        setEditRating(item.rating !== undefined && item.rating !== null ? item.rating.toString() : '0');
+        setEditPhotoUrl(item.photoUrl || '');
+        setEditPhotoFile(null);
+        setPhotoPreview(item.photoUrl || '');
     };
 
     const cancelEditing = () => {
         setEditingId(null);
         setEditName('');
         setEditPrice('');
+        setEditVegOrNonVeg('Both');
+        setEditRating('0');
+        setEditPhotoUrl('');
+        setEditPhotoFile(null);
+        setPhotoPreview('');
+        setUploadingImage(false);
+    };
+
+    const handleFileChange = (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (file) {
+            setEditPhotoFile(file);
+            setPhotoPreview(URL.createObjectURL(file));
+        }
     };
 
     const handleSaveEdit = async (itemId) => {
@@ -43,9 +135,40 @@ export default function BranchItemsPage() {
             alert('Price must be a valid non-negative number');
             return;
         }
+        const parsedRating = Number(editRating);
+        if (isNaN(parsedRating) || parsedRating < 0 || parsedRating > 5) {
+            alert('Rating must be a number between 0 and 5');
+            return;
+        }
 
         setSavingId(itemId);
+        let finalPhotoUrl = editPhotoUrl;
+
         try {
+            if (editPhotoFile) {
+                setUploadingImage(true);
+                const compressed = await compressImage(editPhotoFile, 70);
+                const formData = new FormData();
+                formData.append('file', compressed);
+                formData.append('id', restaurantId || itemId);
+                formData.append('folder', 'items');
+
+                const uploadRes = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData,
+                });
+                const uploadData = await uploadRes.json();
+                if (uploadData.success && uploadData.url) {
+                    finalPhotoUrl = uploadData.url;
+                } else {
+                    alert(uploadData.error || 'Failed to upload image. Item update aborted.');
+                    setSavingId(null);
+                    setUploadingImage(false);
+                    return;
+                }
+                setUploadingImage(false);
+            }
+
             const res = await fetch('/api/item-status', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
@@ -53,6 +176,9 @@ export default function BranchItemsPage() {
                     itemId, 
                     itemName: editName.trim(), 
                     price: parsedPrice,
+                    vegOrNonVeg: editVegOrNonVeg,
+                    rating: parsedRating,
+                    photoUrl: finalPhotoUrl,
                     restaurantId
                 })
             });
@@ -63,14 +189,16 @@ export default function BranchItemsPage() {
                         item._id === itemId ? { ...item, ...data.data } : item
                     )
                 );
-                setEditingId(null);
+                cancelEditing();
             } else {
                 alert(data.error || 'Failed to update item.');
             }
         } catch (err) {
+            console.error("Save edit error:", err);
             alert('Server communication error.');
         } finally {
             setSavingId(null);
+            setUploadingImage(false);
         }
     };
 
@@ -660,7 +788,7 @@ export default function BranchItemsPage() {
                     ← Back to Branch
                 </button>
                 <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                    <Link href="/add-item" className="btnAddItem">
+                    <Link href={restaurantId ? `/add-item-customer?restaurantId=${restaurantId}` : "/add-item-customer"} className="btnAddItem">
                         + Add New Item
                     </Link>
                     {items.length > 0 && (
@@ -710,12 +838,33 @@ export default function BranchItemsPage() {
                             {editingId === item._id ? (
                                 <div className="editFieldsContainer">
                                     <div className="editFieldGroup">
+                                        <span className="editFieldLabel">Item Photo</span>
+                                        {photoPreview ? (
+                                            <div style={{ width: '100%', height: '120px', borderRadius: '8px', overflow: 'hidden', marginBottom: '6px', backgroundColor: '#f1f5f9' }}>
+                                                <img src={photoPreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                            </div>
+                                        ) : null}
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            className="editInputField"
+                                            style={{ padding: '6px' }}
+                                            disabled={savingId === item._id || uploadingImage}
+                                            onChange={handleFileChange}
+                                        />
+                                        {editPhotoFile && (
+                                            <span style={{ fontSize: '0.8rem', color: '#27ae60', fontWeight: '600' }}>
+                                                📷 New image selected: {editPhotoFile.name}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="editFieldGroup">
                                         <span className="editFieldLabel">Item Name</span>
                                         <input
                                             type="text"
                                             className="editInputField"
                                             value={editName}
-                                            disabled={savingId === item._id}
+                                            disabled={savingId === item._id || uploadingImage}
                                             onChange={(e) => setEditName(e.target.value)}
                                             placeholder="Enter item name"
                                         />
@@ -726,11 +875,38 @@ export default function BranchItemsPage() {
                                             type="number"
                                             className="editInputField"
                                             value={editPrice}
-                                            disabled={savingId === item._id}
+                                            disabled={savingId === item._id || uploadingImage}
                                             onChange={(e) => setEditPrice(e.target.value)}
                                             placeholder="Enter price"
                                             min="0"
                                             step="0.01"
+                                        />
+                                    </div>
+                                    <div className="editFieldGroup">
+                                        <span className="editFieldLabel">Type (Veg / Non-Veg)</span>
+                                        <select
+                                            className="editInputField"
+                                            value={editVegOrNonVeg}
+                                            disabled={savingId === item._id || uploadingImage}
+                                            onChange={(e) => setEditVegOrNonVeg(e.target.value)}
+                                        >
+                                            <option value="Veg">🟢 Veg</option>
+                                            <option value="Non-Veg">🔴 Non-Veg</option>
+                                            <option value="Both">🟡 Both</option>
+                                        </select>
+                                    </div>
+                                    <div className="editFieldGroup">
+                                        <span className="editFieldLabel">Rating (0 - 5)</span>
+                                        <input
+                                            type="number"
+                                            className="editInputField"
+                                            value={editRating}
+                                            disabled={savingId === item._id || uploadingImage}
+                                            onChange={(e) => setEditRating(e.target.value)}
+                                            placeholder="Enter rating e.g. 4.5"
+                                            min="0"
+                                            max="5"
+                                            step="0.1"
                                         />
                                     </div>
                                     {item.itemId && (
@@ -741,14 +917,14 @@ export default function BranchItemsPage() {
                                     <div className="editActions">
                                         <button
                                             className="btnSave"
-                                            disabled={savingId === item._id}
+                                            disabled={savingId === item._id || uploadingImage}
                                             onClick={() => handleSaveEdit(item._id)}
                                         >
-                                            {savingId === item._id ? 'Saving...' : '💾 Save'}
+                                            {uploadingImage ? 'Uploading Image...' : savingId === item._id ? 'Saving...' : '💾 Save'}
                                         </button>
                                         <button
                                             className="btnCancel"
-                                            disabled={savingId === item._id}
+                                            disabled={savingId === item._id || uploadingImage}
                                             onClick={cancelEditing}
                                         >
                                             Cancel
@@ -757,6 +933,11 @@ export default function BranchItemsPage() {
                                 </div>
                             ) : (
                                 <>
+                                    {item.photoUrl ? (
+                                        <div style={{ width: '100%', height: '160px', borderRadius: '8px', overflow: 'hidden', marginBottom: '12px', backgroundColor: '#f1f5f9' }}>
+                                            <img src={item.photoUrl} alt={item.itemName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        </div>
+                                    ) : null}
                                     <div>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
                                             <h3 className="itemName" style={{ margin: 0, flex: 1 }}>{item.itemName}</h3>
@@ -773,7 +954,29 @@ export default function BranchItemsPage() {
                                                 </button>
                                             </div>
                                         </div>
-                                        <div className="itemPrice" style={{ marginTop: '8px' }}>₹{item.price}</div>
+
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px', flexWrap: 'wrap' }}>
+                                            <div className="itemPrice" style={{ margin: 0 }}>₹{item.price}</div>
+                                            {item.vegOrNonVeg && (
+                                                <span style={{
+                                                    padding: '3px 8px',
+                                                    borderRadius: '6px',
+                                                    fontSize: '0.75rem',
+                                                    fontWeight: '700',
+                                                    backgroundColor: item.vegOrNonVeg === 'Veg' ? '#e6f4ea' : item.vegOrNonVeg === 'Non-Veg' ? '#fce8e6' : '#fef7e0',
+                                                    color: item.vegOrNonVeg === 'Veg' ? '#137333' : item.vegOrNonVeg === 'Non-Veg' ? '#c5221f' : '#b06000',
+                                                    border: `1px solid ${item.vegOrNonVeg === 'Veg' ? '#a8dab5' : item.vegOrNonVeg === 'Non-Veg' ? '#f5c2c0' : '#fcdc8e'}`
+                                                }}>
+                                                    {item.vegOrNonVeg === 'Veg' ? '🟢 Veg' : item.vegOrNonVeg === 'Non-Veg' ? '🔴 Non-Veg' : '🟡 Both'}
+                                                </span>
+                                            )}
+                                            {item.rating !== undefined && item.rating !== null && (
+                                                <span style={{ fontSize: '0.85rem', fontWeight: '700', color: '#f39c12', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                                                    ⭐ {item.rating}
+                                                </span>
+                                            )}
+                                        </div>
+
                                         {item.itemId && (
                                             <div style={{ fontSize: '0.9rem', color: '#7f8c8d', fontWeight: '500', marginBottom: '15px' }}>
                                                 Item ID: {item.itemId}

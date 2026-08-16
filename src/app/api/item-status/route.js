@@ -27,7 +27,7 @@ export async function GET(request) {
 
 export async function PATCH(request) {
     try {
-        const { itemId, itemStatus, itemtodisplayintherestuarentapp, itemName, price, offerpercentage, restaurantId, applyToAll } = await request.json();
+        const { itemId, itemStatus, itemtodisplayintherestuarentapp, itemName, price, offerpercentage, restaurantId, applyToAll, vegOrNonVeg, rating, photoUrl } = await request.json();
 
         if (!restaurantId) {
             return NextResponse.json({ success: false, error: 'Restaurant ID is required' }, { status: 400 });
@@ -82,6 +82,20 @@ export async function PATCH(request) {
                 return NextResponse.json({ success: false, error: 'Offer percentage must be a number between 0 and 100' }, { status: 400 });
             }
             updateData.offerpercentage = parsedOffer;
+        }
+        if (vegOrNonVeg !== undefined) {
+            if (['Veg', 'Non-Veg', 'Both'].includes(vegOrNonVeg)) {
+                updateData.vegOrNonVeg = vegOrNonVeg;
+            }
+        }
+        if (rating !== undefined) {
+            const parsedRating = Number(rating);
+            if (!isNaN(parsedRating) && parsedRating >= 0 && parsedRating <= 5) {
+                updateData.rating = parsedRating;
+            }
+        }
+        if (photoUrl !== undefined) {
+            updateData.photoUrl = photoUrl;
         }
 
         const RestaurantItem = await getRestaurantItemModel(restaurantId);
