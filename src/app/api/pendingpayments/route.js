@@ -31,7 +31,7 @@ async function getRestaurantData(restaurantId, monthParam) {
     const { year, month, startOfMonth, endOfMonth, monthKey } = getMonthBounds(monthParam);
     const numericRestId = !isNaN(Number(restaurantId)) ? Number(restaurantId) : null;
 
-    // 1. Fetch RestaurantUser to get exact restId, name, phone, and commission
+    // 1. Fetch RestaurantUser to get exact restId, name, phone, and commission rate
     let restaurant = null;
     let commissionRate = 0;
     try {
@@ -93,16 +93,17 @@ async function getRestaurantData(restaurantId, monthParam) {
         ]
     }).lean();
 
-    let monthlyGrossTotal = 0;
+    // Calculate initial gross total from completed orders
+    let initialGrossTotal = 0;
     if (completedOrders && completedOrders.length > 0) {
-        monthlyGrossTotal = completedOrders.reduce((sum, order) => {
+        initialGrossTotal = completedOrders.reduce((sum, order) => {
             return sum + (Number(order.grandTotal) || Number(order.totalPrice) || Number(order.totalAmount) || Number(order.grossTotal) || Number(order.grossAmount) || 0);
         }, 0);
-    } else if (payment) {
-        monthlyGrossTotal = Number(payment.grossTotal) || Number(payment.grandTotal) || 0;
+    } else if (payment && payment.grossTotal !== undefined) {
+        initialGrossTotal = Number(payment.grossTotal) || 0;
     }
 
-    // 4. Calculate transactions and payout balances
+    // 4. Calculate total paid from transaction history for selected month
     const allTransactions = payment?.transactions || [];
     const monthlyTransactions = allTransactions.filter(tx => {
         if (!tx.date) return false;
@@ -111,9 +112,24 @@ async function getRestaurantData(restaurantId, monthParam) {
     });
 
     const monthlyTotalPaid = monthlyTransactions.reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
-    const multiplier = (100 - commissionRate) / 100;
-    const monthlyInitialNet = monthlyGrossTotal * multiplier;
-    const monthlyNetPending = Math.max(0, monthlyInitialNet - monthlyTotalPaid);
+
+    // 5. Commission multiplier and dynamic Net Pending calculation from DB grandTotal
+    const multiplier = commissionRate < 100 ? (100 - commissionRate) / 100 : 1;
+
+    let monthlyNetPending = 0;
+    if (payment && payment.grandTotal !== undefined && payment.grandTotal !== null) {
+        monthlyNetPending = Number(payment.grandTotal) || 0;
+    } else {
+        monthlyNetPending = Math.max(0, (initialGrossTotal * multiplier) - monthlyTotalPaid);
+    }
+
+    // 6. Dynamic Gross Total corresponding to remaining Net Pending Payout
+    let monthlyGrossTotal = 0;
+    if (multiplier > 0) {
+        monthlyGrossTotal = monthlyNetPending / multiplier;
+    } else {
+        monthlyGrossTotal = monthlyNetPending;
+    }
 
     return {
         payment,
@@ -144,7 +160,7 @@ export async function GET(request) {
 
         return NextResponse.json({
             success: true,
-            data: data.payment || { grandTotal: data.monthlyGrossTotal, transactions: [] },
+            data: data.payment || { grandTotal: data.monthlyNetPending, transactions: [] },
             grossTotal: data.monthlyGrossTotal,
             netPending: data.monthlyNetPending,
             totalPaid: data.monthlyTotalPaid,
@@ -169,31 +185,52 @@ export async function POST(request) {
         }
 
         const initialData = await getRestaurantData(restaurantId, selectedMonthParam);
-        const targetRestId = initialData.payment?.restaurantId || restaurantId;
         const paidAmount = Number(amount) || 0;
 
-        // Push new payout transaction
-        let updatedPayment = await PendingPayment.findOneAndUpdate(
-            { restaurantId: targetRestId },
-            {
-                $push: {
-                    transactions: {
-                        transactionId,
-                        amount: paidAmount,
-                        date: new Date()
-                    }
-                }
-            },
-            { new: true }
-        );
+        // Find existing PendingPayment record
+        const existingRecord = await PendingPayment.findOne({
+            $or: [
+                { restaurantId: { $in: initialData.possibleIds } },
+                { restId: { $in: initialData.possibleIds } },
+                { restaurantName: { $in: initialData.possibleIds } }
+            ]
+        });
 
-        if (!updatedPayment) {
-            // Create record if it doesn't exist
+        const targetRestId = existingRecord?.restaurantId || String(restaurantId);
+
+        // Retrieve current DB grandTotal or initial net pending
+        let currentGrandTotal = 0;
+        if (existingRecord && existingRecord.grandTotal !== undefined && existingRecord.grandTotal !== null) {
+            currentGrandTotal = Number(existingRecord.grandTotal) || 0;
+        } else {
+            currentGrandTotal = initialData.monthlyNetPending || 0;
+        }
+
+        const newGrandTotal = Math.max(0, currentGrandTotal - paidAmount);
+
+        let updatedPayment;
+        if (existingRecord) {
+            updatedPayment = await PendingPayment.findOneAndUpdate(
+                { _id: existingRecord._id },
+                {
+                    $set: {
+                        grandTotal: newGrandTotal
+                    },
+                    $push: {
+                        transactions: {
+                            transactionId,
+                            amount: paidAmount,
+                            date: new Date()
+                        }
+                    }
+                },
+                { new: true }
+            );
+        } else {
             updatedPayment = await PendingPayment.create({
                 restaurantId: targetRestId,
                 restaurantName: initialData.restaurant?.name || String(restaurantId),
-                grandTotal: initialData.monthlyGrossTotal,
-                grossTotal: initialData.monthlyGrossTotal,
+                grandTotal: newGrandTotal,
                 transactions: [{
                     transactionId,
                     amount: paidAmount,

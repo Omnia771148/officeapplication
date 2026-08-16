@@ -37,13 +37,13 @@ export default function PaymentsPage() {
             const data = await response.json();
 
             if (data.success) {
-                const gross = data.grossTotal !== undefined ? data.grossTotal : (data.data?.grandTotal || 0);
+                const gross = data.grossTotal !== undefined ? data.grossTotal : 0;
                 const commRate = data.commission !== undefined ? data.commission : 0;
-                const netPending = data.netPending !== undefined ? data.netPending : (gross * ((100 - commRate) / 100));
+                const netPending = data.netPending !== undefined ? data.netPending : (data.data?.grandTotal || 0);
                 const paidSum = data.totalPaid !== undefined ? data.totalPaid : 0;
 
                 setPayments({
-                    grandTotal: gross,
+                    grandTotal: data.data?.grandTotal !== undefined ? data.data.grandTotal : netPending,
                     grossTotal: gross,
                     pendingAmount: netPending,
                     commission: commRate,
@@ -102,8 +102,8 @@ export default function PaymentsPage() {
     return (
         <div style={{ padding: '40px', fontFamily: 'var(--font-outfit), sans-serif', textAlign: 'center', backgroundColor: '#f4f7f6', minHeight: '100vh', position: 'relative' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '30px', borderBottom: '2px solid #edf2f7', paddingBottom: '15px', maxWidth: '800px', margin: '0 auto' }}>
-                <button 
-                    onClick={() => window.history.back()} 
+                <button
+                    onClick={() => window.history.back()}
                     style={{
                         background: '#fff',
                         border: '1px solid #dfe6e9',
