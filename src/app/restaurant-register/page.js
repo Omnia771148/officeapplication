@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import "./register.css";
 
@@ -79,6 +79,7 @@ export default function RestaurantRegisterPage() {
   const [offerTitle, setOfferTitle] = useState("");
   const [password, setPassword] = useState("");
   const [restId, setRestId] = useState("");
+  const [latestRestId, setLatestRestId] = useState("");
   const [restLocation, setRestLocation] = useState("");
   const [address, setAddress] = useState("");
   const [fssai, setFssai] = useState("");
@@ -93,6 +94,22 @@ export default function RestaurantRegisterPage() {
   const [vegOrNonVeg, setVegOrNonVeg] = useState("Both");
   const [commission, setCommission] = useState("");
   const router = useRouter();
+
+  const fetchLatestRestId = async () => {
+    try {
+      const res = await fetch("/api/restaurant-register");
+      const data = await res.json();
+      if (data.success && data.latestRestId) {
+        setLatestRestId(data.latestRestId);
+      }
+    } catch (err) {
+      console.error("Error fetching latest rest ID:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchLatestRestId();
+  }, []);
 
   const handleResetForm = () => {
     setEmail("");
@@ -175,6 +192,7 @@ export default function RestaurantRegisterPage() {
       setMsg(data.message);
       if (res.status === 201) {
         setIsSuccess(true);
+        fetchLatestRestId();
       }
     } catch (error) {
       setMsg("Registration failed: " + error.message);
@@ -246,7 +264,14 @@ export default function RestaurantRegisterPage() {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Restaurant ID</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+              <label className="form-label" style={{ margin: 0 }}>Restaurant ID</label>
+              {latestRestId && (
+                <span style={{ fontSize: '0.85rem', color: '#009688', fontWeight: '700', backgroundColor: '#e6f4f2', padding: '2px 8px', borderRadius: '4px' }}>
+                  Latest ID: {latestRestId}
+                </span>
+              )}
+            </div>
             <input 
               className="input-field" 
               placeholder="e.g., 16" 

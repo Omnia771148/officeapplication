@@ -258,3 +258,33 @@ export async function PUT(req) {
     );
   }
 }
+
+export async function GET(req) {
+  try {
+    await dbConnect();
+    const restaurants = await RestuarentUser.find({}, { restId: 1, createdAt: 1 }).sort({ createdAt: -1 }).lean();
+
+    if (!restaurants || restaurants.length === 0) {
+      return NextResponse.json({ success: true, latestRestId: "None" });
+    }
+
+    const latestCreated = restaurants[0]?.restId || "None";
+
+    let maxNumericId = 0;
+    restaurants.forEach(r => {
+      const num = Number(r.restId);
+      if (!isNaN(num) && num > maxNumericId) {
+        maxNumericId = num;
+      }
+    });
+
+    const displayLatest = maxNumericId > 0 ? String(maxNumericId) : latestCreated;
+
+    return NextResponse.json({
+      success: true,
+      latestRestId: displayLatest
+    });
+  } catch (error) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
