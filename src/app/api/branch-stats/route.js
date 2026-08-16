@@ -81,7 +81,8 @@ export async function GET(request) {
                 restaurantLocation: restaurant.restaurantLocation,
                 logoUrl: restaurant.logoUrl,
                 vegOrNonVeg: restaurant.vegOrNonVeg || "Both",
-                commission: restaurant.commission !== undefined ? restaurant.commission : 0
+                commission: restaurant.commission !== undefined ? restaurant.commission : 0,
+                isActive: restaurant.isActive !== undefined ? restaurant.isActive : true
             } : null
         });
     } catch (error) {

@@ -19,6 +19,79 @@ export default function RestaurantDashboardPage({ params }) {
     const [editName, setEditName] = useState('');
     const [updatingName, setUpdatingName] = useState(false);
 
+    // Active status toggle state
+    const [togglingActive, setTogglingActive] = useState(false);
+
+    // Timings edit state
+    const [isEditingTimings, setIsEditingTimings] = useState(false);
+    const [editOpenTime, setEditOpenTime] = useState('');
+    const [editCloseTime, setEditCloseTime] = useState('');
+    const [updatingTimings, setUpdatingTimings] = useState(false);
+
+    const handleSaveTimings = async () => {
+        if (!editOpenTime || !editCloseTime) {
+            alert('Please select both Open Time and Close Time');
+            return;
+        }
+        setUpdatingTimings(true);
+        try {
+            const res = await fetch('/api/restaurant-timings', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    restId: id,
+                    openTime: editOpenTime,
+                    closeTime: editCloseTime
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setDetails(prev => ({
+                    ...prev,
+                    openTime: editOpenTime,
+                    closeTime: editCloseTime
+                }));
+                setIsEditingTimings(false);
+                alert('Restaurant timings updated successfully!');
+            } else {
+                alert(data.error || 'Failed to update restaurant timings.');
+            }
+        } catch (err) {
+            console.error("Error updating timings:", err);
+            alert("Server communication error.");
+        } finally {
+            setUpdatingTimings(false);
+        }
+    };
+
+    const handleToggleActive = async (nextStatus) => {
+        setTogglingActive(true);
+        try {
+            const res = await fetch('/api/restaurant-timings', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    restId: id,
+                    isActive: nextStatus
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setDetails(prev => ({
+                    ...prev,
+                    isActive: nextStatus
+                }));
+            } else {
+                alert(data.error || 'Failed to update active status.');
+            }
+        } catch (err) {
+            console.error("Error toggling active status:", err);
+            alert("Server communication error.");
+        } finally {
+            setTogglingActive(false);
+        }
+    };
+
     const handleSaveName = async () => {
         if (!editName.trim()) {
             alert('Restaurant name cannot be empty');
@@ -248,12 +321,160 @@ export default function RestaurantDashboardPage({ params }) {
                             )}
                         </div>
                         <div className="detailItem">
-                            <span className="detailLabel">Open Time</span>
-                            <span className="detailValue">{details.openTime || 'N/A'}</span>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span className="detailLabel">Open Time</span>
+                                {!isEditingTimings && (
+                                    <button 
+                                        className="passwordToggleBtn"
+                                        onClick={() => {
+                                            setEditOpenTime(details.openTime || '09:00');
+                                            setEditCloseTime(details.closeTime || '22:00');
+                                            setIsEditingTimings(true);
+                                        }}
+                                    >
+                                        ✏️ Edit
+                                    </button>
+                                )}
+                            </div>
+                            {isEditingTimings ? (
+                                <input
+                                    type="time"
+                                    value={editOpenTime}
+                                    onChange={(e) => setEditOpenTime(e.target.value)}
+                                    disabled={updatingTimings}
+                                    style={{
+                                        padding: '6px 10px',
+                                        borderRadius: '6px',
+                                        border: '1px solid #cbd5e1',
+                                        fontSize: '0.95rem',
+                                        color: '#1e293b',
+                                        backgroundColor: '#ffffff',
+                                        width: '100%',
+                                        marginTop: '4px',
+                                        boxSizing: 'border-box'
+                                    }}
+                                />
+                            ) : (
+                                <span className="detailValue">{details.openTime || 'N/A'}</span>
+                            )}
                         </div>
                         <div className="detailItem">
-                            <span className="detailLabel">Close Time</span>
-                            <span className="detailValue">{details.closeTime || 'N/A'}</span>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span className="detailLabel">Close Time</span>
+                                {!isEditingTimings && (
+                                    <button 
+                                        className="passwordToggleBtn"
+                                        onClick={() => {
+                                            setEditOpenTime(details.openTime || '09:00');
+                                            setEditCloseTime(details.closeTime || '22:00');
+                                            setIsEditingTimings(true);
+                                        }}
+                                    >
+                                        ✏️ Edit
+                                    </button>
+                                )}
+                            </div>
+                            {isEditingTimings ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
+                                    <input
+                                        type="time"
+                                        value={editCloseTime}
+                                        onChange={(e) => setEditCloseTime(e.target.value)}
+                                        disabled={updatingTimings}
+                                        style={{
+                                            padding: '6px 10px',
+                                            borderRadius: '6px',
+                                            border: '1px solid #cbd5e1',
+                                            fontSize: '0.95rem',
+                                            color: '#1e293b',
+                                            backgroundColor: '#ffffff',
+                                            width: '100%',
+                                            boxSizing: 'border-box'
+                                        }}
+                                    />
+                                    <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
+                                        <button
+                                            onClick={handleSaveTimings}
+                                            disabled={updatingTimings}
+                                            style={{
+                                                backgroundColor: '#2ecc71',
+                                                color: 'white',
+                                                border: 'none',
+                                                padding: '5px 10px',
+                                                borderRadius: '6px',
+                                                cursor: 'pointer',
+                                                fontWeight: '600',
+                                                fontSize: '0.8rem',
+                                                flex: 1
+                                            }}
+                                        >
+                                            {updatingTimings ? '...' : 'Save'}
+                                        </button>
+                                        <button
+                                            onClick={() => setIsEditingTimings(false)}
+                                            disabled={updatingTimings}
+                                            style={{
+                                                backgroundColor: '#e74c3c',
+                                                color: 'white',
+                                                border: 'none',
+                                                padding: '5px 10px',
+                                                borderRadius: '6px',
+                                                cursor: 'pointer',
+                                                fontWeight: '600',
+                                                fontSize: '0.8rem',
+                                                flex: 1
+                                            }}
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <span className="detailValue">{details.closeTime || 'N/A'}</span>
+                            )}
+                        </div>
+                        <div className="detailItem">
+                            <span className="detailLabel">Active Status</span>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px' }}>
+                                <span style={{
+                                    fontSize: '0.9rem',
+                                    fontWeight: '700',
+                                    color: (details.isActive !== false) ? '#2ecc71' : '#e74c3c'
+                                }}>
+                                    {(details.isActive !== false) ? '● Active' : '○ Inactive'}
+                                </span>
+                                <label style={{ position: 'relative', display: 'inline-block', width: '46px', height: '24px', flexShrink: 0 }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={details.isActive !== false}
+                                        disabled={togglingActive}
+                                        onChange={(e) => handleToggleActive(e.target.checked)}
+                                        style={{ opacity: 0, width: 0, height: 0 }}
+                                    />
+                                    <span style={{
+                                        position: 'absolute',
+                                        cursor: togglingActive ? 'not-allowed' : 'pointer',
+                                        top: 0, left: 0, right: 0, bottom: 0,
+                                        backgroundColor: (details.isActive !== false) ? '#2ecc71' : '#cbd5e1',
+                                        transition: '.3s',
+                                        borderRadius: '24px',
+                                        opacity: togglingActive ? 0.6 : 1
+                                    }}>
+                                        <span style={{
+                                            position: 'absolute',
+                                            content: '""',
+                                            height: '18px',
+                                            width: '18px',
+                                            left: (details.isActive !== false) ? '24px' : '4px',
+                                            bottom: '3px',
+                                            backgroundColor: 'white',
+                                            transition: '.3s',
+                                            borderRadius: '50%',
+                                            boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                                        }} />
+                                    </span>
+                                </label>
+                            </div>
                         </div>
                     </div>
                 </div>

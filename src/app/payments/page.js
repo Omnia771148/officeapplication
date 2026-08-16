@@ -158,7 +158,7 @@ export default function PaymentsPage() {
                 }}>
                     <h2 style={{ fontSize: '1.3rem', color: '#475569', marginBottom: '10px' }}>Gross Orders Total</h2>
                     <p style={{ fontSize: '2.2rem', fontWeight: 'bold', color: '#1e293b', margin: '10px 0' }}>
-                        ₹{(payments.grandTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        ₹{(payments.grossTotal !== undefined ? payments.grossTotal : payments.grandTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                     <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>
                         Total order value
