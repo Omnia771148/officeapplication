@@ -187,6 +187,16 @@ export default function Dashboard() {
             <div style={{ width: '90%', maxWidth: '800px', marginBottom: '20px' }}>
                 <button
                     className="branchButton"
+                    style={{ '--btn-color': '#E91E63' }}
+                    onClick={() => router.push('/restaurant-positions')}
+                >
+                    📍 Restaurants Position
+                </button>
+            </div>
+
+            <div style={{ width: '90%', maxWidth: '800px', marginBottom: '20px' }}>
+                <button
+                    className="branchButton"
                     style={{ '--btn-color': '#2196F3' }}
                     onClick={() => router.push('/send-notification')}
                 >

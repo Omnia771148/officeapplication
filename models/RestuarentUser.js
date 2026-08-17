@@ -84,6 +84,10 @@ const RegisterUserSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    position: {
+      type: Number,
+      default: 0,
+    },
   },
   { timestamps: true }
 );
