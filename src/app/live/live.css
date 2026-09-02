@@ -22,10 +22,11 @@
 
 .ordersGrid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 20px;
     max-width: 1200px;
     margin: 0 auto;
+    align-items: start;
 }
 
 .orderCard {
@@ -33,14 +34,14 @@
     border-radius: 12px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     overflow: hidden;
-    transition: transform 0.2s;
+    transition: all 0.2s ease-in-out;
     border-left: 5px solid #2196F3;
     /* Default accent color */
 }
 
 .orderCard:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.12);
 }
 
 .cardHeader {
@@ -49,13 +50,49 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.2s ease;
+}
+
+.cardHeader:hover {
+    background-color: #e9ecef;
+}
+
+.orderCard.expanded .cardHeader {
     border-bottom: 1px solid #e9ecef;
+}
+
+.headerTitleWrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
 }
 
 .cardHeader h3 {
     margin: 0;
-    font-size: 1.1rem;
+    font-size: 1.05rem;
     color: #333;
+}
+
+.dropdownChevron {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    margin-left: 8px;
+}
+
+.chevronIcon {
+    font-size: 0.85rem;
+    color: #666;
+    transition: transform 0.3s ease;
+    display: inline-block;
+}
+
+.chevronIcon.open {
+    transform: rotate(180deg);
 }
 
 .statusBadge {
@@ -340,7 +377,7 @@
 
 .delayColumns {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 24px;
 }
 
@@ -365,6 +402,10 @@
 
 .columnHeader.delivery {
     color: #b7791f;
+}
+
+.columnHeader.outForDelivery {
+    color: #2b6cb0;
 }
 
 .miniCardsContainer {
@@ -396,6 +437,10 @@
 
 .delayMiniCard.delivery {
     border-left: 4px solid #b7791f;
+}
+
+.delayMiniCard.outForDelivery {
+    border-left: 4px solid #2b6cb0;
 }
 
 .miniCardHeader {

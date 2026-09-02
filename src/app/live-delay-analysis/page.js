@@ -66,10 +66,33 @@ export default function LiveDelayAnalysisPage() {
 
         const hasDeliveryAccepted = Boolean(status.deliveryBoyAcceptedAt);
         const statusStr = String(status.status || '').toLowerCase();
-        const isDeliveredOrComplete = statusStr.includes('complete') || statusStr.includes('deliver') || statusStr.includes('pickup') || statusStr.includes('dispatched');
+        const isDeliveredOrComplete = statusStr.includes('complete') || statusStr.includes('deliver') || statusStr.includes('pickup') || statusStr.includes('dispatched') || statusStr.includes('out for delivery');
         const isRejected = statusStr.includes('reject') || statusStr.includes('cancel');
 
         return elapsed > 5 && !hasDeliveryAccepted && !isDeliveredOrComplete && !isRejected;
+    });
+
+    const delayedOutForDelivery = orderStatuses.filter(status => {
+        const statusStr = String(status.status || '').toLowerCase();
+        const hasDeliveryAccepted = Boolean(status.deliveryBoyAcceptedAt);
+        const isOutForDeliveryStatus = 
+            statusStr.includes('out for delivery') || 
+            statusStr.includes('out-for-delivery') || 
+            statusStr.includes('picked') || 
+            statusStr.includes('dispatched') ||
+            statusStr.includes('will-be-delivered-soon') ||
+            statusStr.includes('accepted-by-delivery-boy') ||
+            statusStr.includes('accepted by delivery');
+
+        const isDeliveredOrComplete = statusStr.includes('complete') || statusStr === 'delivered';
+        const isRejected = statusStr.includes('reject') || statusStr.includes('cancel');
+
+        if ((isOutForDeliveryStatus || hasDeliveryAccepted) && !isDeliveredOrComplete && !isRejected) {
+            const startTime = status.deliveryBoyAcceptedAt || status.restaurantAcceptedAt || status.createdAt;
+            const elapsed = getMinutesElapsed(startTime);
+            return elapsed > 5;
+        }
+        return false;
     });
 
     return (
@@ -125,10 +148,10 @@ export default function LiveDelayAnalysisPage() {
                         </div>
 
                         <div className="delayColumn">
-                            <h3 className="columnHeader delivery">⏳ Delayed by Delivery Boy ({delayedByDeliveryBoy.length})</h3>
+                            <h3 className="columnHeader delivery">⏳ Delayed Acceptance ({delayedByDeliveryBoy.length})</h3>
                             <div className="miniCardsContainer" style={{ maxHeight: 'none' }}>
                                 {delayedByDeliveryBoy.length === 0 ? (
-                                    <p className="noDelayText">No delivery boy delays detected (all accepted within 5 minutes).</p>
+                                    <p className="noDelayText">No delivery acceptance delays detected (all accepted within 5 minutes).</p>
                                 ) : (
                                     delayedByDeliveryBoy.map(order => {
                                         const elapsed = getMinutesElapsed(order.restaurantAcceptedAt || order.createdAt);
@@ -147,6 +170,46 @@ export default function LiveDelayAnalysisPage() {
                                                             </a>
                                                         ) : (
                                                             <span className="noBoyText" style={{ flex: 1, alignSelf: 'center' }}>No Boy Assigned</span>
+                                                        )}
+                                                        <a href={order.userPhone ? `tel:${order.userPhone}` : '#'} className="miniActionBtn user" style={{ flex: 1 }}>
+                                                            📞 Customer
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="delayColumn">
+                            <h3 className="columnHeader outForDelivery">🛵 Delayed Out For Delivery ({delayedOutForDelivery.length})</h3>
+                            <div className="miniCardsContainer" style={{ maxHeight: 'none' }}>
+                                {delayedOutForDelivery.length === 0 ? (
+                                    <p className="noDelayText">No out-for-delivery delays detected (all delivered within 5 minutes or pending transit).</p>
+                                ) : (
+                                    delayedOutForDelivery.map(order => {
+                                        const startTime = order.deliveryBoyAcceptedAt || order.restaurantAcceptedAt || order.createdAt;
+                                        const elapsed = getMinutesElapsed(startTime);
+                                        return (
+                                            <div key={order._id} className="delayMiniCard outForDelivery">
+                                                <div className="miniCardHeader">
+                                                    <span className="miniCardId">Order ID: {order.orderId || order._id || 'N/A'}</span>
+                                                    <span className="miniCardTimer">{elapsed} mins in transit</span>
+                                                </div>
+                                                <div className="miniCardBody">
+                                                    <p className="miniCardRestName"><strong>Restaurant:</strong> {order.restaurantName || 'N/A'}</p>
+                                                    <p className="miniCardRestName" style={{ fontSize: '0.85rem', marginBottom: '10px' }}>
+                                                        <strong>Status:</strong> <span className="statusBadge out-for-delivery" style={{ fontSize: '0.75rem', padding: '2px 8px' }}>{order.status || 'Out for Delivery'}</span>
+                                                    </p>
+                                                    <div className="miniCardActions" style={{ display: 'flex', gap: '8px' }}>
+                                                        {order.deliveryBoyPhone || order.deliveryboyPhone ? (
+                                                            <a href={`tel:${order.deliveryBoyPhone || order.deliveryboyPhone}`} className="miniActionBtn boy" style={{ flex: 1 }}>
+                                                                📞 Delivery Boy
+                                                            </a>
+                                                        ) : (
+                                                            <span className="noBoyText" style={{ flex: 1, alignSelf: 'center' }}>No Boy Info</span>
                                                         )}
                                                         <a href={order.userPhone ? `tel:${order.userPhone}` : '#'} className="miniActionBtn user" style={{ flex: 1 }}>
                                                             📞 Customer
