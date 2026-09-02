@@ -154,6 +154,16 @@ export default function AddCarouselPage() {
 
   return (
     <div style={styles.container}>
+      <style>{`
+        .carouselInput {
+          color: #1a202c !important;
+          background-color: #ffffff !important;
+        }
+        .carouselInput::placeholder {
+          color: #4a5568 !important;
+          opacity: 1;
+        }
+      `}</style>
       <div style={styles.header}>
         <button style={styles.backBtn} onClick={() => router.push("/dashboard")}>
           ← Dashboard
@@ -165,6 +175,7 @@ export default function AddCarouselPage() {
         <div style={styles.formGroup}>
           <label style={styles.label}>Carousel Slide ID</label>
           <input
+            className="carouselInput"
             style={styles.input}
             type="text"
             placeholder="e.g. slide_1, main_banner"
@@ -177,6 +188,7 @@ export default function AddCarouselPage() {
         <div style={styles.formGroup}>
           <label style={styles.label}>Carousel Title</label>
           <input
+            className="carouselInput"
             style={styles.input}
             type="text"
             placeholder="e.g. Special Discount Slide"
@@ -190,6 +202,7 @@ export default function AddCarouselPage() {
           <label style={styles.label}>Upload Photo</label>
           <input
             id="carousel-file-input"
+            className="carouselInput"
             style={styles.input}
             type="file"
             accept="image/*"
@@ -281,6 +294,8 @@ const styles = {
     border: "1px solid #CBD5E0",
     fontSize: "16px",
     boxSizing: "border-box",
+    backgroundColor: "#FFFFFF",
+    color: "#1A202C",
   },
   button: {
     width: "100%",

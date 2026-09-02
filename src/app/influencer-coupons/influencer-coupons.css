@@ -39,19 +39,34 @@
     font-weight: 500;
 }
 
-.inputGroup input {
+.inputGroup input,
+.selectField {
     width: 100%;
     padding: 12px;
-    border: 1px solid #ddd;
+    border: 1px solid #cbd5e0;
     border-radius: 8px;
     font-size: 16px;
     outline: none;
-    transition: border-color 0.3s;
+    transition: border-color 0.3s, box-shadow 0.3s;
     box-sizing: border-box;
+    background-color: #ffffff !important;
+    color: #1a202c !important;
 }
 
-.inputGroup input:focus {
+.inputGroup input::placeholder {
+    color: #718096 !important;
+    opacity: 1;
+}
+
+.selectField option {
+    background-color: #ffffff !important;
+    color: #1a202c !important;
+}
+
+.inputGroup input:focus,
+.selectField:focus {
     border-color: #9C27B0;
+    box-shadow: 0 0 0 3px rgba(156, 39, 176, 0.15);
 }
 
 .submitBtn {
@@ -78,7 +93,7 @@
 }
 
 .backBtn {
-    margin-top: 20px;
+    margin-top: 30px;
     padding: 10px 20px;
     background-color: transparent;
     color: #666;
@@ -91,4 +106,109 @@
 .backBtn:hover {
     background-color: #e0e0e0;
     color: #333;
+}
+
+/* Existing Coupons Section */
+.couponsSection {
+    margin-top: 40px;
+    width: 100%;
+    max-width: 600px;
+}
+
+.sectionTitle {
+    color: #2d3748;
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    text-align: center;
+}
+
+.loadingText,
+.noCouponsText {
+    text-align: center;
+    color: #718096;
+    font-size: 0.95rem;
+    padding: 20px 0;
+}
+
+.couponsGrid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.couponItemCard {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 16px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.couponHeaderRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.couponCodeBadge {
+    background: #9C27B0;
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 1rem;
+    padding: 4px 12px;
+    border-radius: 6px;
+    letter-spacing: 0.5px;
+}
+
+.discountBadge {
+    background: #eef2ff;
+    color: #4f46e5;
+    font-weight: 700;
+    font-size: 0.85rem;
+    padding: 4px 10px;
+    border-radius: 12px;
+    border: 1px solid #c7d2fe;
+}
+
+.couponBodyRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+    color: #4a5568;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.influencerText {
+    margin: 0;
+    color: #2d3748;
+}
+
+.dateText {
+    margin: 0;
+    font-size: 0.8rem;
+    color: #a0aec0;
+}
+
+.deleteCouponBtn {
+    align-self: flex-end;
+    background: #fff5f5;
+    color: #e53e3e;
+    border: 1px solid #fed7d7;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.deleteCouponBtn:hover {
+    background: #e53e3e;
+    color: #ffffff;
 }

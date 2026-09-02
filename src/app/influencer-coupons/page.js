@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import './influencer-coupons.css';
 
@@ -11,6 +11,26 @@ export default function InfluencerCoupons() {
     const [discountType, setDiscountType] = useState('flat');
     const [discountValue, setDiscountValue] = useState(50);
     const [loading, setLoading] = useState(false);
+    const [coupons, setCoupons] = useState([]);
+    const [fetchingCoupons, setFetchingCoupons] = useState(true);
+
+    const fetchCoupons = async () => {
+        try {
+            const res = await fetch('/api/coupon-codes');
+            const data = await res.json();
+            if (data.success) {
+                setCoupons(data.data || []);
+            }
+        } catch (error) {
+            console.error('Failed to fetch coupons:', error);
+        } finally {
+            setFetchingCoupons(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchCoupons();
+    }, []);
 
     const handleDiscountTypeChange = (type) => {
         setDiscountType(type);
@@ -60,6 +80,7 @@ export default function InfluencerCoupons() {
                 setCouponCode('');
                 setDiscountType('flat');
                 setDiscountValue(50);
+                fetchCoupons();
             } else {
                 alert(data.message || 'Error adding coupon code');
             }
@@ -68,6 +89,25 @@ export default function InfluencerCoupons() {
             alert('Something went wrong');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDelete = async (id) => {
+        if (!confirm('Are you sure you want to delete this coupon code?')) return;
+        try {
+            const res = await fetch(`/api/coupon-codes?id=${id}`, {
+                method: 'DELETE'
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('Coupon code deleted successfully!');
+                fetchCoupons();
+            } else {
+                alert(data.message || 'Failed to delete coupon');
+            }
+        } catch (error) {
+            console.error('Error deleting coupon:', error);
+            alert('Failed to delete coupon');
         }
     };
 
@@ -123,6 +163,45 @@ export default function InfluencerCoupons() {
                     {loading ? 'Submitting...' : 'Submit'}
                 </button>
             </form>
+
+            <div className="couponsSection">
+                <h2 className="sectionTitle">Existing Coupon Codes ({coupons.length})</h2>
+                {fetchingCoupons ? (
+                    <p className="loadingText">⏳ Loading coupon codes...</p>
+                ) : coupons.length === 0 ? (
+                    <p className="noCouponsText">No existing coupon codes found.</p>
+                ) : (
+                    <div className="couponsGrid">
+                        {coupons.map((coupon) => (
+                            <div key={coupon._id} className="couponItemCard">
+                                <div className="couponHeaderRow">
+                                    <span className="couponCodeBadge">{coupon.couponCode}</span>
+                                    <span className="discountBadge">
+                                        {coupon.discountType === 'percentage' 
+                                            ? `${coupon.discountValue}% OFF` 
+                                            : `₹${coupon.discountValue} OFF`}
+                                    </span>
+                                </div>
+                                <div className="couponBodyRow">
+                                    <p className="influencerText"><strong>Influencer:</strong> {coupon.influencerName}</p>
+                                    {coupon.createdAt && (
+                                        <p className="dateText">
+                                            Added: {new Date(coupon.createdAt).toLocaleDateString()}
+                                        </p>
+                                    )}
+                                </div>
+                                <button 
+                                    type="button" 
+                                    className="deleteCouponBtn" 
+                                    onClick={() => handleDelete(coupon._id)}
+                                >
+                                    🗑️ Delete
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
 
             <button 
                 className="backBtn"
