@@ -10,6 +10,7 @@ export default function InfluencerCoupons() {
     const [couponCode, setCouponCode] = useState('');
     const [discountType, setDiscountType] = useState('flat');
     const [discountValue, setDiscountValue] = useState(50);
+    const [minOrderAmount, setMinOrderAmount] = useState('');
     const [loading, setLoading] = useState(false);
     const [coupons, setCoupons] = useState([]);
     const [fetchingCoupons, setFetchingCoupons] = useState(true);
@@ -68,7 +69,8 @@ export default function InfluencerCoupons() {
                     influencerName, 
                     couponCode, 
                     discountType, 
-                    discountValue: value 
+                    discountValue: value,
+                    minOrderAmount: minOrderAmount !== '' ? Number(minOrderAmount) : 0
                 })
             });
 
@@ -80,6 +82,7 @@ export default function InfluencerCoupons() {
                 setCouponCode('');
                 setDiscountType('flat');
                 setDiscountValue(50);
+                setMinOrderAmount('');
                 fetchCoupons();
             } else {
                 alert(data.message || 'Error adding coupon code');
@@ -159,6 +162,17 @@ export default function InfluencerCoupons() {
                     />
                 </div>
 
+                                <div className="inputGroup">
+                    <label>Minimum Order Amount (₹)</label>
+                    <input 
+                        type="number" 
+                        value={minOrderAmount} 
+                        onChange={(e) => setMinOrderAmount(e.target.value)} 
+                        placeholder="e.g. 199 (0 or empty for no minimum)"
+                        min="0"
+                    />
+                </div>
+
                 <button type="submit" className="submitBtn" disabled={loading}>
                     {loading ? 'Submitting...' : 'Submit'}
                 </button>
@@ -181,9 +195,13 @@ export default function InfluencerCoupons() {
                                             ? `${coupon.discountValue}% OFF` 
                                             : `₹${coupon.discountValue} OFF`}
                                     </span>
+                                    <span style={{ fontSize: '11px', color: '#1B5E20', backgroundColor: '#E8F5E9', padding: '3px 8px', borderRadius: '12px', fontWeight: 'bold', border: '1px solid #C8E6C9' }}>
+                                        1-Use Per Customer
+                                    </span>
                                 </div>
                                 <div className="couponBodyRow">
                                     <p className="influencerText"><strong>Influencer:</strong> {coupon.influencerName}</p>
+                                    <p className="influencerText"><strong>Min Order:</strong> {coupon.minOrderAmount ? `₹${coupon.minOrderAmount}` : 'No Minimum'}</p>
                                     {coupon.createdAt && (
                                         <p className="dateText">
                                             Added: {new Date(coupon.createdAt).toLocaleDateString()}

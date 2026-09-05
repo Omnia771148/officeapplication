@@ -17,7 +17,7 @@ export async function POST(req) {
         await dbConnect();
         
         const data = await req.json();
-        const { influencerName, couponCode, discountType, discountValue } = data;
+        const { influencerName, couponCode, discountType, discountValue, minOrderAmount } = data;
         
         if (!influencerName || !couponCode) {
             return NextResponse.json({ success: false, message: 'All fields are required' }, { status: 400 });
@@ -35,7 +35,8 @@ export async function POST(req) {
             influencerName: influencerName.trim(),
             couponCode: normalizedCode,
             discountType: discountType || 'flat',
-            discountValue: discountValue !== undefined ? Number(discountValue) : 50
+            discountValue: discountValue !== undefined ? Number(discountValue) : 50,
+            minOrderAmount: minOrderAmount !== undefined && minOrderAmount !== '' ? Math.max(0, Number(minOrderAmount)) : 0
         });
         
         await newCoupon.save();

@@ -216,8 +216,8 @@ export default function DeliveryBoyDetailsPage() {
                                                 fontWeight: '600',
                                                 fontSize: '0.9rem',
                                                 cursor: 'pointer',
-                                                backgroundColor: (boy.isBlocked || !boy.isActive) ? '#22c55e' : '#f8fafc',
-                                                color: (boy.isBlocked || !boy.isActive) ? '#ffffff' : '#64748b',
+                                                backgroundColor: !boy.isBlocked ? '#22c55e' : '#f8fafc',
+                                                color: !boy.isBlocked ? '#ffffff' : '#64748b',
                                                 transition: 'all 0.2s'
                                             }}
                                             onClick={() => handleBlockToggle(boy._id, false)}
@@ -233,8 +233,8 @@ export default function DeliveryBoyDetailsPage() {
                                                 fontWeight: '600',
                                                 fontSize: '0.9rem',
                                                 cursor: 'pointer',
-                                                backgroundColor: (boy.isBlocked || !boy.isActive) ? '#ef4444' : '#f8fafc',
-                                                color: (boy.isBlocked || !boy.isActive) ? '#ffffff' : '#ef4444',
+                                                backgroundColor: boy.isBlocked ? '#ef4444' : '#f8fafc',
+                                                color: boy.isBlocked ? '#ffffff' : '#ef4444',
                                                 transition: 'all 0.2s'
                                             }}
                                             onClick={() => handleBlockToggle(boy._id, true)}

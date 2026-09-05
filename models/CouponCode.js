@@ -18,6 +18,10 @@ const CouponCodeSchema = new mongoose.Schema({
     discountValue: {
         type: Number,
         default: 50,
+    },
+    minOrderAmount: {
+        type: Number,
+        default: 0,
     }
 }, { timestamps: true });
 
