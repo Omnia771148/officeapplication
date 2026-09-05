@@ -61,3 +61,18 @@ export async function DELETE(req) {
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 }
+
+export async function PATCH(req) {
+    try {
+        await dbConnect();
+        const data = await req.json();
+        const { id, isActive } = data;
+        if (!id) {
+            return NextResponse.json({ success: false, message: 'Coupon ID is required' }, { status: 400 });
+        }
+        const updated = await CouponCode.findByIdAndUpdate(id, { isActive: Boolean(isActive) }, { new: true });
+        return NextResponse.json({ success: true, data: updated });
+    } catch (error) {
+        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    }
+}

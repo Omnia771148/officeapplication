@@ -95,6 +95,26 @@ export default function InfluencerCoupons() {
         }
     };
 
+    const handleToggleStatus = async (id, currentStatus) => {
+        try {
+            const nextStatus = currentStatus === false ? true : false;
+            const res = await fetch('/api/coupon-codes', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, isActive: nextStatus })
+            });
+            const data = await res.json();
+            if (data.success) {
+                fetchCoupons();
+            } else {
+                alert(data.message || 'Failed to update coupon status');
+            }
+        } catch (error) {
+            console.error('Error toggling coupon status:', error);
+            alert('Failed to update status');
+        }
+    };
+
     const handleDelete = async (id) => {
         if (!confirm('Are you sure you want to delete this coupon code?')) return;
         try {
@@ -173,48 +193,35 @@ export default function InfluencerCoupons() {
                     />
                 </div>
 
-                <button type="submit" className="submitBtn" disabled={loading}>
-                    {loading ? 'Submitting...' : 'Submit'}
-                </button>
-            </form>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '12px', paddingTop: '8px', borderTop: '1px solid #eee' }}>
+                                    <button 
+                                        type="button" 
+                                        onClick={() => handleToggleStatus(coupon._id, coupon.isActive)}
+                                        style={{
+                                            backgroundColor: coupon.isActive !== false ? '#2e7d32' : '#d32f2f',
+                                            color: '#ffffff',
+                                            border: 'none',
+                                            padding: '6px 12px',
+                                            borderRadius: '6px',
+                                            cursor: 'pointer',
+                                            fontSize: '12px',
+                                            fontWeight: 'bold',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '4px'
+                                        }}
+                                    >
+                                        {coupon.isActive !== false ? '🟢 ON (Active)' : '🔴 OFF (Inactive)'}
+                                    </button>
 
-            <div className="couponsSection">
-                <h2 className="sectionTitle">Existing Coupon Codes ({coupons.length})</h2>
-                {fetchingCoupons ? (
-                    <p className="loadingText">⏳ Loading coupon codes...</p>
-                ) : coupons.length === 0 ? (
-                    <p className="noCouponsText">No existing coupon codes found.</p>
-                ) : (
-                    <div className="couponsGrid">
-                        {coupons.map((coupon) => (
-                            <div key={coupon._id} className="couponItemCard">
-                                <div className="couponHeaderRow">
-                                    <span className="couponCodeBadge">{coupon.couponCode}</span>
-                                    <span className="discountBadge">
-                                        {coupon.discountType === 'percentage' 
-                                            ? `${coupon.discountValue}% OFF` 
-                                            : `₹${coupon.discountValue} OFF`}
-                                    </span>
-                                    <span style={{ fontSize: '11px', color: '#1B5E20', backgroundColor: '#E8F5E9', padding: '3px 8px', borderRadius: '12px', fontWeight: 'bold', border: '1px solid #C8E6C9' }}>
-                                        1-Use Per Customer
-                                    </span>
+                                    <button 
+                                        type="button" 
+                                        className="deleteCouponBtn" 
+                                        onClick={() => handleDelete(coupon._id)}
+                                    >
+                                        🗑️ Delete
+                                    </button>
                                 </div>
-                                <div className="couponBodyRow">
-                                    <p className="influencerText"><strong>Influencer:</strong> {coupon.influencerName}</p>
-                                    <p className="influencerText"><strong>Min Order:</strong> {coupon.minOrderAmount ? `₹${coupon.minOrderAmount}` : 'No Minimum'}</p>
-                                    {coupon.createdAt && (
-                                        <p className="dateText">
-                                            Added: {new Date(coupon.createdAt).toLocaleDateString()}
-                                        </p>
-                                    )}
-                                </div>
-                                <button 
-                                    type="button" 
-                                    className="deleteCouponBtn" 
-                                    onClick={() => handleDelete(coupon._id)}
-                                >
-                                    🗑️ Delete
-                                </button>
                             </div>
                         ))}
                     </div>
