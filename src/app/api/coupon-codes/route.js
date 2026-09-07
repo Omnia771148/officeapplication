@@ -17,7 +17,7 @@ export async function POST(req) {
         await dbConnect();
         
         const data = await req.json();
-        const { influencerName, couponCode, discountType, discountValue } = data;
+        const { influencerName, couponCode, discountType, discountValue, minOrderAmount } = data;
         
         if (!influencerName || !couponCode) {
             return NextResponse.json({ success: false, message: 'All fields are required' }, { status: 400 });
@@ -35,7 +35,8 @@ export async function POST(req) {
             influencerName: influencerName.trim(),
             couponCode: normalizedCode,
             discountType: discountType || 'flat',
-            discountValue: discountValue !== undefined ? Number(discountValue) : 50
+            discountValue: discountValue !== undefined ? Number(discountValue) : 50,
+            minOrderAmount: minOrderAmount !== undefined && minOrderAmount !== '' ? Math.max(0, Number(minOrderAmount)) : 0
         });
         
         await newCoupon.save();
@@ -56,6 +57,21 @@ export async function DELETE(req) {
         }
         await CouponCode.findByIdAndDelete(id);
         return NextResponse.json({ success: true, message: 'Coupon deleted successfully' });
+    } catch (error) {
+        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    }
+}
+
+export async function PATCH(req) {
+    try {
+        await dbConnect();
+        const data = await req.json();
+        const { id, isActive } = data;
+        if (!id) {
+            return NextResponse.json({ success: false, message: 'Coupon ID is required' }, { status: 400 });
+        }
+        const updated = await CouponCode.findByIdAndUpdate(id, { isActive: Boolean(isActive) }, { new: true });
+        return NextResponse.json({ success: true, data: updated });
     } catch (error) {
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }

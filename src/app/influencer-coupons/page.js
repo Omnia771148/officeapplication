@@ -5,24 +5,26 @@ import { useRouter } from 'next/navigation';
 import './influencer-coupons.css';
 
 export default function InfluencerCoupons() {
-    const router = useRouter();
+    const [coupons, setCoupons] = useState([]);
     const [influencerName, setInfluencerName] = useState('');
     const [couponCode, setCouponCode] = useState('');
     const [discountType, setDiscountType] = useState('flat');
     const [discountValue, setDiscountValue] = useState(50);
+    const [minOrderAmount, setMinOrderAmount] = useState('');
     const [loading, setLoading] = useState(false);
-    const [coupons, setCoupons] = useState([]);
     const [fetchingCoupons, setFetchingCoupons] = useState(true);
+    const router = useRouter();
 
     const fetchCoupons = async () => {
         try {
+            setFetchingCoupons(true);
             const res = await fetch('/api/coupon-codes');
             const data = await res.json();
             if (data.success) {
                 setCoupons(data.data || []);
             }
         } catch (error) {
-            console.error('Failed to fetch coupons:', error);
+            console.error('Error fetching coupons', error);
         } finally {
             setFetchingCoupons(false);
         }
@@ -35,6 +37,26 @@ export default function InfluencerCoupons() {
     const handleDiscountTypeChange = (type) => {
         setDiscountType(type);
         setDiscountValue(type === 'flat' ? 50 : 10);
+    };
+
+    const handleToggleStatus = async (id, currentStatus) => {
+        try {
+            const nextStatus = currentStatus === false ? true : false;
+            const res = await fetch('/api/coupon-codes', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, isActive: nextStatus })
+            });
+            const data = await res.json();
+            if (data.success) {
+                fetchCoupons();
+            } else {
+                alert(data.message || 'Failed to update coupon status');
+            }
+        } catch (error) {
+            console.error('Error toggling coupon status:', error);
+            alert('Failed to update status');
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -68,7 +90,8 @@ export default function InfluencerCoupons() {
                     influencerName, 
                     couponCode, 
                     discountType, 
-                    discountValue: value 
+                    discountValue: value,
+                    minOrderAmount: minOrderAmount !== '' ? Number(minOrderAmount) : 0
                 })
             });
 
@@ -80,6 +103,7 @@ export default function InfluencerCoupons() {
                 setCouponCode('');
                 setDiscountType('flat');
                 setDiscountValue(50);
+                setMinOrderAmount('');
                 fetchCoupons();
             } else {
                 alert(data.message || 'Error adding coupon code');
@@ -159,6 +183,17 @@ export default function InfluencerCoupons() {
                     />
                 </div>
 
+                <div className="inputGroup">
+                    <label>Minimum Order Amount (₹)</label>
+                    <input 
+                        type="number" 
+                        value={minOrderAmount} 
+                        onChange={(e) => setMinOrderAmount(e.target.value)} 
+                        placeholder="e.g. 199 (0 or empty for no minimum)"
+                        min="0"
+                    />
+                </div>
+
                 <button type="submit" className="submitBtn" disabled={loading}>
                     {loading ? 'Submitting...' : 'Submit'}
                 </button>
@@ -181,22 +216,48 @@ export default function InfluencerCoupons() {
                                             ? `${coupon.discountValue}% OFF` 
                                             : `₹${coupon.discountValue} OFF`}
                                     </span>
+                                    <span style={{ fontSize: '11px', color: '#1B5E20', backgroundColor: '#E8F5E9', padding: '3px 8px', borderRadius: '12px', fontWeight: 'bold', border: '1px solid #C8E6C9' }}>
+                                        1-Use Per Customer
+                                    </span>
                                 </div>
                                 <div className="couponBodyRow">
                                     <p className="influencerText"><strong>Influencer:</strong> {coupon.influencerName}</p>
+                                    <p className="influencerText"><strong>Min Order:</strong> {coupon.minOrderAmount ? `₹${coupon.minOrderAmount}` : 'No Minimum'}</p>
                                     {coupon.createdAt && (
                                         <p className="dateText">
                                             Added: {new Date(coupon.createdAt).toLocaleDateString()}
                                         </p>
                                     )}
                                 </div>
-                                <button 
-                                    type="button" 
-                                    className="deleteCouponBtn" 
-                                    onClick={() => handleDelete(coupon._id)}
-                                >
-                                    🗑️ Delete
-                                </button>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '12px', paddingTop: '8px', borderTop: '1px solid #eee' }}>
+                                    <button 
+                                        type="button" 
+                                        onClick={() => handleToggleStatus(coupon._id, coupon.isActive)}
+                                        style={{
+                                            backgroundColor: coupon.isActive !== false ? '#2e7d32' : '#d32f2f',
+                                            color: '#ffffff',
+                                            border: 'none',
+                                            padding: '6px 12px',
+                                            borderRadius: '6px',
+                                            cursor: 'pointer',
+                                            fontSize: '12px',
+                                            fontWeight: 'bold',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '4px'
+                                        }}
+                                    >
+                                        {coupon.isActive !== false ? '🟢 ON (Active)' : '🔴 OFF (Inactive)'}
+                                    </button>
+
+                                    <button 
+                                        type="button" 
+                                        className="deleteCouponBtn" 
+                                        onClick={() => handleDelete(coupon._id)}
+                                    >
+                                        🗑️ Delete
+                                    </button>
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -212,4 +273,3 @@ export default function InfluencerCoupons() {
         </div>
     );
 }
-

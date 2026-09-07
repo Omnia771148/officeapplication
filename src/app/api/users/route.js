@@ -18,7 +18,11 @@ export async function PATCH(request) {
         const { userId, blickstatus, inconvinience, coins, transactionId, noofcoins } = await request.json();
 
         const updateData = {};
-        if (blickstatus !== undefined) updateData.blickstatus = blickstatus;
+        if (blickstatus !== undefined) {
+            updateData.blickstatus = blickstatus;
+            updateData.isBlocked = !blickstatus;
+            updateData.status = blickstatus ? 'active' : 'blocked';
+        }
         if (inconvinience !== undefined) updateData.inconvinience = inconvinience;
         if (coins !== undefined) updateData.coins = coins;
 
