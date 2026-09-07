@@ -66,6 +66,21 @@ export default function ViewDeliveryBoys() {
                             <p><span className="font-medium text-gray-500">Aadhar No:</span> {boy.aadharNumber}</p>
                             <p><span className="font-medium text-gray-500">RC No:</span> {boy.rcNumber}</p>
                             <p><span className="font-medium text-gray-500">License No:</span> {boy.licenseNumber}</p>
+                            {boy.termsAndConditionsAccepted !== undefined && (
+                                <p>
+                                    <span className="font-medium text-gray-500">T&C Accepted:</span>{' '}
+                                    <span className={boy.termsAndConditionsAccepted ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold'}>
+                                        {boy.termsAndConditionsAccepted ? 'Yes' : 'No'}
+                                    </span>
+                                    {boy.termsAndConditionsVersion ? ` (v${boy.termsAndConditionsVersion})` : ''}
+                                </p>
+                            )}
+                            {boy.termsAndConditionsAcceptedAt && (
+                                <p>
+                                    <span className="font-medium text-gray-500">T&C Accepted At:</span>{' '}
+                                    {new Date(boy.termsAndConditionsAcceptedAt).toLocaleString()}
+                                </p>
+                            )}
                         </div>
 
                         <div className="mt-4 pt-4 border-t border-gray-700 grid grid-cols-3 gap-2">

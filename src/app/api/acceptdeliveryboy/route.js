@@ -9,21 +9,23 @@ export async function POST(request) {
         await dbConnect();
 
         // 1. Find the delivery boy in the temporary collection
-        const boyData = await DeliveryBoyNewAdd.findById(id);
+        let boyData = await DeliveryBoyNewAdd.findById(id).lean();
+        if (!boyData) {
+            try {
+                const { ObjectId } = require('mongodb');
+                boyData = await DeliveryBoyNewAdd.collection.findOne({ _id: new ObjectId(id) });
+            } catch (e) {}
+        }
 
         if (!boyData) {
             return NextResponse.json({ error: 'Delivery boy not found' }, { status: 404 });
         }
 
         // 2. Create a new entry in the permanent collection
-        // We explicitly map fields to avoid copying internal mongoose properties like _id (unless we want to keep the same _id)
-        // Generally creating a new document with a new _id is safer to avoid collisions if not intended, 
-        // but often keeping the same _id is useful. The prompt implies just "moving data".
-        // I will let Mongoose generate a new _id for the new collection unless there is a reason to keep it.
-        // However, if they have auth linked to _id, we might want to be careful. 
-        // Given 'firebaseUid' is present, that's likely the auth anchor.
+        const { _id, __v, ...restData } = boyData;
 
-        const newDeliveryBoy = new DeliveryBoyUser({
+        const docToInsert = {
+            ...restData,
             name: boyData.name,
             email: boyData.email,
             password: boyData.password,
@@ -37,13 +39,22 @@ export async function POST(request) {
             licenseNumber: boyData.licenseNumber,
             accountNumber: boyData.accountNumber,
             ifscCode: boyData.ifscCode,
-            isActive: boyData.isActive,
-        });
+            isActive: boyData.isActive !== undefined ? boyData.isActive : true,
+            isBlocked: boyData.isBlocked !== undefined ? boyData.isBlocked : false,
+            profilePicUrl: boyData.profilePicUrl || '',
+            photoUrl: boyData.photoUrl || '',
+            termsAndConditionsAccepted: boyData.termsAndConditionsAccepted !== undefined ? boyData.termsAndConditionsAccepted : true,
+            termsAndConditionsAcceptedAt: boyData.termsAndConditionsAcceptedAt ? new Date(boyData.termsAndConditionsAcceptedAt) : new Date(),
+            termsAndConditionsVersion: boyData.termsAndConditionsVersion || '1.0',
+            createdAt: boyData.createdAt ? new Date(boyData.createdAt) : new Date(),
+            updatedAt: new Date()
+        };
 
-        await newDeliveryBoy.save();
+        // Insert directly into the deliveryboyusers collection to guarantee all fields are preserved
+        await DeliveryBoyUser.collection.insertOne(docToInsert);
 
         // 3. Delete from the temporary collection
-        await DeliveryBoyNewAdd.findByIdAndDelete(id);
+        await DeliveryBoyNewAdd.collection.deleteOne({ _id: boyData._id });
 
         return NextResponse.json({ message: 'Delivery boy accepted and moved successfully' }, { status: 200 });
 

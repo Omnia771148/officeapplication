@@ -49,6 +49,21 @@ const DeliveryBoyNewAddSchema = new mongoose.Schema({
         type: Boolean,
         default: true,
     },
-}, { timestamps: true, collection: 'Deliveryboynewadd' });
+    termsAndConditionsAccepted: {
+        type: Boolean,
+        default: false,
+    },
+    termsAndConditionsAcceptedAt: {
+        type: Date,
+    },
+    termsAndConditionsVersion: {
+        type: String,
+    },
+}, { timestamps: true, collection: 'Deliveryboynewadd', strict: false });
+
+if (mongoose.models.DeliveryBoyNewAdd) {
+    delete mongoose.models.DeliveryBoyNewAdd;
+}
 
 export default mongoose.models.DeliveryBoyNewAdd || mongoose.model('DeliveryBoyNewAdd', DeliveryBoyNewAddSchema);
+

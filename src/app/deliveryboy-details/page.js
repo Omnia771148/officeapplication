@@ -183,6 +183,17 @@ export default function DeliveryBoyDetailsPage() {
                                         </span>
                                     </div>
 
+                                    {boy.termsAndConditionsAccepted !== undefined && (
+                                        <div className="infoGroup">
+                                            <span className="infoLabel">Terms & Conditions</span>
+                                            <span className="infoValue">
+                                                {boy.termsAndConditionsAccepted ? '✅ Accepted' : '❌ Not Accepted'}
+                                                {boy.termsAndConditionsVersion ? ` (v${boy.termsAndConditionsVersion})` : ''}
+                                                {boy.termsAndConditionsAcceptedAt ? ` on ${new Date(boy.termsAndConditionsAcceptedAt).toLocaleDateString()}` : ''}
+                                            </span>
+                                        </div>
+                                    )}
+
                                     <div className="docLinksContainer">
                                         {boy.aadharUrl && (
                                             <a href={boy.aadharUrl} target="_blank" rel="noopener noreferrer" className="docButton">

@@ -5,7 +5,7 @@ import DeliveryBoyUser from '../../../../models/DeliveryBoyUser';
 export async function GET() {
     try {
         await dbConnect();
-        const deliveryBoys = await DeliveryBoyUser.find({});
+        const deliveryBoys = await DeliveryBoyUser.find({}).lean();
         return NextResponse.json(deliveryBoys, { status: 200 });
     } catch (error) {
         console.error('Error fetching delivery boys:', error);

@@ -53,6 +53,21 @@ const DeliveryBoyUserSchema = new mongoose.Schema({
         type: Boolean,
         default: false,
     },
-}, { timestamps: true, collection: 'deliveryboyusers' });
+    termsAndConditionsAccepted: {
+        type: Boolean,
+        default: false,
+    },
+    termsAndConditionsAcceptedAt: {
+        type: Date,
+    },
+    termsAndConditionsVersion: {
+        type: String,
+    },
+}, { timestamps: true, collection: 'deliveryboyusers', strict: false });
+
+if (mongoose.models.DeliveryBoyUser) {
+    delete mongoose.models.DeliveryBoyUser;
+}
 
 export default mongoose.models.DeliveryBoyUser || mongoose.model('DeliveryBoyUser', DeliveryBoyUserSchema);
+
