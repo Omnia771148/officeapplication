@@ -207,6 +207,16 @@ export default function Dashboard() {
             <div style={{ width: '90%', maxWidth: '800px', marginBottom: '20px' }}>
                 <button
                     className="branchButton"
+                    style={{ '--btn-color': '#16a085' }}
+                    onClick={() => router.push('/income-records')}
+                >
+                    💰 Total Records of Income
+                </button>
+            </div>
+
+            <div style={{ width: '90%', maxWidth: '800px', marginBottom: '20px' }}>
+                <button
+                    className="branchButton"
                     style={{ '--btn-color': '#607D8B' }}
                     onClick={() => setShowMoreOptions(!showMoreOptions)}
                 >
