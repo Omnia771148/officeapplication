@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 // Utility to compress and resize image using HTML5 Canvas (keeps file size ~65KB)
