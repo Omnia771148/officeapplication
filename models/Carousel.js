@@ -16,6 +16,10 @@ const CarouselSchema = new mongoose.Schema(
       type: String,
       required: false,
     },
+    restaurantId: {
+      type: String,
+      required: false,
+    },
   },
   {
     timestamps: true,

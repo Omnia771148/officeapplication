@@ -74,10 +74,31 @@ const compressImage = (file, targetSizeKb = 65) => {
 export default function AddCarouselPage() {
   const [carouselId, setCarouselId] = useState("");
   const [carouselTitle, setCarouselTitle] = useState("");
+  const [restaurantId, setRestaurantId] = useState("");
+  const [restaurantsList, setRestaurantsList] = useState([]);
   const [logoFile, setLogoFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [msg, setMsg] = useState("");
   const [isSuccess, setIsSuccess] = useState(false);
+  useEffect(() => {
+    async function loadRestaurants() {
+      try {
+        const res = await fetch('/api/restaurant-timings');
+        const data = await res.json();
+        if (data.success && data.restaurants) {
+          const list = data.restaurants.map((r) => ({
+            id: r.restId || r._id,
+            name: r.name || r.phone || r.restId,
+          }));
+          setRestaurantsList(list);
+        }
+      } catch (err) {
+        console.error('Failed to load restaurants for carousel dropdown:', err);
+      }
+    }
+    loadRestaurants();
+  }, []);
+
   const router = useRouter();
 
   const handleUpload = async () => {
@@ -127,6 +148,7 @@ export default function AddCarouselPage() {
           carouselId: carouselId.trim(),
           imageUrl: s3Url,
           title: carouselTitle.trim(),
+          restaurantId: restaurantId.trim(),
         }),
       });
 
@@ -139,6 +161,7 @@ export default function AddCarouselPage() {
       setIsSuccess(true);
       setCarouselId("");
       setCarouselTitle("");
+      setRestaurantId("");
       setLogoFile(null);
       // Reset the file input field
       const fileInput = document.getElementById("carousel-file-input");
@@ -197,6 +220,37 @@ export default function AddCarouselPage() {
             disabled={uploading}
           />
         </div>
+                <div style={styles.formGroup}>
+          <label style={styles.label}>Target Restaurant (Optional)</label>
+          <select
+            className="carouselInput"
+            style={{ ...styles.input, cursor: 'pointer' }}
+            value={restaurantId}
+            onChange={(e) => setRestaurantId(e.target.value)}
+            disabled={uploading}
+          >
+            <option value="">-- Select a Restaurant (Optional) --</option>
+            {restaurantsList.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.name} (ID: {r.id})
+              </option>
+            ))}
+          </select>
+          <div style={{ marginTop: '6px', fontSize: '13px', color: '#718096' }}>
+            Or enter ID manually:
+          </div>
+          <input
+            className="carouselInput"
+            style={{ ...styles.input, marginTop: '4px' }}
+            type="text"
+            placeholder="Type custom restaurant ID if not in list"
+            value={restaurantId}
+            onChange={(e) => setRestaurantId(e.target.value)}
+            disabled={uploading}
+          />
+        </div>
+
+
 
         <div style={styles.formGroup}>
           <label style={styles.label}>Upload Photo</label>

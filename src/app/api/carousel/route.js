@@ -6,7 +6,7 @@ export async function POST(req) {
   try {
     await dbConnect();
 
-    const { carouselId, imageUrl, title } = await req.json();
+    const { carouselId, imageUrl, title, restaurantId } = await req.json();
 
     if (!carouselId || !imageUrl) {
       return NextResponse.json(
@@ -29,6 +29,7 @@ export async function POST(req) {
       carouselId,
       imageUrl,
       title,
+      restaurantId: restaurantId || "",
     });
 
     return NextResponse.json({
