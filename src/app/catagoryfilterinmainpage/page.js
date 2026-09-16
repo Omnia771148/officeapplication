@@ -94,6 +94,12 @@ export default function CatagoryFilterPage() {
   const [items, setItems] = useState([]);
   const [loadingItems, setLoadingItems] = useState(true);
   const [editingItem, setEditingItem] = useState(null);
+
+  // Position control states (keyed by stable Mongo _id)
+  const [inputPositions, setInputPositions] = useState({});
+  const [savingId, setSavingId] = useState(null);
+  const [positionMsg, setPositionMsg] = useState({ text: "", isError: false });
+
   const router = useRouter();
 
   // Fetch existing filters
@@ -103,7 +109,14 @@ export default function CatagoryFilterPage() {
       const res = await fetch("/api/catagoryfilterinmainpage");
       const data = await res.json();
       if (res.ok && data.success) {
-        setItems(data.data || []);
+        const fetchedItems = data.data || [];
+        setItems(fetchedItems);
+        // Initialize position inputs to match current positions using stable _id
+        const initialInputs = {};
+        fetchedItems.forEach((item) => {
+          initialInputs[item._id] = item.position ? item.position.toString() : (item.id ? item.id.toString() : "");
+        });
+        setInputPositions(initialInputs);
       } else {
         console.error("Failed to fetch filters:", data.error);
       }
@@ -117,6 +130,87 @@ export default function CatagoryFilterPage() {
   useEffect(() => {
     fetchFilters();
   }, []);
+
+  const handlePositionInputChange = (key, val) => {
+    setInputPositions((prev) => ({
+      ...prev,
+      [key]: val,
+    }));
+  };
+
+  // Reorder position & ID handler
+  const handleSavePosition = async (item, targetPosOverride) => {
+    const key = item._id;
+    const rawVal =
+      targetPosOverride !== undefined
+        ? targetPosOverride
+        : inputPositions[key];
+    const newPosNum = parseInt(rawVal, 10);
+
+    if (isNaN(newPosNum) || newPosNum < 1) {
+      setPositionMsg({
+        text: "Please enter a valid position number (1 or greater).",
+        isError: true,
+      });
+      return;
+    }
+
+    try {
+      setSavingId(key);
+      setPositionMsg({ text: "", isError: false });
+
+      const res = await fetch("/api/catagoryfilterinmainpage", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          _id: item._id,
+          id: item.id,
+          newPosition: newPosNum,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        const updatedList = data.data || [];
+        setItems(updatedList);
+        const updatedInputs = {};
+        updatedList.forEach((it) => {
+          updatedInputs[it._id] = it.position ? it.position.toString() : (it.id ? it.id.toString() : "");
+        });
+        setInputPositions(updatedInputs);
+        setPositionMsg({
+          text: data.message || `Position & DB ID updated successfully for ${item.name}!`,
+          isError: false,
+        });
+      } else {
+        setPositionMsg({
+          text: data.error || "Failed to update position.",
+          isError: true,
+        });
+      }
+    } catch (err) {
+      console.error("Position update error:", err);
+      setPositionMsg({
+        text: "An error occurred while updating position.",
+        isError: true,
+      });
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const handleStepPosition = (item, currentPos, delta) => {
+    const targetPos = currentPos + delta;
+    if (targetPos < 1 || targetPos > items.length) return;
+    setInputPositions((prev) => ({ ...prev, [item._id]: targetPos.toString() }));
+    handleSavePosition(item, targetPos);
+  };
+
+  const handleMoveToTop = (item) => {
+    setInputPositions((prev) => ({ ...prev, [item._id]: "1" }));
+    handleSavePosition(item, 1);
+  };
 
   const handleSelectEdit = (item) => {
     setEditingItem(item);
@@ -186,6 +280,7 @@ export default function CatagoryFilterPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          _id: editingItem ? editingItem._id : undefined,
           name: name.trim(),
           id: catId.trim(),
           imageUrl: s3Url,
@@ -248,19 +343,40 @@ export default function CatagoryFilterPage() {
 
   return (
     <div style={styles.container}>
+      {/* Header Bar */}
       <div style={styles.header}>
         <button style={styles.backBtn} onClick={() => router.push("/dashboard")}>
-          ← Dashboard
+          ← Back to Dashboard
         </button>
-        <h2 style={styles.title}>Manage Main Page Category Filters</h2>
+        <h1 style={styles.title}>📍 Manage Main Page Category Filters & Positions</h1>
       </div>
 
+      {/* Info Banner for Reordering */}
+      <div style={styles.infoBanner}>
+        ℹ️ <strong>Re-order Positions & DB IDs:</strong> Enter a target position number under any category or click <strong>🔝 To Top</strong>, <strong>▲ Up</strong>, or <strong>▼ Down</strong>.
+        When moved, both the <strong>display position</strong> and the <strong>DB ID</strong> automatically update to match (e.g. position 1 has DB ID: 1, position 2 has DB ID: 2).
+      </div>
+
+      {/* Position Status Message Banner */}
+      {positionMsg.text && (
+        <div
+          style={{
+            ...styles.messageBanner,
+            backgroundColor: positionMsg.isError ? "#FFF5F5" : "#F0FFF4",
+            color: positionMsg.isError ? "#E53E3E" : "#2F855A",
+            borderColor: positionMsg.isError ? "#FEB2B2" : "#C6F6D5",
+          }}
+        >
+          {positionMsg.text}
+        </div>
+      )}
+
       <div style={styles.layoutGrid}>
-        {/* Form Card */}
-        <div style={styles.card}>
-          <h3 style={styles.cardTitle}>
-            {editingItem ? "Update Category Filter" : "Add New Category Filter"}
-          </h3>
+        {/* Left Column: Form Card */}
+        <div style={styles.formCard}>
+          <h2 style={styles.cardTitle}>
+            {editingItem ? "✏️ Update Category Filter" : "➕ Add New Category Filter"}
+          </h2>
           
           <div style={styles.formGroup}>
             <label style={styles.label}>Category ID (e.g. 123)</label>
@@ -288,7 +404,7 @@ export default function CatagoryFilterPage() {
 
           <div style={styles.formGroup}>
             <label style={styles.label}>
-              {editingItem ? "Upload New Category Picture (Optional)" : "Upload Category Picture"}
+              {editingItem ? "Upload New Picture (Optional)" : "Upload Category Picture"}
             </label>
             <input
               id="category-file-input"
@@ -340,6 +456,7 @@ export default function CatagoryFilterPage() {
             <div
               style={{
                 ...styles.messageBanner,
+                marginTop: "20px",
                 backgroundColor: isSuccess ? "#F0FFF4" : "#FFF5F5",
                 color: isSuccess ? "#38A169" : "#C53030",
                 borderColor: isSuccess ? "#C6F6D5" : "#FEB2B2",
@@ -350,9 +467,21 @@ export default function CatagoryFilterPage() {
           )}
         </div>
 
-        {/* List Card */}
-        <div style={styles.card}>
-          <h3 style={styles.cardTitle}>Active Category Filters</h3>
+        {/* Right Column: List Card with Position Controls */}
+        <div style={styles.listCard}>
+          <div style={styles.listCardHeader}>
+            <h2 style={styles.cardTitle}>
+              Active Category Filters ({items.length})
+            </h2>
+            <button
+              style={styles.refreshBtn}
+              onClick={fetchFilters}
+              disabled={loadingItems}
+              title="Refresh list"
+            >
+              🔄 Refresh
+            </button>
+          </div>
           
           {loadingItems ? (
             <div style={styles.loadingText}>Loading category filters...</div>
@@ -360,37 +489,147 @@ export default function CatagoryFilterPage() {
             <div style={styles.emptyState}>No category filters added yet.</div>
           ) : (
             <div style={styles.grid}>
-              {items.map((item) => (
-                <div key={item._id} style={styles.gridItem}>
-                  <img
-                    src={item.imageUrl}
-                    alt={item.name}
-                    style={styles.itemImage}
-                  />
-                  <div style={styles.itemDetails}>
-                    <div style={{ display: "flex", flexDirection: "column" }}>
-                      <div style={styles.itemName}>{item.name}</div>
-                      <div style={{ fontSize: "12px", color: "#718096", marginTop: "2px", fontWeight: "600" }}>
-                        ID: {item.id || "N/A"}
+              {items.map((item, index) => {
+                const key = item._id;
+                const isSaving = savingId === key;
+                const currentPos = item.position || (item.id && !isNaN(parseInt(item.id, 10)) ? parseInt(item.id, 10) : index + 1);
+                const isFirst = currentPos === 1;
+                const isLast = currentPos === items.length;
+
+                return (
+                  <div key={item._id} style={styles.itemCard}>
+                    {/* Rank Badge */}
+                    <div style={styles.rankBadge} title={`Position & DB ID: #${currentPos}`}>
+                      #{currentPos}
+                    </div>
+
+                    {/* Main Item Content */}
+                    <div style={styles.itemContent}>
+                      {/* Top Row: Image, Name, ID, Edit/Delete */}
+                      <div style={styles.itemTopRow}>
+                        <div style={styles.itemInfoGroup}>
+                          {item.imageUrl ? (
+                            <img
+                              src={item.imageUrl}
+                              alt={item.name}
+                              style={styles.itemImage}
+                            />
+                          ) : (
+                            <div style={styles.imagePlaceholder}>🍽️</div>
+                          )}
+                          <div>
+                            <h3 style={styles.itemName}>{item.name}</h3>
+                            <div style={styles.itemIdText}>
+                              DB ID: <strong>{item.id || "N/A"}</strong>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Edit & Delete Action Buttons */}
+                        <div style={styles.actionButtonsGroup}>
+                          <button
+                            style={styles.editBtn}
+                            onClick={() => handleSelectEdit(item)}
+                          >
+                            ✏️ Edit
+                          </button>
+                          <button
+                            style={styles.deleteBtn}
+                            onClick={() => handleDelete(item._id)}
+                          >
+                            🗑️ Delete
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Bottom Row: Position Controls */}
+                      <div style={styles.positionControlGroup}>
+                        <span style={styles.inputLabel}>Position & ID:</span>
+                        <div style={styles.positionActionsRow}>
+                          <input
+                            type="number"
+                            min="1"
+                            max={items.length}
+                            style={styles.positionInput}
+                            value={inputPositions[key] ?? ""}
+                            onChange={(e) =>
+                              handlePositionInputChange(key, e.target.value)
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                handleSavePosition(item);
+                              }
+                            }}
+                            disabled={isSaving}
+                            placeholder="Pos #"
+                          />
+
+                          <button
+                            style={{
+                              ...styles.saveBtn,
+                              opacity: isSaving ? 0.7 : 1,
+                              cursor: isSaving ? "not-allowed" : "pointer",
+                            }}
+                            onClick={() => handleSavePosition(item)}
+                            disabled={isSaving}
+                          >
+                            {isSaving ? "Saving..." : "Set"}
+                          </button>
+
+                          {/* Quick To Top Button */}
+                          <button
+                            style={{
+                              ...styles.topBtn,
+                              opacity: isFirst || isSaving ? 0.45 : 1,
+                              cursor:
+                                isFirst || isSaving ? "not-allowed" : "pointer",
+                            }}
+                            onClick={() => handleMoveToTop(item)}
+                            disabled={isFirst || isSaving}
+                            title="Move directly to top (#1 position & DB ID 1)"
+                          >
+                            🔝 To Top
+                          </button>
+
+                          {/* Quick Up Arrow Button */}
+                          <button
+                            style={{
+                              ...styles.stepBtn,
+                              opacity: isFirst || isSaving ? 0.45 : 1,
+                              cursor:
+                                isFirst || isSaving ? "not-allowed" : "pointer",
+                            }}
+                            onClick={() =>
+                              handleStepPosition(item, currentPos, -1)
+                            }
+                            disabled={isFirst || isSaving}
+                            title="Move up 1 rank"
+                          >
+                            ▲ Up
+                          </button>
+
+                          {/* Quick Down Arrow Button */}
+                          <button
+                            style={{
+                              ...styles.stepBtn,
+                              opacity: isLast || isSaving ? 0.45 : 1,
+                              cursor:
+                                isLast || isSaving ? "not-allowed" : "pointer",
+                            }}
+                            onClick={() =>
+                              handleStepPosition(item, currentPos, 1)
+                            }
+                            disabled={isLast || isSaving}
+                            title="Move down 1 rank"
+                          >
+                            ▼ Down
+                          </button>
+                        </div>
                       </div>
                     </div>
-                    <div style={{ display: "flex", gap: "8px" }}>
-                      <button
-                        style={styles.editBtn}
-                        onClick={() => handleSelectEdit(item)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        style={styles.deleteBtn}
-                        onClick={() => handleDelete(item._id)}
-                      >
-                        Delete
-                      </button>
-                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -401,158 +640,319 @@ export default function CatagoryFilterPage() {
 
 const styles = {
   container: {
-    padding: "40px",
-    maxWidth: "1200px",
+    padding: "30px 24px",
+    maxWidth: "1280px",
     margin: "0 auto",
-    fontFamily: "system-ui, -apple-system, sans-serif",
-    backgroundColor: "#F7FAFC",
+    fontFamily:
+      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    backgroundColor: "#F8FAFC",
     minHeight: "100vh",
   },
   header: {
     display: "flex",
     alignItems: "center",
-    gap: "20px",
-    marginBottom: "30px",
+    gap: "18px",
+    marginBottom: "20px",
+    flexWrap: "wrap",
   },
   backBtn: {
-    padding: "8px 16px",
-    backgroundColor: "#EDF2F7",
-    border: "none",
-    borderRadius: "6px",
+    padding: "10px 18px",
+    backgroundColor: "#ffffff",
+    border: "1px solid #CBD5E1",
+    borderRadius: "8px",
     cursor: "pointer",
-    fontSize: "15px",
-    fontWeight: "600",
-    color: "#4A5568",
-    transition: "background-color 0.2s, color 0.2s",
+    fontSize: "14px",
+    fontWeight: "700",
+    color: "#334155",
+    boxShadow: "0 2px 4px rgba(0,0,0,0.04)",
+    transition: "all 0.2s",
   },
   title: {
     margin: 0,
-    fontSize: "22px",
-    color: "#2D3748",
+    fontSize: "24px",
+    fontWeight: "800",
+    color: "#1E293B",
+  },
+  infoBanner: {
+    backgroundColor: "#EFF6FF",
+    border: "1px solid #BFDBFE",
+    borderRadius: "10px",
+    padding: "14px 18px",
+    fontSize: "14px",
+    color: "#1E40AF",
+    lineHeight: "1.5",
+    marginBottom: "20px",
+    boxShadow: "0 2px 4px rgba(59, 130, 246, 0.05)",
+  },
+  messageBanner: {
+    padding: "12px 18px",
+    borderRadius: "8px",
+    border: "1px solid",
+    fontSize: "14px",
+    fontWeight: "600",
+    marginBottom: "20px",
+    textAlign: "center",
   },
   layoutGrid: {
     display: "flex",
     flexWrap: "wrap",
-    gap: "30px",
+    gap: "28px",
     alignItems: "start",
   },
-  card: {
+  formCard: {
     backgroundColor: "white",
-    borderRadius: "12px",
-    padding: "30px",
-    boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)",
+    borderRadius: "14px",
+    padding: "26px",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
     border: "1px solid #E2E8F0",
-    flex: "1 1 450px",
+    flex: "1 1 380px",
+    maxWidth: "440px",
     boxSizing: "border-box",
   },
-  cardTitle: {
-    margin: "0 0 20px 0",
-    fontSize: "18px",
-    color: "#2D3748",
+  listCard: {
+    backgroundColor: "white",
+    borderRadius: "14px",
+    padding: "26px",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+    border: "1px solid #E2E8F0",
+    flex: "2 1 600px",
+    boxSizing: "border-box",
+  },
+  listCardHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
     borderBottom: "2px solid #EDF2F7",
-    paddingBottom: "10px",
+    paddingBottom: "12px",
+    marginBottom: "20px",
+  },
+  refreshBtn: {
+    padding: "6px 14px",
+    backgroundColor: "#F1F5F9",
+    border: "1px solid #CBD5E1",
+    borderRadius: "6px",
+    fontSize: "13px",
+    fontWeight: "700",
+    color: "#475569",
+    cursor: "pointer",
+  },
+  cardTitle: {
+    margin: "0 0 16px 0",
+    fontSize: "18px",
+    fontWeight: "700",
+    color: "#1E293B",
   },
   formGroup: {
-    marginBottom: "20px",
+    marginBottom: "18px",
   },
   label: {
     display: "block",
-    marginBottom: "8px",
+    marginBottom: "7px",
     fontWeight: "600",
-    color: "#4A5568",
-    fontSize: "15px",
+    color: "#475569",
+    fontSize: "14px",
   },
   input: {
     width: "100%",
-    padding: "12px",
-    borderRadius: "6px",
-    border: "1px solid #CBD5E0",
-    fontSize: "16px",
+    padding: "11px 13px",
+    borderRadius: "8px",
+    border: "1.5px solid #CBD5E1",
+    fontSize: "15px",
     boxSizing: "border-box",
+    outline: "none",
   },
   button: {
     width: "100%",
-    padding: "14px",
-    borderRadius: "6px",
+    padding: "13px",
+    borderRadius: "8px",
     border: "none",
     color: "white",
-    fontSize: "16px",
-    fontWeight: "600",
-    transition: "background-color 0.2s",
-    marginTop: "10px",
-  },
-  messageBanner: {
-    marginTop: "20px",
-    padding: "12px 16px",
-    borderRadius: "6px",
-    border: "1px solid",
     fontSize: "15px",
-    textAlign: "center",
-    fontWeight: "500",
+    fontWeight: "700",
+    transition: "background-color 0.2s",
+    marginTop: "6px",
   },
   loadingText: {
     textAlign: "center",
-    color: "#718096",
-    padding: "20px 0",
+    color: "#64748B",
+    padding: "30px 0",
+    fontSize: "15px",
   },
   emptyState: {
     textAlign: "center",
-    color: "#718096",
+    color: "#64748B",
     padding: "40px 0",
-    fontSize: "16px",
+    fontSize: "15px",
   },
   grid: {
     display: "flex",
     flexDirection: "column",
-    gap: "15px",
+    gap: "16px",
   },
-  gridItem: {
+  itemCard: {
     display: "flex",
     alignItems: "center",
-    gap: "20px",
-    padding: "15px",
-    borderRadius: "8px",
-    border: "1px solid #E2E8F0",
-    backgroundColor: "#F8FAFC",
+    gap: "16px",
+    backgroundColor: "#ffffff",
+    borderRadius: "12px",
+    padding: "16px 18px",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+    border: "1.5px solid #E2E8F0",
+    transition: "transform 0.15s ease",
   },
-  itemImage: {
-    width: "60px",
-    height: "60px",
-    borderRadius: "8px",
-    objectFit: "cover",
-    border: "1px solid #CBD5E0",
+  rankBadge: {
+    minWidth: "46px",
+    height: "46px",
+    borderRadius: "50%",
+    backgroundColor: "#e67e22",
+    color: "#ffffff",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontWeight: "800",
+    fontSize: "15px",
+    boxShadow: "0 4px 10px rgba(230, 126, 34, 0.28)",
+    flexShrink: 0,
   },
-  itemDetails: {
+  itemContent: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px",
+    flex: 1,
+  },
+  itemTopRow: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    flex: 1,
+    flexWrap: "wrap",
+    gap: "12px",
+  },
+  itemInfoGroup: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+  },
+  itemImage: {
+    width: "48px",
+    height: "48px",
+    borderRadius: "10px",
+    objectFit: "cover",
+    border: "2px solid #E2E8F0",
+    flexShrink: 0,
+  },
+  imagePlaceholder: {
+    width: "48px",
+    height: "48px",
+    borderRadius: "10px",
+    backgroundColor: "#F1F5F9",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "20px",
   },
   itemName: {
+    margin: 0,
     fontSize: "16px",
-    fontWeight: "600",
-    color: "#2D3748",
+    fontWeight: "700",
+    color: "#0F172A",
   },
-  deleteBtn: {
-    padding: "6px 12px",
-    backgroundColor: "#FED7D7",
-    color: "#C53030",
-    border: "none",
-    borderRadius: "4px",
-    cursor: "pointer",
-    fontSize: "14px",
-    fontWeight: "600",
-    transition: "background-color 0.2s",
+  itemIdText: {
+    fontSize: "12px",
+    color: "#64748B",
+    marginTop: "2px",
+  },
+  actionButtonsGroup: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
   },
   editBtn: {
     padding: "6px 12px",
     backgroundColor: "#EDF2F7",
-    color: "#4A5568",
+    color: "#334155",
     border: "none",
-    borderRadius: "4px",
+    borderRadius: "6px",
     cursor: "pointer",
+    fontSize: "13px",
+    fontWeight: "700",
+    transition: "background-color 0.2s",
+  },
+  deleteBtn: {
+    padding: "6px 12px",
+    backgroundColor: "#FEE2E2",
+    color: "#DC2626",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+    fontSize: "13px",
+    fontWeight: "700",
+    transition: "background-color 0.2s",
+  },
+  positionControlGroup: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    backgroundColor: "#F8FAFC",
+    padding: "8px 12px",
+    borderRadius: "8px",
+    border: "1px solid #E2E8F0",
+    flexWrap: "wrap",
+  },
+  inputLabel: {
+    fontSize: "12px",
+    fontWeight: "700",
+    color: "#64748B",
+    textTransform: "uppercase",
+    letterSpacing: "0.5px",
+  },
+  positionActionsRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    flexWrap: "wrap",
+  },
+  positionInput: {
+    width: "70px",
+    padding: "6px 10px",
+    borderRadius: "6px",
+    border: "1.5px solid #CBD5E1",
     fontSize: "14px",
-    fontWeight: "600",
+    fontWeight: "700",
+    textAlign: "center",
+    color: "#0F172A",
+    outline: "none",
+  },
+  saveBtn: {
+    padding: "6px 14px",
+    backgroundColor: "#e67e22",
+    color: "#ffffff",
+    border: "none",
+    borderRadius: "6px",
+    fontSize: "13px",
+    fontWeight: "700",
+    cursor: "pointer",
+    transition: "background-color 0.2s",
+  },
+  topBtn: {
+    padding: "6px 12px",
+    backgroundColor: "#059669",
+    color: "#ffffff",
+    border: "none",
+    borderRadius: "6px",
+    fontSize: "12px",
+    fontWeight: "700",
+    cursor: "pointer",
+    transition: "background-color 0.2s",
+  },
+  stepBtn: {
+    padding: "6px 10px",
+    backgroundColor: "#E2E8F0",
+    color: "#334155",
+    border: "none",
+    borderRadius: "6px",
+    fontSize: "12px",
+    fontWeight: "700",
+    cursor: "pointer",
     transition: "background-color 0.2s",
   },
 };

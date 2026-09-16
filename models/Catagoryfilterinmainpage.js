@@ -18,6 +18,10 @@ const CatagoryfilterinmainpageSchema = new mongoose.Schema(
       unique: true,
       trim: true,
     },
+    position: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,
@@ -25,5 +29,12 @@ const CatagoryfilterinmainpageSchema = new mongoose.Schema(
   }
 );
 
-export default mongoose.models.Catagoryfilterinmainpage ||
-  mongoose.model("Catagoryfilterinmainpage", CatagoryfilterinmainpageSchema, "catagoryfilterinmainpage");
+if (mongoose.models.Catagoryfilterinmainpage) {
+  delete mongoose.models.Catagoryfilterinmainpage;
+}
+
+export default mongoose.model(
+  "Catagoryfilterinmainpage",
+  CatagoryfilterinmainpageSchema,
+  "catagoryfilterinmainpage"
+);
