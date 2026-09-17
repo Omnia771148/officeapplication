@@ -7,6 +7,11 @@ const CarouselSchema = new mongoose.Schema(
       required: true,
       unique: true,
       index: true,
+      trim: true,
+    },
+    position: {
+      type: Number,
+      default: 0,
     },
     imageUrl: {
       type: String,
@@ -27,4 +32,9 @@ const CarouselSchema = new mongoose.Schema(
   }
 );
 
-export default mongoose.models.Carousel || mongoose.model("Carousel", CarouselSchema, "carousel");
+if (mongoose.models.Carousel) {
+  delete mongoose.models.Carousel;
+}
+
+export default mongoose.model("Carousel", CarouselSchema, "carousel");
+

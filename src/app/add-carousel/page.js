@@ -92,6 +92,11 @@ export default function AddCarouselPage() {
   const [deletingId, setDeletingId] = useState(null);
   const [previewModalImg, setPreviewModalImg] = useState(null);
 
+  // Position control states (keyed by stable Mongo _id)
+  const [inputPositions, setInputPositions] = useState({});
+  const [savingId, setSavingId] = useState(null);
+  const [positionMsg, setPositionMsg] = useState({ text: "", isError: false });
+
   // Load restaurants for dropdown
   useEffect(() => {
     async function loadRestaurants() {
@@ -120,6 +125,12 @@ export default function AddCarouselPage() {
       const data = await res.json();
       if (data.success && Array.isArray(data.carousels)) {
         setCarousels(data.carousels);
+        // Initialize position inputs to match current positions using stable _id
+        const initialInputs = {};
+        data.carousels.forEach((item) => {
+          initialInputs[item._id] = item.position ? item.position.toString() : (item.carouselId ? item.carouselId.toString() : "");
+        });
+        setInputPositions(initialInputs);
       } else {
         console.error("Failed to fetch carousels:", data.error);
       }
@@ -133,6 +144,87 @@ export default function AddCarouselPage() {
   useEffect(() => {
     fetchCarousels();
   }, []);
+
+  const handlePositionInputChange = (key, val) => {
+    setInputPositions((prev) => ({
+      ...prev,
+      [key]: val,
+    }));
+  };
+
+  // Reorder position & ID handler
+  const handleSavePosition = async (item, targetPosOverride) => {
+    const key = item._id;
+    const rawVal =
+      targetPosOverride !== undefined
+        ? targetPosOverride
+        : inputPositions[key];
+    const newPosNum = parseInt(rawVal, 10);
+
+    if (isNaN(newPosNum) || newPosNum < 1) {
+      setPositionMsg({
+        text: "Please enter a valid position number (1 or greater).",
+        isError: true,
+      });
+      return;
+    }
+
+    try {
+      setSavingId(key);
+      setPositionMsg({ text: "", isError: false });
+
+      const res = await fetch("/api/carousel", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          _id: item._id,
+          carouselId: item.carouselId,
+          newPosition: newPosNum,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        const updatedList = data.carousels || [];
+        setCarousels(updatedList);
+        const updatedInputs = {};
+        updatedList.forEach((it) => {
+          updatedInputs[it._id] = it.position ? it.position.toString() : (it.carouselId ? it.carouselId.toString() : "");
+        });
+        setInputPositions(updatedInputs);
+        setPositionMsg({
+          text: data.message || `Position & Slide ID updated successfully for ${item.title || item.carouselId}!`,
+          isError: false,
+        });
+      } else {
+        setPositionMsg({
+          text: data.error || "Failed to update position.",
+          isError: true,
+        });
+      }
+    } catch (err) {
+      console.error("Position update error:", err);
+      setPositionMsg({
+        text: "An error occurred while updating position.",
+        isError: true,
+      });
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const handleStepPosition = (item, currentPos, delta) => {
+    const targetPos = currentPos + delta;
+    if (targetPos < 1 || targetPos > carousels.length) return;
+    setInputPositions((prev) => ({ ...prev, [item._id]: targetPos.toString() }));
+    handleSavePosition(item, targetPos);
+  };
+
+  const handleMoveToTop = (item) => {
+    setInputPositions((prev) => ({ ...prev, [item._id]: "1" }));
+    handleSavePosition(item, 1);
+  };
 
   // Handle local file selection preview
   const handleFileChange = (e) => {
@@ -152,16 +244,14 @@ export default function AddCarouselPage() {
       setMsg("");
       setIsSuccess(false);
 
-      if (!carouselId.trim()) {
-        setMsg("Carousel ID is required");
-        return;
-      }
       if (!logoFile) {
         setMsg("Please choose a carousel photo to upload");
         return;
       }
 
       setUploading(true);
+
+      const targetId = carouselId.trim() || (carousels.length + 1).toString();
 
       // Step 1: Compress the image in-browser to target ~65KB
       setMsg("Compressing photo to ~65KB...");
@@ -171,7 +261,7 @@ export default function AddCarouselPage() {
       setMsg("Uploading compressed image to S3...");
       const formData = new FormData();
       formData.append("file", compressedFile);
-      formData.append("id", carouselId.trim());
+      formData.append("id", targetId);
       formData.append("folder", "carousel");
 
       const uploadRes = await fetch("/api/upload", {
@@ -191,7 +281,7 @@ export default function AddCarouselPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          carouselId: carouselId.trim(),
+          carouselId: targetId,
           imageUrl: s3Url,
           title: carouselTitle.trim(),
           restaurantId: restaurantId.trim(),
@@ -238,7 +328,16 @@ export default function AddCarouselPage() {
       });
       const data = await res.json();
       if (data.success) {
-        setCarousels((prev) => prev.filter((c) => (c._id ? c._id !== item._id : c.carouselId !== item.carouselId)));
+        if (Array.isArray(data.carousels)) {
+          setCarousels(data.carousels);
+          const updatedInputs = {};
+          data.carousels.forEach((it) => {
+            updatedInputs[it._id] = it.position ? it.position.toString() : (it.carouselId ? it.carouselId.toString() : "");
+          });
+          setInputPositions(updatedInputs);
+        } else {
+          setCarousels((prev) => prev.filter((c) => (c._id ? c._id !== item._id : c.carouselId !== item.carouselId)));
+        }
       } else {
         alert("Failed to delete carousel: " + (data.error || "Unknown error"));
       }
@@ -249,6 +348,7 @@ export default function AddCarouselPage() {
       setDeletingId(null);
     }
   };
+
 
   // Resolve restaurant name for display
   const getRestaurantLabel = (restId) => {
@@ -295,6 +395,28 @@ export default function AddCarouselPage() {
         </div>
       </div>
 
+      {/* Info Banner for Reordering */}
+      <div style={styles.infoBanner}>
+        ℹ️ <strong>Re-order Positions & Slide IDs:</strong> Enter a target position number under any slide or click <strong>🔝 To Top</strong>, <strong>▲ Up</strong>, or <strong>▼ Down</strong>.
+        When moved, both the <strong>display position</strong> and the <strong>Slide ID</strong> automatically update to match (e.g. position 1 has Slide ID: 1, position 2 has Slide ID: 2).
+      </div>
+
+      {/* Position Status Message Banner */}
+      {positionMsg.text && (
+        <div
+          style={{
+            ...styles.messageBanner,
+            backgroundColor: positionMsg.isError ? "#FFF5F5" : "#F0FFF4",
+            color: positionMsg.isError ? "#E53E3E" : "#2F855A",
+            borderColor: positionMsg.isError ? "#FEB2B2" : "#C6F6D5",
+            marginBottom: "20px",
+            textAlign: "center",
+          }}
+        >
+          {positionMsg.text}
+        </div>
+      )}
+
       {/* Main Responsive Grid Layout */}
       <div style={styles.mainLayout}>
         {/* Left Column: Add Carousel Form */}
@@ -307,18 +429,19 @@ export default function AddCarouselPage() {
 
             <div style={styles.formGroup}>
               <label style={styles.label}>
-                Carousel Slide ID <span style={{ color: "#E53E3E" }}>*</span>
+                Carousel Slide ID <span style={{ color: "#718096", fontSize: "12px", fontWeight: "normal" }}>(Optional - defaults to #{carousels.length + 1})</span>
               </label>
               <input
                 className="carouselInput"
                 style={styles.input}
                 type="text"
-                placeholder="e.g. slide_1, main_banner"
+                placeholder={carousels.length > 0 ? `e.g. ${carousels.length + 1}` : "e.g. 1"}
                 value={carouselId}
                 onChange={(e) => setCarouselId(e.target.value)}
                 disabled={uploading}
               />
             </div>
+
 
             <div style={styles.formGroup}>
               <label style={styles.label}>Carousel Title (Optional)</label>
@@ -468,80 +591,187 @@ export default function AddCarouselPage() {
               </div>
             ) : (
               <div style={styles.slidesGrid}>
-                {filteredCarousels.map((item) => (
-                  <div
-                    key={item._id || item.carouselId}
-                    className="carouselCard"
-                    style={styles.slideCard}
-                  >
-                    {/* Slide Image Preview */}
+                {filteredCarousels.map((item, index) => {
+                  const key = item._id;
+                  const isSaving = savingId === key;
+                  const currentPos = item.position || (item.carouselId && !isNaN(parseInt(item.carouselId, 10)) ? parseInt(item.carouselId, 10) : index + 1);
+                  const isFirst = currentPos === 1;
+                  const isLast = currentPos === carousels.length;
+
+                  return (
                     <div
-                      style={styles.imgWrapper}
-                      onClick={() => setPreviewModalImg(item.imageUrl)}
-                      title="Click to view full image"
+                      key={item._id || item.carouselId}
+                      className="carouselCard"
+                      style={styles.slideCard}
                     >
-                      <img
-                        src={item.imageUrl}
-                        alt={item.title || item.carouselId}
-                        style={styles.slideImg}
-                        onError={(e) => {
-                          e.target.src =
-                            "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='150' viewBox='0 0 300 150'><rect fill='%23E2E8F0' width='300' height='150'/><text fill='%23718096' font-size='14' font-family='sans-serif' x='50%' y='50%' text-anchor='middle' dy='.3em'>Image unavailable</text></svg>";
-                        }}
-                      />
-                      <div style={styles.imgOverlay}>🔍 Click to Enlarge</div>
-                    </div>
-
-                    {/* Slide Details */}
-                    <div style={styles.slideContent}>
-                      <div style={styles.slideTopRow}>
-                        <span style={styles.slideIdBadge}>{item.carouselId}</span>
-                        {item.createdAt && (
-                          <span style={styles.slideDate}>
-                            {new Date(item.createdAt).toLocaleDateString("en-IN", {
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                            })}
-                          </span>
-                        )}
+                      {/* Rank Badge */}
+                      <div
+                        style={styles.rankBadge}
+                        title={`Position & Slide ID: #${currentPos}`}
+                      >
+                        #{currentPos}
                       </div>
 
-                      <h4 style={styles.slideTitle}>
-                        {item.title ? item.title : <span style={{ color: "#A0AEC0", fontStyle: "italic" }}>No Title</span>}
-                      </h4>
-
-                      <div style={styles.restTag}>
-                        {getRestaurantLabel(item.restaurantId)}
-                      </div>
-
-                      {/* Actions */}
-                      <div style={styles.slideActions}>
-                        <a
-                          href={item.imageUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={styles.viewLinkBtn}
-                        >
-                          🔗 Open Image
-                        </a>
-
-                        <button
-                          style={{
-                            ...styles.deleteBtn,
-                            opacity: deletingId === (item._id || item.carouselId) ? 0.6 : 1,
-                            cursor: deletingId === (item._id || item.carouselId) ? "not-allowed" : "pointer",
+                      {/* Slide Image Preview */}
+                      <div
+                        style={styles.imgWrapper}
+                        onClick={() => setPreviewModalImg(item.imageUrl)}
+                        title="Click to view full image"
+                      >
+                        <img
+                          src={item.imageUrl}
+                          alt={item.title || item.carouselId}
+                          style={styles.slideImg}
+                          onError={(e) => {
+                            e.target.src =
+                              "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='150' viewBox='0 0 300 150'><rect fill='%23E2E8F0' width='300' height='150'/><text fill='%23718096' font-size='14' font-family='sans-serif' x='50%' y='50%' text-anchor='middle' dy='.3em'>Image unavailable</text></svg>";
                           }}
-                          onClick={() => handleDeleteCarousel(item)}
-                          disabled={deletingId === (item._id || item.carouselId)}
-                          title="Delete slide from DB"
-                        >
-                          {deletingId === (item._id || item.carouselId) ? "Deleting..." : "🗑️ Delete"}
-                        </button>
+                        />
+                        <div style={styles.imgOverlay}>🔍 Click to Enlarge</div>
+                      </div>
+
+                      {/* Slide Details */}
+                      <div style={styles.slideContent}>
+                        <div style={styles.slideTopRow}>
+                          <span style={styles.slideIdBadge}>
+                            Slide ID: <strong>{item.carouselId}</strong>
+                          </span>
+                          {item.createdAt && (
+                            <span style={styles.slideDate}>
+                              {new Date(item.createdAt).toLocaleDateString("en-IN", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              })}
+                            </span>
+                          )}
+                        </div>
+
+                        <h4 style={styles.slideTitle}>
+                          {item.title ? item.title : <span style={{ color: "#A0AEC0", fontStyle: "italic" }}>No Title</span>}
+                        </h4>
+
+                        <div style={styles.restTag}>
+                          {getRestaurantLabel(item.restaurantId)}
+                        </div>
+
+                        {/* Position & Reorder Controls */}
+                        <div style={styles.positionControlGroup}>
+                          <div style={styles.positionControlHeader}>
+                            <span style={styles.positionControlLabel}>Position & ID:</span>
+                            <span style={styles.currentRankText}>Rank #{currentPos}</span>
+                          </div>
+                          <div style={styles.positionActionsRow}>
+                            <input
+                              type="number"
+                              min="1"
+                              max={carousels.length}
+                              style={styles.positionInput}
+                              value={inputPositions[key] ?? ""}
+                              onChange={(e) =>
+                                handlePositionInputChange(key, e.target.value)
+                              }
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  handleSavePosition(item);
+                                }
+                              }}
+                              disabled={isSaving}
+                              placeholder="Pos #"
+                            />
+
+                            <button
+                              style={{
+                                ...styles.saveBtn,
+                                opacity: isSaving ? 0.7 : 1,
+                                cursor: isSaving ? "not-allowed" : "pointer",
+                              }}
+                              onClick={() => handleSavePosition(item)}
+                              disabled={isSaving}
+                              title="Set target position"
+                            >
+                              {isSaving ? "..." : "Set"}
+                            </button>
+
+                            {/* Quick To Top Button */}
+                            <button
+                              style={{
+                                ...styles.topBtn,
+                                opacity: isFirst || isSaving ? 0.45 : 1,
+                                cursor:
+                                  isFirst || isSaving ? "not-allowed" : "pointer",
+                              }}
+                              onClick={() => handleMoveToTop(item)}
+                              disabled={isFirst || isSaving}
+                              title="Move directly to top (#1 position & Slide ID 1)"
+                            >
+                              🔝 Top
+                            </button>
+
+                            {/* Quick Up Arrow Button */}
+                            <button
+                              style={{
+                                ...styles.stepBtn,
+                                opacity: isFirst || isSaving ? 0.45 : 1,
+                                cursor:
+                                  isFirst || isSaving ? "not-allowed" : "pointer",
+                              }}
+                              onClick={() =>
+                                handleStepPosition(item, currentPos, -1)
+                              }
+                              disabled={isFirst || isSaving}
+                              title="Move up 1 rank"
+                            >
+                              ▲ Up
+                            </button>
+
+                            {/* Quick Down Arrow Button */}
+                            <button
+                              style={{
+                                ...styles.stepBtn,
+                                opacity: isLast || isSaving ? 0.45 : 1,
+                                cursor:
+                                  isLast || isSaving ? "not-allowed" : "pointer",
+                              }}
+                              onClick={() =>
+                                handleStepPosition(item, currentPos, 1)
+                              }
+                              disabled={isLast || isSaving}
+                              title="Move down 1 rank"
+                            >
+                              ▼ Down
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div style={styles.slideActions}>
+                          <a
+                            href={item.imageUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={styles.viewLinkBtn}
+                          >
+                            🔗 Open Image
+                          </a>
+
+                          <button
+                            style={{
+                              ...styles.deleteBtn,
+                              opacity: deletingId === (item._id || item.carouselId) ? 0.6 : 1,
+                              cursor: deletingId === (item._id || item.carouselId) ? "not-allowed" : "pointer",
+                            }}
+                            onClick={() => handleDeleteCarousel(item)}
+                            disabled={deletingId === (item._id || item.carouselId)}
+                            title="Delete slide from DB"
+                          >
+                            {deletingId === (item._id || item.carouselId) ? "Deleting..." : "🗑️ Delete"}
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -718,6 +948,16 @@ const styles = {
     transition: "background-color 0.2s",
     marginTop: "6px",
   },
+  infoBanner: {
+    backgroundColor: "#EFF6FF",
+    border: "1px solid #BFDBFE",
+    borderRadius: "8px",
+    padding: "12px 18px",
+    fontSize: "14px",
+    color: "#1E40AF",
+    marginBottom: "20px",
+    lineHeight: "1.5",
+  },
   messageBanner: {
     marginTop: "16px",
     padding: "12px 16px",
@@ -729,10 +969,11 @@ const styles = {
   },
   slidesGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))",
-    gap: "16px",
+    gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+    gap: "18px",
   },
   slideCard: {
+    position: "relative",
     border: "1px solid #E2E8F0",
     borderRadius: "10px",
     overflow: "hidden",
@@ -740,6 +981,103 @@ const styles = {
     transition: "transform 0.2s ease, box-shadow 0.2s ease",
     display: "flex",
     flexDirection: "column",
+  },
+  rankBadge: {
+    position: "absolute",
+    top: "10px",
+    left: "10px",
+    zIndex: 2,
+    backgroundColor: "#3182CE",
+    color: "#ffffff",
+    fontWeight: "800",
+    fontSize: "13px",
+    padding: "4px 10px",
+    borderRadius: "20px",
+    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.35)",
+    letterSpacing: "0.5px",
+  },
+  positionControlGroup: {
+    backgroundColor: "#F8FAFC",
+    border: "1px solid #E2E8F0",
+    borderRadius: "8px",
+    padding: "10px",
+    marginBottom: "12px",
+  },
+  positionControlHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "8px",
+  },
+  positionControlLabel: {
+    fontSize: "11px",
+    fontWeight: "700",
+    color: "#64748B",
+    textTransform: "uppercase",
+    letterSpacing: "0.5px",
+  },
+  inputLabel: {
+    fontSize: "11px",
+    fontWeight: "700",
+    color: "#64748B",
+    textTransform: "uppercase",
+    letterSpacing: "0.5px",
+  },
+  currentRankText: {
+    fontSize: "12px",
+    fontWeight: "700",
+    color: "#2B6CB0",
+  },
+  positionActionsRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: "6px",
+    flexWrap: "wrap",
+  },
+  positionInput: {
+    width: "55px",
+    padding: "5px 6px",
+    borderRadius: "6px",
+    border: "1.5px solid #CBD5E1",
+    fontSize: "13px",
+    fontWeight: "700",
+    textAlign: "center",
+    color: "#1A202C",
+    backgroundColor: "#FFFFFF",
+    outline: "none",
+  },
+  saveBtn: {
+    padding: "5px 10px",
+    backgroundColor: "#3182CE",
+    color: "#FFFFFF",
+    border: "none",
+    borderRadius: "6px",
+    fontSize: "12px",
+    fontWeight: "700",
+    cursor: "pointer",
+    transition: "background-color 0.2s",
+  },
+  topBtn: {
+    padding: "5px 8px",
+    backgroundColor: "#059669",
+    color: "#FFFFFF",
+    border: "none",
+    borderRadius: "6px",
+    fontSize: "11px",
+    fontWeight: "700",
+    cursor: "pointer",
+    transition: "background-color 0.2s",
+  },
+  stepBtn: {
+    padding: "5px 8px",
+    backgroundColor: "#EDF2F7",
+    color: "#2D3748",
+    border: "1px solid #CBD5E0",
+    borderRadius: "6px",
+    fontSize: "11px",
+    fontWeight: "700",
+    cursor: "pointer",
+    transition: "background-color 0.2s",
   },
   imgWrapper: {
     position: "relative",
