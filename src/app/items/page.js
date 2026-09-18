@@ -281,6 +281,7 @@ export default function BranchItemsPage() {
     const [editVegOrNonVeg, setEditVegOrNonVeg] = useState('Both');
     const [editRating, setEditRating] = useState('0');
     const [editPhotoUrl, setEditPhotoUrl] = useState('');
+    const [editOfferPercentage, setEditOfferPercentage] = useState('');
     const [editPhotoFile, setEditPhotoFile] = useState(null);
     const [photoPreview, setPhotoPreview] = useState('');
     const [uploadingImage, setUploadingImage] = useState(false);
@@ -293,6 +294,7 @@ export default function BranchItemsPage() {
         setEditVegOrNonVeg(item.vegOrNonVeg || 'Both');
         setEditRating(item.rating !== undefined && item.rating !== null ? item.rating.toString() : '0');
         setEditPhotoUrl(item.photoUrl || '');
+        setEditOfferPercentage(item.offerpercentage !== undefined && item.offerpercentage !== null && Number(item.offerpercentage) > 0 ? item.offerpercentage.toString() : '');
         setEditPhotoFile(null);
         setPhotoPreview(item.photoUrl || '');
     };
@@ -304,6 +306,7 @@ export default function BranchItemsPage() {
         setEditVegOrNonVeg('Both');
         setEditRating('0');
         setEditPhotoUrl('');
+        setEditOfferPercentage('');
         setEditPhotoFile(null);
         setPhotoPreview('');
         setUploadingImage(false);
@@ -330,6 +333,12 @@ export default function BranchItemsPage() {
         const parsedRating = Number(editRating);
         if (isNaN(parsedRating) || parsedRating < 0 || parsedRating > 5) {
             alert('Rating must be a number between 0 and 5');
+            return;
+        }
+
+        const parsedOffer = editOfferPercentage === '' ? 0 : Number(editOfferPercentage);
+        if (isNaN(parsedOffer) || parsedOffer < 0 || parsedOffer > 100) {
+            alert('Offer percentage must be a number between 0 and 100');
             return;
         }
 
@@ -371,6 +380,7 @@ export default function BranchItemsPage() {
                     vegOrNonVeg: editVegOrNonVeg,
                     rating: parsedRating,
                     photoUrl: finalPhotoUrl,
+                    offerpercentage: parsedOffer,
                     restaurantId
                 })
             });
@@ -504,7 +514,8 @@ export default function BranchItemsPage() {
     };
 
     const filteredItems = items.filter(item =>
-        item.itemName.toLowerCase().includes(searchTerm.toLowerCase())
+        item.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.offerpercentage !== undefined && item.offerpercentage !== null && item.offerpercentage.toString().includes(searchTerm))
     );
 
     if (loading) {
@@ -864,6 +875,21 @@ export default function BranchItemsPage() {
                     border-color: #2ecc71;
                     box-shadow: 0 0 0 3px rgba(46, 204, 113, 0.1);
                     background-color: #ffffff;
+                }
+                .btnClearOfferText {
+                    background: #fee2e2;
+                    color: #ef4444;
+                    border: 1px solid #fca5a5;
+                    border-radius: 4px;
+                    padding: 2px 8px;
+                    font-size: 0.75rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                .btnClearOfferText:hover:not(:disabled) {
+                    background: #fecaca;
+                    color: #dc2626;
                 }
                 .editActions {
                     display: flex;
@@ -1842,6 +1868,108 @@ export default function BranchItemsPage() {
                                         />
                                     </div>
                                     <div className="editFieldGroup">
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <span className="editFieldLabel">Offer Percentage (%)</span>
+                                            {editOfferPercentage !== '' && editOfferPercentage !== '0' && (
+                                                <button
+                                                    type="button"
+                                                    className="btnClearOfferText"
+                                                    onClick={() => setEditOfferPercentage('')}
+                                                    disabled={savingId === item._id || uploadingImage}
+                                                    title="Clear offer percentage to 0%"
+                                                >
+                                                    ✕ Clear (0%)
+                                                </button>
+                                            )}
+                                        </div>
+                                        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                            <input
+                                                type="number"
+                                                className="editInputField"
+                                                style={{ width: '100%', paddingRight: editOfferPercentage ? '36px' : '14px' }}
+                                                value={editOfferPercentage}
+                                                disabled={savingId === item._id || uploadingImage}
+                                                onChange={(e) => setEditOfferPercentage(e.target.value)}
+                                                placeholder="Enter % off e.g. 50 (or 0 for none)"
+                                                min="0"
+                                                max="100"
+                                                step="1"
+                                            />
+                                            {editOfferPercentage !== '' && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setEditOfferPercentage('')}
+                                                    disabled={savingId === item._id || uploadingImage}
+                                                    style={{
+                                                        position: 'absolute',
+                                                        right: '10px',
+                                                        background: '#e2e8f0',
+                                                        border: 'none',
+                                                        borderRadius: '50%',
+                                                        width: '20px',
+                                                        height: '20px',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        cursor: 'pointer',
+                                                        fontSize: '11px',
+                                                        color: '#64748b',
+                                                        padding: 0
+                                                    }}
+                                                    title="Clear offer percentage"
+                                                >
+                                                    ✕
+                                                </button>
+                                            )}
+                                        </div>
+                                        {/* Quick Preset Buttons */}
+                                        <div style={{ display: 'flex', gap: '6px', marginTop: '4px', flexWrap: 'wrap' }}>
+                                            {[10, 20, 30, 40, 50].map(pct => (
+                                                <button
+                                                    key={pct}
+                                                    type="button"
+                                                    onClick={() => setEditOfferPercentage(pct.toString())}
+                                                    disabled={savingId === item._id || uploadingImage}
+                                                    style={{
+                                                        padding: '2px 8px',
+                                                        borderRadius: '4px',
+                                                        border: '1px solid #cbd5e1',
+                                                        backgroundColor: editOfferPercentage === pct.toString() ? '#e11d48' : '#f8fafc',
+                                                        color: editOfferPercentage === pct.toString() ? '#ffffff' : '#475569',
+                                                        fontSize: '0.75rem',
+                                                        fontWeight: '600',
+                                                        cursor: 'pointer',
+                                                        transition: 'all 0.15s'
+                                                    }}
+                                                >
+                                                    {pct}%
+                                                </button>
+                                            ))}
+                                            <button
+                                                type="button"
+                                                onClick={() => setEditOfferPercentage('')}
+                                                disabled={savingId === item._id || uploadingImage}
+                                                style={{
+                                                    padding: '2px 8px',
+                                                    borderRadius: '4px',
+                                                    border: '1px solid #fca5a5',
+                                                    backgroundColor: editOfferPercentage === '' || editOfferPercentage === '0' ? '#fee2e2' : '#ffffff',
+                                                    color: '#dc2626',
+                                                    fontSize: '0.75rem',
+                                                    fontWeight: '600',
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                None (0%)
+                                            </button>
+                                        </div>
+                                        <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                                            {editOfferPercentage && Number(editOfferPercentage) > 0
+                                                ? `Active discount: ${editOfferPercentage}% OFF.`
+                                                : 'No offer applied. Enter 0 or click Clear to remove.'}
+                                        </span>
+                                    </div>
+                                    <div className="editFieldGroup">
                                         <span className="editFieldLabel">Price (₹)</span>
                                         <input
                                             type="number"
@@ -1926,6 +2054,44 @@ export default function BranchItemsPage() {
                                                 </button>
                                             </div>
                                         </div>
+
+                                        {item.offerpercentage !== undefined && item.offerpercentage !== null && Number(item.offerpercentage) > 0 ? (
+                                            <div style={{
+                                                marginTop: '8px',
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: '6px',
+                                                background: 'linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%)',
+                                                border: '1px solid #fecdd3',
+                                                color: '#e11d48',
+                                                padding: '4px 10px',
+                                                borderRadius: '6px',
+                                                fontSize: '0.8rem',
+                                                fontWeight: '700',
+                                                letterSpacing: '0.2px'
+                                            }}>
+                                                <span>🏷️</span>
+                                                <span>{item.offerpercentage}% OFF</span>
+                                            </div>
+                                        ) : item.offerTitle ? (
+                                            <div style={{
+                                                marginTop: '8px',
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: '6px',
+                                                background: 'linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%)',
+                                                border: '1px solid #fecdd3',
+                                                color: '#e11d48',
+                                                padding: '4px 10px',
+                                                borderRadius: '6px',
+                                                fontSize: '0.8rem',
+                                                fontWeight: '700',
+                                                letterSpacing: '0.2px'
+                                            }}>
+                                                <span>🏷️</span>
+                                                <span>{item.offerTitle}</span>
+                                            </div>
+                                        ) : null}
 
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px', flexWrap: 'wrap' }}>
                                             <div className="itemPrice" style={{ margin: 0 }}>₹{item.price}</div>
@@ -2073,7 +2239,7 @@ export default function BranchItemsPage() {
                         <div className="hikeEmptyIcon">🛒</div>
                         <h3 className="hikeEmptyTitle">No Items Selected Yet</h3>
                         <p className="hikeEmptyText">
-                            Check <strong>"Select for Hike"</strong> on any items above to adjust their prices, or select all below.
+                            Check <strong>&quot;Select for Hike&quot;</strong> on any items above to adjust their prices, or select all below.
                         </p>
                         <button
                             type="button"

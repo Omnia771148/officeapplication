@@ -21,6 +21,10 @@ const ItemStatusSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    offerTitle: {
+        type: String,
+        default: ""
+    },
     itemStatus: {
         type: Boolean,
         default: true

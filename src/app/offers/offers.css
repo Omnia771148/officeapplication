@@ -1,0 +1,47 @@
+/* Offers Page Styling - Ensure dropdowns, input text, and placeholders are black */
+
+.offers-page-container input,
+.offers-page-container select,
+.offers-page-container textarea {
+    color: #000000 !important;
+    background-color: #ffffff !important;
+    -webkit-text-fill-color: #000000 !important;
+}
+
+.offers-page-container input::placeholder,
+.offers-page-container textarea::placeholder {
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+    opacity: 0.75 !important;
+}
+
+.offers-page-container input::-webkit-input-placeholder,
+.offers-page-container textarea::-webkit-input-placeholder {
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+    opacity: 0.75 !important;
+}
+
+.offers-page-container input::-moz-placeholder,
+.offers-page-container textarea::-moz-placeholder {
+    color: #000000 !important;
+    opacity: 0.75 !important;
+}
+
+.offers-page-container input:-ms-input-placeholder,
+.offers-page-container textarea:-ms-input-placeholder {
+    color: #000000 !important;
+    opacity: 0.75 !important;
+}
+
+.offers-page-container select {
+    color: #000000 !important;
+    background-color: #ffffff !important;
+    -webkit-text-fill-color: #000000 !important;
+}
+
+.offers-page-container select option {
+    color: #000000 !important;
+    background-color: #ffffff !important;
+    -webkit-text-fill-color: #000000 !important;
+}

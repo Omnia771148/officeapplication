@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import './offers.css';
 
 export default function OffersPage() {
     const router = useRouter();
@@ -322,7 +323,7 @@ export default function OffersPage() {
     }
 
     return (
-        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 20px', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+        <div className="offers-page-container" style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 20px', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '15px' }}>
                 <div>
@@ -448,7 +449,7 @@ export default function OffersPage() {
                                         type="number"
                                         value={tier.minBillAmount}
                                         onChange={(e) => handleUpdateTier(idx, 'minBillAmount', Number(e.target.value))}
-                                        style={{ width: '110px', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontWeight: '600' }}
+                                        style={{ width: '110px', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontWeight: '600', color: '#000000', backgroundColor: '#ffffff' }}
                                     />
                                 </div>
 
@@ -467,10 +468,10 @@ export default function OffersPage() {
                                             };
                                             setTieredDiscounts(updated);
                                         }}
-                                        style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontWeight: '600', background: 'white', cursor: 'pointer' }}
+                                        style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontWeight: '600', background: '#ffffff', color: '#000000', cursor: 'pointer' }}
                                     >
-                                        <option value="percentage">Percentage (%)</option>
-                                        <option value="flat">Flat Money (₹)</option>
+                                        <option value="percentage" style={{ color: '#000000', background: '#ffffff' }}>Percentage (%)</option>
+                                        <option value="flat" style={{ color: '#000000', background: '#ffffff' }}>Flat Money (₹)</option>
                                     </select>
                                 </div>
 
@@ -485,7 +486,7 @@ export default function OffersPage() {
                                                 placeholder="20"
                                                 value={tier.discountAmount !== undefined ? tier.discountAmount : ''}
                                                 onChange={(e) => handleUpdateTier(idx, 'discountAmount', Number(e.target.value))}
-                                                style={{ width: '90px', padding: '8px 12px', borderRadius: '6px', border: '1px solid #10b981', fontWeight: '700', color: '#065f46' }}
+                                                style={{ width: '90px', padding: '8px 12px', borderRadius: '6px', border: '1px solid #10b981', fontWeight: '700', color: '#000000', backgroundColor: '#ffffff' }}
                                             />
                                             <span style={{ fontWeight: '700', color: '#10b981' }}>OFF</span>
                                         </div>
@@ -497,7 +498,7 @@ export default function OffersPage() {
                                                 max="100"
                                                 value={tier.discountPercentage !== undefined ? tier.discountPercentage : ''}
                                                 onChange={(e) => handleUpdateTier(idx, 'discountPercentage', Number(e.target.value))}
-                                                style={{ width: '80px', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontWeight: '600' }}
+                                                style={{ width: '80px', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontWeight: '600', color: '#000000', backgroundColor: '#ffffff' }}
                                             />
                                             <span style={{ fontWeight: '700', color: '#0f172a' }}>% OFF</span>
                                         </div>
@@ -511,7 +512,7 @@ export default function OffersPage() {
                                         placeholder="e.g. 12% OFF on ₹2000+"
                                         value={tier.label || ''}
                                         onChange={(e) => handleUpdateTier(idx, 'label', e.target.value)}
-                                        style={{ flex: 1, padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                                        style={{ flex: 1, padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', color: '#000000', backgroundColor: '#ffffff' }}
                                     />
                                 </div>
 
@@ -616,12 +617,12 @@ export default function OffersPage() {
                                     <select
                                         value={newBogoSourceItemId}
                                         onChange={(e) => setNewBogoSourceItemId(e.target.value)}
-                                        style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: '600', background: 'white', fontSize: '0.95rem' }}
+                                        style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: '600', background: '#ffffff', color: '#000000', fontSize: '0.95rem' }}
                                     >
                                         {items.map(item => {
                                             const name = item.itemName || item.name || 'Food Item';
                                             return (
-                                                <option key={item._id} value={item._id}>
+                                                <option key={item._id} value={item._id} style={{ color: '#000000', background: '#ffffff' }}>
                                                     {name} — ₹{item.price} {item.category ? '(' + item.category + ')' : ''}
                                                 </option>
                                             );
@@ -638,12 +639,12 @@ export default function OffersPage() {
                                     <select
                                         value={newBogoTargetItemId}
                                         onChange={(e) => setNewBogoTargetItemId(e.target.value)}
-                                        style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: '600', background: 'white', fontSize: '0.95rem' }}
+                                        style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: '600', background: '#ffffff', color: '#000000', fontSize: '0.95rem' }}
                                     >
                                         {items.map(item => {
                                             const name = item.itemName || item.name || 'Food Item';
                                             return (
-                                                <option key={item._id} value={item._id}>
+                                                <option key={item._id} value={item._id} style={{ color: '#000000', background: '#ffffff' }}>
                                                     {name} — ₹{item.price} {item.category ? '(' + item.category + ')' : ''}
                                                 </option>
                                             );
@@ -668,9 +669,9 @@ export default function OffersPage() {
                                     <select
                                         value={newBogoSource}
                                         onChange={(e) => setNewBogoSource(e.target.value)}
-                                        style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: '600', background: 'white' }}
+                                        style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: '600', background: '#ffffff', color: '#000000' }}
                                     >
-                                        {categories.map(c => <option key={c._id} value={c.name}>{c.name}</option>)}
+                                        {categories.map(c => <option key={c._id} value={c.name} style={{ color: '#000000', background: '#ffffff' }}>{c.name}</option>)}
                                     </select>
                                 </div>
 
@@ -683,9 +684,9 @@ export default function OffersPage() {
                                     <select
                                         value={newBogoTarget}
                                         onChange={(e) => setNewBogoTarget(e.target.value)}
-                                        style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: '600', background: 'white' }}
+                                        style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: '600', background: '#ffffff', color: '#000000' }}
                                     >
-                                        {categories.map(c => <option key={c._id} value={c.name}>{c.name}</option>)}
+                                        {categories.map(c => <option key={c._id} value={c.name} style={{ color: '#000000', background: '#ffffff' }}>{c.name}</option>)}
                                     </select>
                                 </div>
 
@@ -823,7 +824,7 @@ export default function OffersPage() {
                                             max="100"
                                             value={currentPct}
                                             onChange={(e) => handleCategoryDiscountChange(cat.name, e.target.value)}
-                                            style={{ width: '80px', padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontWeight: '600' }}
+                                            style={{ width: '80px', padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontWeight: '600', color: '#000000', backgroundColor: '#ffffff' }}
                                         />
                                         <span style={{ fontWeight: '600', color: '#64748b' }}>% Discount</span>
                                     </div>
@@ -884,7 +885,7 @@ export default function OffersPage() {
                                 max="100"
                                 value={bulkOffer}
                                 onChange={(e) => setBulkOffer(e.target.value)}
-                                style={{ width: '80px', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontWeight: '600' }}
+                                style={{ width: '80px', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontWeight: '600', color: '#000000', backgroundColor: '#ffffff' }}
                             />
                             <span style={{ fontWeight: '600', color: '#475569' }}>% Off</span>
 
@@ -911,7 +912,7 @@ export default function OffersPage() {
                             placeholder="🔍 Search menu items by name or category..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', boxSizing: 'border-box' }}
+                            style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', boxSizing: 'border-box', color: '#000000', backgroundColor: '#ffffff' }}
                         />
                     </div>
 
@@ -970,7 +971,7 @@ export default function OffersPage() {
                                                 max="100"
                                                 value={localVal}
                                                 onChange={(e) => handlePercentageChange(item._id, e.target.value)}
-                                                style={{ width: '60px', padding: '6px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontWeight: '600' }}
+                                                style={{ width: '60px', padding: '6px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontWeight: '600', color: '#000000', backgroundColor: '#ffffff' }}
                                             />
                                             <button
                                                 disabled={savingId === item._id}
