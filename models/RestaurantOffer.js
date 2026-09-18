@@ -7,14 +7,21 @@ const RestaurantOfferSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    // 1+1 Offers (Supports Category-Wise and Item-Wise)
     bogoOffers: [
       {
-        sourceCategory: { type: String, required: true },
-        targetCategory: { type: String, required: true },
+        type: { type: String, enum: ['category', 'item'], default: 'category' },
+        sourceItemId: { type: String, default: '' },
+        sourceItemName: { type: String, default: '' },
+        targetItemId: { type: String, default: '' },
+        targetItemName: { type: String, default: '' },
+        sourceCategory: { type: String, default: '' },
+        targetCategory: { type: String, default: '' },
         offerTitle: { type: String, default: '1+1 Offer' },
         isActive: { type: Boolean, default: true },
       },
     ],
+    // Category-level % Discounts
     categoryDiscounts: [
       {
         category: { type: String, required: true },
@@ -22,6 +29,7 @@ const RestaurantOfferSchema = new mongoose.Schema(
         isActive: { type: Boolean, default: true },
       },
     ],
+    // Tiered Restaurant Bill Discounts (Percentage or Flat Amount in Money)
     tieredDiscounts: [
       {
         minBillAmount: { type: Number, required: true, min: 0 },

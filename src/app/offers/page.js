@@ -38,6 +38,9 @@ export default function OffersPage() {
     // Form states for adding new 1+1 rule
     const [newBogoSource, setNewBogoSource] = useState('');
     const [newBogoTarget, setNewBogoTarget] = useState('');
+    const [bogoRuleType, setBogoRuleType] = useState('item');
+    const [newBogoSourceItemId, setNewBogoSourceItemId] = useState('');
+    const [newBogoTargetItemId, setNewBogoTargetItemId] = useState('');
 
     useEffect(() => {
         const storedId = localStorage.getItem('restaurantId');
@@ -156,21 +159,47 @@ export default function OffersPage() {
         setTieredDiscounts(updated);
     };
 
-    // 1+1 BOGO Handlers
+    // 1+1 BOGO Handlers (Supports Item-Wise & Category-Wise)
     const handleAddBogoRule = () => {
-        if (!newBogoSource || !newBogoTarget) {
-            alert('Please select both Buy Category and Get Category.');
-            return;
+        if (bogoRuleType === 'item') {
+            const sourceItem = items.find(i => String(i._id || i.itemId) === String(newBogoSourceItemId));
+            const targetItem = items.find(i => String(i._id || i.itemId) === String(newBogoTargetItemId));
+            if (!sourceItem || !targetItem) {
+                alert('Please select both Buy Item and Free Item.');
+                return;
+            }
+            const sourceName = sourceItem.itemName || sourceItem.name || 'Item';
+            const targetName = targetItem.itemName || targetItem.name || 'Item';
+            const newRule = {
+                type: 'item',
+                sourceItemId: String(sourceItem._id || sourceItem.itemId || ''),
+                sourceItemName: sourceName,
+                sourceCategory: sourceItem.category || '',
+                targetItemId: String(targetItem._id || targetItem.itemId || ''),
+                targetItemName: targetName,
+                targetCategory: targetItem.category || '',
+                offerTitle: '1+1: Buy ' + sourceName + ' Get ' + targetName + ' Free',
+                isActive: true
+            };
+            const updated = [...bogoOffers, newRule];
+            setBogoOffers(updated);
+            handleSaveAdvancedOffers(updated, categoryDiscounts, tieredDiscounts);
+        } else {
+            if (!newBogoSource || !newBogoTarget) {
+                alert('Please select both Buy Category and Get Category.');
+                return;
+            }
+            const newRule = {
+                type: 'category',
+                sourceCategory: newBogoSource,
+                targetCategory: newBogoTarget,
+                offerTitle: '1+1: Buy ' + newBogoSource + ' Get ' + newBogoTarget + ' Free',
+                isActive: true
+            };
+            const updated = [...bogoOffers, newRule];
+            setBogoOffers(updated);
+            handleSaveAdvancedOffers(updated, categoryDiscounts, tieredDiscounts);
         }
-        const newRule = {
-            sourceCategory: newBogoSource,
-            targetCategory: newBogoTarget,
-            offerTitle: `1+1: Buy ${newBogoSource} Get ${newBogoTarget} Free`,
-            isActive: true
-        };
-        const updated = [...bogoOffers, newRule];
-        setBogoOffers(updated);
-        handleSaveAdvancedOffers(updated, categoryDiscounts, tieredDiscounts);
     };
 
     const handleDeleteBogoRule = (index) => {
@@ -520,52 +549,155 @@ export default function OffersPage() {
                 </div>
             )}
 
-            {/* TAB 2: 1+1 CATEGORY BOGO OFFERS */}
+            {/* TAB 2: 1+1 BOGO OFFERS (ITEM-WISE & CATEGORY-WISE) */}
             {activeTab === 'bogo' && (
                 <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                    <h2 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#1e293b', margin: 0 }}>
-                        1+1 (Buy 1 Get 1) Category Deals
-                    </h2>
-                    <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '4px', marginBottom: '20px' }}>
-                        Pair a Primary Category with a Target Category. When customer buys 1 item, the 2nd item is automatically added and free (100% discount on 2nd item).
-                    </p>
-
-                    {/* New Rule Creator */}
-                    <div style={{ background: '#fef3c7', padding: '18px', borderRadius: '10px', border: '1px solid #fde68a', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '8px' }}>
                         <div>
-                            <label style={{ display: 'block', fontWeight: '700', fontSize: '0.85rem', color: '#92400e', marginBottom: '4px' }}>
-                                BUY FROM CATEGORY:
-                            </label>
-                            <select
-                                value={newBogoSource}
-                                onChange={(e) => setNewBogoSource(e.target.value)}
-                                style={{ padding: '8px 14px', borderRadius: '6px', border: '1px solid #cbd5e1', fontWeight: '600', minWidth: '180px' }}
-                            >
-                                {categories.map(c => <option key={c._id} value={c.name}>{c.name}</option>)}
-                            </select>
+                            <h2 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#1e293b', margin: 0 }}>
+                                1+1 (Buy 1 Get 1) Deals & Pairings
+                            </h2>
+                            <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '4px', marginBottom: 0 }}>
+                                Create item-specific 1+1 deals (e.g., Buy Pizza → Get Coca Cola Free) or category-wide 1+1 offers.
+                            </p>
                         </div>
 
-                        <span style={{ fontWeight: '800', fontSize: '1.2rem', color: '#d97706', alignSelf: 'center', marginTop: '16px' }}>➔</span>
-
-                        <div>
-                            <label style={{ display: 'block', fontWeight: '700', fontSize: '0.85rem', color: '#92400e', marginBottom: '4px' }}>
-                                GET FREE FROM CATEGORY:
-                            </label>
-                            <select
-                                value={newBogoTarget}
-                                onChange={(e) => setNewBogoTarget(e.target.value)}
-                                style={{ padding: '8px 14px', borderRadius: '6px', border: '1px solid #cbd5e1', fontWeight: '600', minWidth: '180px' }}
+                        {/* Mode Selector Pill Buttons */}
+                        <div style={{ display: 'flex', background: '#f1f5f9', padding: '4px', borderRadius: '8px', gap: '4px' }}>
+                            <button
+                                type="button"
+                                onClick={() => setBogoRuleType('item')}
+                                style={{
+                                    border: 'none',
+                                    background: bogoRuleType === 'item' ? '#d97706' : 'transparent',
+                                    color: bogoRuleType === 'item' ? '#ffffff' : '#64748b',
+                                    padding: '6px 14px',
+                                    borderRadius: '6px',
+                                    fontWeight: '700',
+                                    fontSize: '0.88rem',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                }}
                             >
-                                {categories.map(c => <option key={c._id} value={c.name}>{c.name}</option>)}
-                            </select>
+                                🍔 Items Wise 1+1
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setBogoRuleType('category')}
+                                style={{
+                                    border: 'none',
+                                    background: bogoRuleType === 'category' ? '#d97706' : 'transparent',
+                                    color: bogoRuleType === 'category' ? '#ffffff' : '#64748b',
+                                    padding: '6px 14px',
+                                    borderRadius: '6px',
+                                    fontWeight: '700',
+                                    fontSize: '0.88rem',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                }}
+                            >
+                                🏷️ Category Wise 1+1
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* New Rule Creator Box */}
+                    <div style={{ background: '#fef3c7', padding: '20px', borderRadius: '10px', border: '1px solid #fde68a', marginTop: '16px', marginBottom: '24px' }}>
+                        <div style={{ fontWeight: '800', color: '#92400e', fontSize: '0.95rem', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span>✨ Create New {bogoRuleType === 'item' ? 'Item-Wise 1+1 Deal' : 'Category-Wise 1+1 Deal'}</span>
                         </div>
 
-                        <button
-                            onClick={handleAddBogoRule}
-                            style={{ background: '#d97706', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', alignSelf: 'flex-end', marginTop: '16px' }}
-                        >
-                            + Add 1+1 Offer
-                        </button>
+                        {bogoRuleType === 'item' ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap' }}>
+                                <div style={{ flex: 1, minWidth: '220px' }}>
+                                    <label style={{ display: 'block', fontWeight: '700', fontSize: '0.85rem', color: '#92400e', marginBottom: '6px' }}>
+                                        🍔 BUY THIS ITEM:
+                                    </label>
+                                    <select
+                                        value={newBogoSourceItemId}
+                                        onChange={(e) => setNewBogoSourceItemId(e.target.value)}
+                                        style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: '600', background: 'white', fontSize: '0.95rem' }}
+                                    >
+                                        {items.map(item => {
+                                            const name = item.itemName || item.name || 'Food Item';
+                                            return (
+                                                <option key={item._id} value={item._id}>
+                                                    {name} — ₹{item.price} {item.category ? '(' + item.category + ')' : ''}
+                                                </option>
+                                            );
+                                        })}
+                                    </select>
+                                </div>
+
+                                <span style={{ fontWeight: '900', fontSize: '1.4rem', color: '#d97706', alignSelf: 'center', marginTop: '20px' }}>➔</span>
+
+                                <div style={{ flex: 1, minWidth: '220px' }}>
+                                    <label style={{ display: 'block', fontWeight: '700', fontSize: '0.85rem', color: '#92400e', marginBottom: '6px' }}>
+                                        🎁 GET THIS FREE (+1):
+                                    </label>
+                                    <select
+                                        value={newBogoTargetItemId}
+                                        onChange={(e) => setNewBogoTargetItemId(e.target.value)}
+                                        style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: '600', background: 'white', fontSize: '0.95rem' }}
+                                    >
+                                        {items.map(item => {
+                                            const name = item.itemName || item.name || 'Food Item';
+                                            return (
+                                                <option key={item._id} value={item._id}>
+                                                    {name} — ₹{item.price} {item.category ? '(' + item.category + ')' : ''}
+                                                </option>
+                                            );
+                                        })}
+                                    </select>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={handleAddBogoRule}
+                                    style={{ background: '#d97706', color: 'white', border: 'none', padding: '11px 22px', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', alignSelf: 'flex-end', marginTop: '20px', boxShadow: '0 2px 4px rgba(217,119,6,0.25)' }}
+                                >
+                                    + Add Item 1+1 Offer
+                                </button>
+                            </div>
+                        ) : (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap' }}>
+                                <div style={{ flex: 1, minWidth: '180px' }}>
+                                    <label style={{ display: 'block', fontWeight: '700', fontSize: '0.85rem', color: '#92400e', marginBottom: '6px' }}>
+                                        🏷️ BUY FROM CATEGORY:
+                                    </label>
+                                    <select
+                                        value={newBogoSource}
+                                        onChange={(e) => setNewBogoSource(e.target.value)}
+                                        style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: '600', background: 'white' }}
+                                    >
+                                        {categories.map(c => <option key={c._id} value={c.name}>{c.name}</option>)}
+                                    </select>
+                                </div>
+
+                                <span style={{ fontWeight: '900', fontSize: '1.4rem', color: '#d97706', alignSelf: 'center', marginTop: '20px' }}>➔</span>
+
+                                <div style={{ flex: 1, minWidth: '180px' }}>
+                                    <label style={{ display: 'block', fontWeight: '700', fontSize: '0.85rem', color: '#92400e', marginBottom: '6px' }}>
+                                        🎁 GET FREE FROM CATEGORY:
+                                    </label>
+                                    <select
+                                        value={newBogoTarget}
+                                        onChange={(e) => setNewBogoTarget(e.target.value)}
+                                        style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: '600', background: 'white' }}
+                                    >
+                                        {categories.map(c => <option key={c._id} value={c.name}>{c.name}</option>)}
+                                    </select>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={handleAddBogoRule}
+                                    style={{ background: '#d97706', color: 'white', border: 'none', padding: '11px 22px', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', alignSelf: 'flex-end', marginTop: '20px', boxShadow: '0 2px 4px rgba(217,119,6,0.25)' }}
+                                >
+                                    + Add Category 1+1 Offer
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                     {/* Active BOGO Rules List */}
@@ -575,43 +707,63 @@ export default function OffersPage() {
 
                     {bogoOffers.length === 0 ? (
                         <div style={{ textAlign: 'center', padding: '30px', color: '#94a3b8', background: '#f8fafc', borderRadius: '8px' }}>
-                            No 1+1 category offers created yet. Create one above!
+                            No 1+1 offers created yet. Create one above!
                         </div>
                     ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                            {bogoOffers.map((bogo, idx) => (
-                                <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc', padding: '14px 18px', borderRadius: '8px', border: '1px solid #e2e8f0', flexWrap: 'wrap', gap: '10px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                        <span style={{ background: '#fef3c7', color: '#b45309', fontWeight: '700', padding: '4px 10px', borderRadius: '6px', fontSize: '0.85rem' }}>1+1 DEAL</span>
-                                        <span style={{ fontWeight: '600', color: '#1e293b' }}>
-                                            Buy <strong>{bogo.sourceCategory}</strong> → Get <strong>{bogo.targetCategory}</strong> FREE
-                                        </span>
-                                    </div>
-
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                        <button
-                                            onClick={() => handleToggleBogoRule(idx)}
-                                            style={{
-                                                background: bogo.isActive !== false ? '#dcfce7' : '#f1f5f9',
-                                                color: bogo.isActive !== false ? '#15803d' : '#64748b',
-                                                border: 'none',
-                                                padding: '6px 14px',
+                            {bogoOffers.map((bogo, idx) => {
+                                const isItemRule = bogo.type === 'item';
+                                return (
+                                    <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc', padding: '14px 18px', borderRadius: '8px', border: '1px solid #e2e8f0', flexWrap: 'wrap', gap: '10px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <span style={{
+                                                background: isItemRule ? '#fed7aa' : '#fef3c7',
+                                                color: isItemRule ? '#c2410c' : '#b45309',
+                                                fontWeight: '800',
+                                                padding: '4px 10px',
                                                 borderRadius: '6px',
-                                                fontWeight: '700',
-                                                cursor: 'pointer'
-                                            }}
-                                        >
-                                            {bogo.isActive !== false ? '✓ Enabled' : 'Disabled'}
-                                        </button>
-                                        <button
-                                            onClick={() => handleDeleteBogoRule(idx)}
-                                            style={{ background: '#fee2e2', color: '#dc2626', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: '600', cursor: 'pointer' }}
-                                        >
-                                            Delete
-                                        </button>
+                                                fontSize: '0.82rem'
+                                            }}>
+                                                {isItemRule ? '🍔 ITEM 1+1' : '🏷️ CATEGORY 1+1'}
+                                            </span>
+                                            {isItemRule ? (
+                                                <span style={{ fontWeight: '600', color: '#1e293b' }}>
+                                                    Buy <strong>{bogo.sourceItemName || 'Item'}</strong> ➔ Get <strong>{bogo.targetItemName || 'Free Item'}</strong> <span style={{ color: '#15803d', fontWeight: '800' }}>FREE (+1)</span>
+                                                </span>
+                                            ) : (
+                                                <span style={{ fontWeight: '600', color: '#1e293b' }}>
+                                                    Buy <strong>{bogo.sourceCategory}</strong> ➔ Get <strong>{bogo.targetCategory}</strong> <span style={{ color: '#15803d', fontWeight: '800' }}>FREE</span>
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleToggleBogoRule(idx)}
+                                                style={{
+                                                    background: bogo.isActive !== false ? '#dcfce7' : '#f1f5f9',
+                                                    color: bogo.isActive !== false ? '#15803d' : '#64748b',
+                                                    border: 'none',
+                                                    padding: '6px 14px',
+                                                    borderRadius: '6px',
+                                                    fontWeight: '700',
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                {bogo.isActive !== false ? '✓ Enabled' : 'Disabled'}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleDeleteBogoRule(idx)}
+                                                style={{ background: '#fee2e2', color: '#dc2626', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: '600', cursor: 'pointer' }}
+                                            >
+                                                Delete
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
                 </div>

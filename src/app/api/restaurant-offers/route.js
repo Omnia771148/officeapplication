@@ -43,6 +43,18 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: 'Restaurant ID is required' }, { status: 400 });
     }
 
+    const sanitizedBogo = (bogoOffers || []).map((b) => ({
+      type: b.type === 'item' ? 'item' : 'category',
+      sourceItemId: String(b.sourceItemId || ''),
+      sourceItemName: String(b.sourceItemName || ''),
+      targetItemId: String(b.targetItemId || ''),
+      targetItemName: String(b.targetItemName || ''),
+      sourceCategory: String(b.sourceCategory || ''),
+      targetCategory: String(b.targetCategory || ''),
+      offerTitle: String(b.offerTitle || '1+1 Offer'),
+      isActive: b.isActive !== false
+    }));
+
     const sanitizedTiers = (tieredDiscounts || []).map((t) => ({
       minBillAmount: Number(t.minBillAmount || 0),
       discountType: t.discountType === 'flat' ? 'flat' : 'percentage',
@@ -55,7 +67,7 @@ export async function POST(request) {
     const updateDoc = {
       $set: {
         restId: String(restaurantId),
-        bogoOffers: bogoOffers || [],
+        bogoOffers: sanitizedBogo,
         categoryDiscounts: categoryDiscounts || [],
         tieredDiscounts: sanitizedTiers,
         updatedAt: new Date()
