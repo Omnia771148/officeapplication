@@ -19,6 +19,11 @@ export default function RestaurantDashboardPage({ params }) {
     const [editName, setEditName] = useState('');
     const [updatingName, setUpdatingName] = useState(false);
 
+    // Offer title edit states
+    const [isEditingOfferTitle, setIsEditingOfferTitle] = useState(false);
+    const [editOfferTitle, setEditOfferTitle] = useState('');
+    const [updatingOfferTitle, setUpdatingOfferTitle] = useState(false);
+
     // Active status toggle state
     const [togglingActive, setTogglingActive] = useState(false);
 
@@ -123,6 +128,37 @@ export default function RestaurantDashboardPage({ params }) {
             alert('Error updating restaurant name.');
         } finally {
             setUpdatingName(false);
+        }
+    };
+
+    const handleSaveOfferTitle = async () => {
+        setUpdatingOfferTitle(true);
+        try {
+            const trimmedTitle = editOfferTitle.trim();
+            const res = await fetch('/api/restaurant-timings', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    restId: id,
+                    offerTitle: trimmedTitle
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setDetails(prev => ({
+                    ...prev,
+                    offerTitle: trimmedTitle
+                }));
+                setIsEditingOfferTitle(false);
+                alert('Offer title updated successfully!');
+            } else {
+                alert(data.error || 'Failed to update offer title.');
+            }
+        } catch (err) {
+            console.error("Error updating offer title:", err);
+            alert("Server communication error.");
+        } finally {
+            setUpdatingOfferTitle(false);
         }
     };
 
@@ -267,7 +303,100 @@ export default function RestaurantDashboardPage({ params }) {
                         </div>
                         <div className="detailItem">
                             <span className="detailLabel">Offer Title</span>
-                            <span className="detailValue">{details.offerTitle || 'N/A'}</span>
+                            {isEditingOfferTitle ? (
+                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '4px' }}>
+                                    <div style={{ position: 'relative', flex: 1, display: 'flex', alignItems: 'center' }}>
+                                        <input
+                                            type="text"
+                                            style={{
+                                                padding: '6px 28px 6px 10px',
+                                                borderRadius: '6px',
+                                                border: '1px solid #cbd5e1',
+                                                fontSize: '0.95rem',
+                                                color: '#1e293b',
+                                                backgroundColor: '#ffffff',
+                                                width: '100%',
+                                                boxSizing: 'border-box'
+                                            }}
+                                            value={editOfferTitle}
+                                            onChange={(e) => setEditOfferTitle(e.target.value)}
+                                            placeholder="Enter offer title (or empty to clear)"
+                                            disabled={updatingOfferTitle}
+                                        />
+                                        {editOfferTitle && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setEditOfferTitle('')}
+                                                disabled={updatingOfferTitle}
+                                                style={{
+                                                    position: 'absolute',
+                                                    right: '6px',
+                                                    background: '#e2e8f0',
+                                                    border: 'none',
+                                                    borderRadius: '50%',
+                                                    width: '18px',
+                                                    height: '18px',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    cursor: 'pointer',
+                                                    fontSize: '10px',
+                                                    color: '#64748b',
+                                                    padding: 0
+                                                }}
+                                                title="Clear offer title"
+                                            >
+                                                ✕
+                                            </button>
+                                        )}
+                                    </div>
+                                    <button 
+                                        onClick={handleSaveOfferTitle}
+                                        disabled={updatingOfferTitle}
+                                        style={{
+                                            backgroundColor: '#2ecc71',
+                                            color: 'white',
+                                            border: 'none',
+                                            padding: '6px 12px',
+                                            borderRadius: '6px',
+                                            cursor: 'pointer',
+                                            fontWeight: '600',
+                                            fontSize: '0.85rem'
+                                        }}
+                                    >
+                                        {updatingOfferTitle ? '...' : 'Save'}
+                                    </button>
+                                    <button 
+                                        onClick={() => setIsEditingOfferTitle(false)}
+                                        disabled={updatingOfferTitle}
+                                        style={{
+                                            backgroundColor: '#e74c3c',
+                                            color: 'white',
+                                            border: 'none',
+                                            padding: '6px 12px',
+                                            borderRadius: '6px',
+                                            cursor: 'pointer',
+                                            fontWeight: '600',
+                                            fontSize: '0.85rem'
+                                        }}
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            ) : (
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                                    <span className="detailValue">{details.offerTitle || 'N/A'}</span>
+                                    <button 
+                                        className="passwordToggleBtn" 
+                                        onClick={() => {
+                                            setEditOfferTitle(details.offerTitle || '');
+                                            setIsEditingOfferTitle(true);
+                                        }}
+                                    >
+                                        ✏️ Edit
+                                    </button>
+                                </div>
+                            )}
                         </div>
                         <div className="detailItem">
                             <span className="detailLabel">Location Name</span>

@@ -139,7 +139,7 @@ export async function GET() {
 export async function PATCH(request) {
   try {
     await dbConnect();
-    const { restId, openTime, closeTime, isActive } = await request.json();
+    const { restId, openTime, closeTime, isActive, offerTitle } = await request.json();
 
     if (!restId) {
       return NextResponse.json({ success: false, error: "Restaurant ID is required" }, { status: 400 });
@@ -186,6 +186,17 @@ export async function PATCH(request) {
           isActive,
           isManuallyToggled: true,
           manualStatusUpdatedAt: new Date(),
+        },
+        { new: true }
+      );
+    }
+
+    // Update offerTitle if provided in request
+    if (offerTitle !== undefined) {
+      await RestuarentUser.findOneAndUpdate(
+        { restId },
+        {
+          offerTitle: typeof offerTitle === 'string' ? offerTitle.trim() : ''
         },
         { new: true }
       );
