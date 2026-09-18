@@ -13,6 +13,10 @@ const ItemStatusSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
+    oldprices: {
+        type: Number,
+        default: null
+    },
     restaurantId: {
         type: String,
         required: true

@@ -343,6 +343,24 @@ export default function CatagoryFilterPage() {
 
   return (
     <div style={styles.container}>
+      <style>{`
+        input::placeholder {
+          color: #000000 !important;
+          opacity: 1 !important;
+        }
+        input::-webkit-input-placeholder {
+          color: #000000 !important;
+          opacity: 1 !important;
+        }
+        input::-moz-placeholder {
+          color: #000000 !important;
+          opacity: 1 !important;
+        }
+        input:-ms-input-placeholder {
+          color: #000000 !important;
+          opacity: 1 !important;
+        }
+      `}</style>
       {/* Header Bar */}
       <div style={styles.header}>
         <button style={styles.backBtn} onClick={() => router.push("/dashboard")}>
@@ -760,6 +778,7 @@ const styles = {
     fontSize: "15px",
     boxSizing: "border-box",
     outline: "none",
+    color: "#000000",
   },
   button: {
     width: "100%",

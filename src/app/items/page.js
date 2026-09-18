@@ -82,6 +82,198 @@ export default function BranchItemsPage() {
     const [deletingId, setDeletingId] = useState(null);
     const [deletingAll, setDeletingAll] = useState(false);
 
+    // Item Selection & Price Adjustment (Hike / Decrease) States
+    const [selectedItemIds, setSelectedItemIds] = useState([]);
+    const [hikeAction, setHikeAction] = useState('increase'); // 'increase' | 'decrease'
+    const [hikeType, setHikeType] = useState('percentage'); // 'percentage' | 'fixed'
+    const [hikeValue, setHikeValue] = useState('');
+    const [roundToWhole, setRoundToWhole] = useState(true);
+    const [isHiking, setIsHiking] = useState(false);
+    const [hikeSuccessMsg, setHikeSuccessMsg] = useState('');
+    const [hikeErrorMsg, setHikeErrorMsg] = useState('');
+
+    const toggleSelectItem = (id) => {
+        setSelectedItemIds(prev =>
+            prev.includes(id) ? prev.filter(itemId => itemId !== id) : [...prev, id]
+        );
+    };
+
+    const handleSelectAllFiltered = () => {
+        const filteredIds = filteredItems.map(item => item._id);
+        setSelectedItemIds(prev => {
+            const combined = new Set([...prev, ...filteredIds]);
+            return Array.from(combined);
+        });
+    };
+
+    const handleSelectAllItems = () => {
+        setSelectedItemIds(items.map(item => item._id));
+    };
+
+    const handleDeselectAll = () => {
+        setSelectedItemIds([]);
+    };
+
+    const handleRemoveSelectedItem = (id) => {
+        setSelectedItemIds(prev => prev.filter(itemId => itemId !== id));
+    };
+
+    const calculateNewPrice = (currentPrice, action = hikeAction, type = hikeType, val = hikeValue, round = roundToWhole) => {
+        const numPrice = Number(currentPrice) || 0;
+        const numVal = parseFloat(val);
+        if (isNaN(numVal) || numVal <= 0) return numPrice;
+
+        let result = numPrice;
+        if (action === 'increase') {
+            if (type === 'percentage') {
+                result = numPrice + (numPrice * (numVal / 100));
+            } else {
+                result = numPrice + numVal;
+            }
+        } else {
+            // Decrease / Discount
+            if (type === 'percentage') {
+                result = Math.max(0, numPrice - (numPrice * (numVal / 100)));
+            } else {
+                result = Math.max(0, numPrice - numVal);
+            }
+        }
+
+        return round ? Math.round(result) : parseFloat(result.toFixed(2));
+    };
+
+    const handleApplyPriceHike = async () => {
+        if (selectedItemIds.length === 0) {
+            alert('Please select at least one item.');
+            return;
+        }
+
+        const numVal = parseFloat(hikeValue);
+        if (isNaN(numVal) || numVal <= 0) {
+            alert('Please enter a valid positive value.');
+            return;
+        }
+
+        const updates = selectedItemIds.map(id => {
+            const item = items.find(i => i._id === id);
+            const oldPrice = item ? Number(item.price) : 0;
+            return {
+                itemId: id,
+                price: calculateNewPrice(oldPrice, hikeAction, hikeType, numVal, roundToWhole),
+                oldprices: oldPrice
+            };
+        });
+
+        const actionText = hikeAction === 'increase' ? 'increase' : 'decrease';
+        const actionPast = hikeAction === 'increase' ? 'increased' : 'decreased';
+        const hikeDescription = hikeType === 'percentage' ? `${numVal}%` : `₹${numVal}`;
+        const confirmMsg = `Are you sure you want to ${actionText} the price of ${updates.length} selected item(s) by ${hikeDescription}? (Current prices will be saved in 'oldprices' for Undo)`;
+        if (!window.confirm(confirmMsg)) {
+            return;
+        }
+
+        setIsHiking(true);
+        setHikeSuccessMsg('');
+        setHikeErrorMsg('');
+
+        try {
+            const res = await fetch('/api/item-status', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    restaurantId,
+                    bulkPriceUpdates: updates
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setItems(prevItems =>
+                    prevItems.map(item => {
+                        const match = updates.find(u => u.itemId === item._id);
+                        return match ? { ...item, price: match.price, oldprices: match.oldprices } : item;
+                    })
+                );
+                setHikeSuccessMsg(`Successfully ${actionPast} prices for ${updates.length} item(s) by ${hikeDescription}! You can click UNDO anytime to revert.`);
+                setHikeValue('');
+                setTimeout(() => {
+                    setHikeSuccessMsg('');
+                }, 8000);
+            } else {
+                setHikeErrorMsg(data.error || 'Failed to update prices.');
+            }
+        } catch (err) {
+            console.error('Price update error:', err);
+            setHikeErrorMsg('Server error while updating prices.');
+        } finally {
+            setIsHiking(false);
+        }
+    };
+
+    const [isUndoing, setIsUndoing] = useState(false);
+
+    const handleUndoPriceChange = async (targetItemIds = null) => {
+        let idsToUndo = targetItemIds;
+        if (!idsToUndo) {
+            if (selectedItemIds.length > 0) {
+                idsToUndo = selectedItemIds.filter(id => {
+                    const item = items.find(i => i._id === id);
+                    return item && item.oldprices !== undefined && item.oldprices !== null;
+                });
+            } else {
+                idsToUndo = items
+                    .filter(item => item.oldprices !== undefined && item.oldprices !== null)
+                    .map(item => item._id);
+            }
+        }
+
+        if (!idsToUndo || idsToUndo.length === 0) {
+            alert('No items with a previous old price were found to undo.');
+            return;
+        }
+
+        const confirmMsg = `Are you sure you want to UNDO and restore previous prices for ${idsToUndo.length} item(s)?`;
+        if (!window.confirm(confirmMsg)) return;
+
+        setIsUndoing(true);
+        setHikeSuccessMsg('');
+        setHikeErrorMsg('');
+
+        try {
+            const res = await fetch('/api/item-status', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    restaurantId,
+                    action: 'undo',
+                    undoItemIds: idsToUndo
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setItems(prevItems =>
+                    prevItems.map(item => {
+                        if (idsToUndo.includes(item._id)) {
+                            const restoredPrice = item.oldprices !== undefined && item.oldprices !== null ? item.oldprices : item.price;
+                            const copy = { ...item, price: restoredPrice };
+                            delete copy.oldprices;
+                            return copy;
+                        }
+                        return item;
+                    })
+                );
+                setHikeSuccessMsg(`↺ Successfully restored previous prices for ${idsToUndo.length} item(s)!`);
+                setTimeout(() => setHikeSuccessMsg(''), 6000);
+            } else {
+                setHikeErrorMsg(data.error || 'Failed to undo price changes.');
+            }
+        } catch (err) {
+            console.error('Undo price error:', err);
+            setHikeErrorMsg('Server error while undoing prices.');
+        } finally {
+            setIsUndoing(false);
+        }
+    };
+
     // Editing States
     const [editingId, setEditingId] = useState(null);
     const [editName, setEditName] = useState('');
@@ -762,6 +954,729 @@ export default function BranchItemsPage() {
                     cursor: not-allowed;
                 }
 
+                /* Selection Styling on Cards */
+                .itemCard.itemCardSelected {
+                    border: 2px solid #10b981;
+                    background-color: #f7fdf9;
+                    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.14);
+                }
+                .cardSelectBar {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 12px;
+                    padding-bottom: 8px;
+                    border-bottom: 1px dashed #e2e8f0;
+                }
+                .cardSelectLabel {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 8px;
+                    cursor: pointer;
+                    user-select: none;
+                    font-size: 0.88rem;
+                    font-weight: 600;
+                    color: #475569;
+                    transition: color 0.15s;
+                }
+                .cardSelectLabel:hover {
+                    color: #10b981;
+                }
+                .cardSelectLabel.selected {
+                    color: #059669;
+                    font-weight: 700;
+                }
+                .cardSelectCheckbox {
+                    display: none;
+                }
+                .cardCustomBox {
+                    width: 20px;
+                    height: 20px;
+                    border-radius: 6px;
+                    border: 2px solid #cbd5e1;
+                    background: white;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 13px;
+                    color: white;
+                    font-weight: bold;
+                    transition: all 0.2s;
+                }
+                .cardSelectLabel.selected .cardCustomBox {
+                    background: #10b981;
+                    border-color: #10b981;
+                }
+                .cardBadgeSelected {
+                    background: #d1fae5;
+                    color: #065f46;
+                    font-size: 0.72rem;
+                    font-weight: 700;
+                    padding: 2px 7px;
+                    border-radius: 12px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.4px;
+                }
+
+                /* Top Selection Toolbar */
+                .selectionToolbar {
+                    max-width: 1100px;
+                    margin: -15px auto 25px auto;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    background: white;
+                    padding: 12px 20px;
+                    border-radius: 10px;
+                    border: 1px solid #e2e8f0;
+                    flex-wrap: wrap;
+                    gap: 12px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+                }
+                .selectionToolbarLeft {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    flex-wrap: wrap;
+                }
+                .btnSelectAction {
+                    background: #f1f5f9;
+                    color: #334155;
+                    border: 1px solid #cbd5e1;
+                    padding: 7px 14px;
+                    border-radius: 6px;
+                    font-size: 0.88rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                .btnSelectAction:hover {
+                    background: #e2e8f0;
+                    color: #1e293b;
+                }
+                .btnSelectAction.outline {
+                    background: #fff;
+                    color: #e53e3e;
+                    border-color: #fecaca;
+                }
+                .btnSelectAction.outline:hover {
+                    background: #fee2e2;
+                }
+                .btnSelectAction.undo {
+                    background: #eff6ff;
+                    color: #1d4ed8;
+                    border-color: #bfdbfe;
+                }
+                .btnSelectAction.undo:hover:not(:disabled) {
+                    background: #dbeafe;
+                    border-color: #93c5fd;
+                }
+                .cardOldPriceBadge {
+                    background: #f8fafc;
+                    color: #475569;
+                    font-size: 0.78rem;
+                    font-weight: 700;
+                    padding: 2px 7px;
+                    border-radius: 6px;
+                    border: 1px dashed #cbd5e1;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                }
+                .btnCardUndoInline {
+                    background: #3b82f6;
+                    color: white;
+                    border: none;
+                    border-radius: 4px;
+                    padding: 2px 6px;
+                    font-size: 0.72rem;
+                    cursor: pointer;
+                    font-weight: 700;
+                    transition: background 0.15s;
+                }
+                .btnCardUndoInline:hover:not(:disabled) {
+                    background: #1d4ed8;
+                }
+                .btnUndoHikeBottom {
+                    background: #eff6ff;
+                    color: #1d4ed8;
+                    border: 1.5px solid #93c5fd;
+                    padding: 13px 20px;
+                    border-radius: 10px;
+                    font-size: 0.95rem;
+                    font-weight: 700;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                }
+                .btnUndoHikeBottom:hover:not(:disabled) {
+                    background: #dbeafe;
+                    border-color: #60a5fa;
+                    transform: translateY(-1px);
+                }
+                .btnUndoHikeBottom:disabled {
+                    opacity: 0.6;
+                    cursor: not-allowed;
+                }
+                .selectionCountBadge {
+                    font-size: 0.9rem;
+                    font-weight: 600;
+                    color: #64748b;
+                }
+                .btnJumpToHike {
+                    background: #10b981;
+                    color: white;
+                    text-decoration: none;
+                    padding: 8px 16px;
+                    border-radius: 6px;
+                    font-size: 0.88rem;
+                    font-weight: 700;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    transition: all 0.2s;
+                    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+                }
+                .btnJumpToHike:hover {
+                    background: #059669;
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+                }
+
+                /* Downside Price Hike Section */
+                .priceHikeSection {
+                    max-width: 1100px;
+                    margin: 50px auto 20px auto;
+                    background: white;
+                    border-radius: 16px;
+                    border: 2px solid #e2e8f0;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+                    padding: 30px;
+                    scroll-margin-top: 40px;
+                }
+                .hikeHeader {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    flex-wrap: wrap;
+                    gap: 15px;
+                    padding-bottom: 20px;
+                    border-bottom: 1.5px solid #f1f5f9;
+                    margin-bottom: 25px;
+                }
+                .hikeTitleBlock {
+                    display: flex;
+                    align-items: center;
+                    gap: 15px;
+                }
+                .hikeIcon {
+                    width: 48px;
+                    height: 48px;
+                    border-radius: 12px;
+                    background: #ecfdf5;
+                    color: #059669;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 1.6rem;
+                    border: 1px solid #a7f3d0;
+                }
+                .hikeTitle {
+                    margin: 0;
+                    font-size: 1.6rem;
+                    font-weight: 800;
+                    color: #1e293b;
+                }
+                .hikeSubtitle {
+                    margin: 4px 0 0 0;
+                    font-size: 0.95rem;
+                    color: #64748b;
+                }
+                .hikeHeaderActions {
+                    display: flex;
+                    gap: 10px;
+                    flex-wrap: wrap;
+                }
+                .btnClearSelection {
+                    background: #fee2e2;
+                    color: #b91c1c;
+                    border: 1px solid #fecaca;
+                    padding: 8px 14px;
+                    border-radius: 8px;
+                    font-size: 0.88rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                .btnClearSelection:hover {
+                    background: #fecaca;
+                }
+                .btnSelectAllBottom {
+                    background: #f1f5f9;
+                    color: #334155;
+                    border: 1px solid #cbd5e1;
+                    padding: 8px 14px;
+                    border-radius: 8px;
+                    font-size: 0.88rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                .btnSelectAllBottom:hover {
+                    background: #e2e8f0;
+                }
+
+                /* Alerts in Hike Section */
+                .hikeAlert {
+                    padding: 14px 18px;
+                    border-radius: 10px;
+                    margin-bottom: 20px;
+                    font-weight: 600;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                }
+                .hikeAlert.success {
+                    background: #ecfdf5;
+                    color: #065f46;
+                    border: 1px solid #a7f3d0;
+                }
+                .hikeAlert.error {
+                    background: #fef2f2;
+                    color: #991b1b;
+                    border: 1px solid #fecaca;
+                }
+
+                /* Empty state when no items selected */
+                .hikeEmptyState {
+                    text-align: center;
+                    padding: 50px 20px;
+                    background: #f8fafc;
+                    border-radius: 12px;
+                    border: 2px dashed #cbd5e1;
+                }
+                .hikeEmptyIcon {
+                    font-size: 2.8rem;
+                    margin-bottom: 12px;
+                }
+                .hikeEmptyTitle {
+                    margin: 0 0 8px 0;
+                    font-size: 1.3rem;
+                    font-weight: 700;
+                    color: #334155;
+                }
+                .hikeEmptyText {
+                    margin: 0 0 20px 0;
+                    color: #64748b;
+                    font-size: 0.98rem;
+                }
+                .btnSelectAllPrompt {
+                    background: #10b981;
+                    color: white;
+                    border: none;
+                    padding: 10px 22px;
+                    border-radius: 8px;
+                    font-weight: 700;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2);
+                }
+                .btnSelectAllPrompt:hover {
+                    background: #059669;
+                    transform: translateY(-2px);
+                }
+
+                /* Controls Card */
+                .hikeControlsCard {
+                    background: #f8fafc;
+                    border: 1.5px solid #e2e8f0;
+                    border-radius: 12px;
+                    padding: 24px;
+                    margin-bottom: 30px;
+                }
+                .hikeControlsGrid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                    gap: 24px;
+                    margin-bottom: 24px;
+                }
+                .hikeControlGroup {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                }
+                .hikeFieldLabel {
+                    font-size: 0.85rem;
+                    font-weight: 700;
+                    color: #475569;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }
+                .hikeModeTabs {
+                    display: flex;
+                    background: #e2e8f0;
+                    padding: 4px;
+                    border-radius: 10px;
+                    gap: 4px;
+                }
+                .hikeModeTab {
+                    flex: 1;
+                    border: none;
+                    background: transparent;
+                    padding: 10px;
+                    border-radius: 8px;
+                    font-size: 0.9rem;
+                    font-weight: 700;
+                    color: #475569;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                .hikeModeTab.active {
+                    background: white;
+                    color: #059669;
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+                }
+                .hikeActionTab {
+                    flex: 1;
+                    border: none;
+                    background: transparent;
+                    padding: 10px;
+                    border-radius: 8px;
+                    font-size: 0.9rem;
+                    font-weight: 700;
+                    color: #475569;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 6px;
+                }
+                .hikeActionTab.active.increase {
+                    background: #10b981;
+                    color: white;
+                    box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
+                }
+                .hikeActionTab.active.decrease {
+                    background: #e11d48;
+                    color: white;
+                    box-shadow: 0 2px 6px rgba(225, 29, 72, 0.25);
+                }
+                .hikeInputWrapper {
+                    display: flex;
+                    align-items: center;
+                    position: relative;
+                }
+                .hikeInputPrefix {
+                    position: absolute;
+                    left: 14px;
+                    font-size: 1.2rem;
+                    font-weight: 700;
+                    color: #059669;
+                    transition: color 0.2s;
+                }
+                .hikeInputPrefix.decrease {
+                    color: #e11d48;
+                }
+                .hikeInputField {
+                    width: 100%;
+                    padding: 12px 16px 12px 38px;
+                    border-radius: 8px;
+                    border: 1.5px solid #cbd5e1;
+                    font-size: 1.15rem;
+                    font-weight: 700;
+                    color: #1e293b;
+                    background: white;
+                    outline: none;
+                    transition: all 0.2s;
+                }
+                .hikeInputField:focus {
+                    border-color: #10b981;
+                    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+                }
+                .hikeInputField.decrease:focus {
+                    border-color: #e11d48;
+                    box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.15);
+                }
+                .hikeChipsContainer {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    flex-wrap: wrap;
+                    margin-top: 4px;
+                }
+                .chipsLabel {
+                    font-size: 0.78rem;
+                    color: #64748b;
+                    font-weight: 600;
+                }
+                .hikeChip {
+                    background: white;
+                    border: 1px solid #cbd5e1;
+                    padding: 4px 9px;
+                    border-radius: 6px;
+                    font-size: 0.8rem;
+                    font-weight: 600;
+                    color: #334155;
+                    cursor: pointer;
+                    transition: all 0.15s;
+                }
+                .hikeChip:hover {
+                    border-color: #10b981;
+                    color: #059669;
+                    background: #f0fdf4;
+                }
+                .hikeChip.active {
+                    background: #059669;
+                    color: white;
+                    border-color: #059669;
+                }
+                .hikeChip.active-decrease {
+                    background: #e11d48;
+                    color: white;
+                    border-color: #e11d48;
+                }
+                .hikeCheckboxLabel {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    cursor: pointer;
+                    font-size: 0.92rem;
+                    font-weight: 600;
+                    color: #334155;
+                }
+                .hikeCheckboxLabel input {
+                    width: 17px;
+                    height: 17px;
+                    cursor: pointer;
+                    accent-color: #10b981;
+                }
+                .hikeFormulaBadge {
+                    background: #e0f2fe;
+                    color: #0369a1;
+                    border: 1px solid #bae6fd;
+                    padding: 8px 12px;
+                    border-radius: 8px;
+                    font-size: 0.82rem;
+                    font-weight: 600;
+                    margin-top: 6px;
+                }
+                .hikeFormulaBadge.decrease {
+                    background: #fff1f2;
+                    color: #9f1239;
+                    border-color: #fecdd3;
+                }
+                .hikeFormulaBadge code {
+                    font-weight: 800;
+                }
+                .hikeApplyBar {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    background: white;
+                    padding: 16px 20px;
+                    border-radius: 10px;
+                    border: 1px solid #e2e8f0;
+                    flex-wrap: wrap;
+                    gap: 15px;
+                }
+                .hikeApplySummary {
+                    font-size: 1rem;
+                    color: #334155;
+                }
+                .btnApplyHike {
+                    background: #10b981;
+                    color: white;
+                    border: none;
+                    padding: 14px 28px;
+                    border-radius: 10px;
+                    font-size: 1.05rem;
+                    font-weight: 700;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    box-shadow: 0 4px 10px rgba(16, 185, 129, 0.25);
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+                .btnApplyHike:hover:not(:disabled) {
+                    background: #059669;
+                    transform: translateY(-2px);
+                    box-shadow: 0 6px 15px rgba(16, 185, 129, 0.35);
+                }
+                .btnApplyHike.decrease {
+                    background: #e11d48;
+                    box-shadow: 0 4px 10px rgba(225, 29, 72, 0.25);
+                }
+                .btnApplyHike.decrease:hover:not(:disabled) {
+                    background: #be123c;
+                    box-shadow: 0 6px 15px rgba(225, 29, 72, 0.35);
+                }
+                .btnApplyHike:disabled {
+                    opacity: 0.55;
+                    cursor: not-allowed;
+                    transform: none;
+                }
+
+                /* Table Preview */
+                .hikePreviewContainer {
+                    margin-top: 25px;
+                }
+                .hikePreviewHeader {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: baseline;
+                    margin-bottom: 12px;
+                    flex-wrap: wrap;
+                    gap: 8px;
+                }
+                .hikePreviewTitle {
+                    margin: 0;
+                    font-size: 1.25rem;
+                    font-weight: 700;
+                    color: #1e293b;
+                }
+                .hikePreviewHint {
+                    font-size: 0.85rem;
+                    color: #64748b;
+                }
+                .hikeItemsTableWrapper {
+                    overflow-x: auto;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 10px;
+                    background: white;
+                }
+                .hikeItemsTable {
+                    width: 100%;
+                    border-collapse: collapse;
+                    text-align: left;
+                    font-size: 0.95rem;
+                }
+                .hikeItemsTable th {
+                    background: #f8fafc;
+                    color: #475569;
+                    font-weight: 700;
+                    padding: 12px 16px;
+                    border-bottom: 1.5px solid #e2e8f0;
+                    font-size: 0.85rem;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }
+                .hikeItemsTable td {
+                    padding: 12px 16px;
+                    border-bottom: 1px solid #f1f5f9;
+                    vertical-align: middle;
+                }
+                .hikeItemsTable tr:last-child td {
+                    border-bottom: none;
+                }
+                .tableItemInfo {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                }
+                .tableItemImg {
+                    width: 44px;
+                    height: 44px;
+                    border-radius: 8px;
+                    object-fit: cover;
+                }
+                .tableItemImgPlaceholder {
+                    width: 44px;
+                    height: 44px;
+                    border-radius: 8px;
+                    background: #f1f5f9;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 1.3rem;
+                }
+                .tableItemName {
+                    font-weight: 700;
+                    color: #1e293b;
+                }
+                .tableItemId {
+                    font-size: 0.78rem;
+                    color: #94a3b8;
+                }
+                .tableOldPrice {
+                    font-weight: 600;
+                    color: #64748b;
+                }
+                .tableDiff {
+                    font-weight: 700;
+                    padding: 3px 8px;
+                    border-radius: 6px;
+                    display: inline-block;
+                }
+                .tableDiff.positive {
+                    color: #059669;
+                    background: #ecfdf5;
+                }
+                .tableDiff.negative {
+                    color: #e11d48;
+                    background: #fff1f2;
+                }
+                .tableNewPrice {
+                    font-weight: 800;
+                    color: #059669;
+                    font-size: 1.1rem;
+                }
+                .tableNewPrice.decrease {
+                    color: #e11d48;
+                }
+                .btnRemoveFromHike {
+                    background: #fee2e2;
+                    color: #b91c1c;
+                    border: 1px solid #fecaca;
+                    padding: 5px 10px;
+                    border-radius: 6px;
+                    font-size: 0.8rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                .btnRemoveFromHike:hover {
+                    background: #fecaca;
+                }
+
+                /* Floating Pill */
+                .floatingHikePill {
+                    position: fixed;
+                    bottom: 25px;
+                    right: 25px;
+                    background: #1e293b;
+                    color: white;
+                    padding: 12px 20px;
+                    border-radius: 50px;
+                    box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    z-index: 999;
+                    animation: slideUp 0.3s ease-out;
+                }
+                @keyframes slideUp {
+                    from { transform: translateY(30px); opacity: 0; }
+                    to { transform: translateY(0); opacity: 1; }
+                }
+                .floatingHikeLink {
+                    background: #10b981;
+                    color: white;
+                    text-decoration: none;
+                    padding: 6px 14px;
+                    border-radius: 30px;
+                    font-size: 0.85rem;
+                    font-weight: 700;
+                    transition: all 0.2s;
+                }
+                .floatingHikeLink:hover {
+                    background: #059669;
+                    transform: scale(1.04);
+                }
+
                 @media (max-width: 600px) {
                     .itemsPageContainer {
                         padding: 20px;
@@ -816,6 +1731,48 @@ export default function BranchItemsPage() {
                 />
             </div>
 
+            {/* Selection & Batch Actions Toolbar */}
+            <div className="selectionToolbar">
+                <div className="selectionToolbarLeft">
+                    <button
+                        type="button"
+                        className="btnSelectAction"
+                        onClick={handleSelectAllFiltered}
+                        title="Select all visible items"
+                    >
+                        ✓ Select All ({filteredItems.length})
+                    </button>
+                    {selectedItemIds.length > 0 && (
+                        <button
+                            type="button"
+                            className="btnSelectAction outline"
+                            onClick={handleDeselectAll}
+                        >
+                            ✕ Deselect All
+                        </button>
+                    )}
+                    {items.some(i => i.oldprices !== undefined && i.oldprices !== null) && (
+                        <button
+                            type="button"
+                            className="btnSelectAction undo"
+                            onClick={() => handleUndoPriceChange()}
+                            disabled={isUndoing}
+                            title="Undo and restore previous prices"
+                        >
+                            {isUndoing ? 'Restoring...' : `↺ UNDO (${items.filter(i => i.oldprices !== undefined && i.oldprices !== null).length})`}
+                        </button>
+                    )}
+                    <span className="selectionCountBadge">
+                        <strong>{selectedItemIds.length}</strong> of {items.length} item(s) selected
+                    </span>
+                </div>
+                {selectedItemIds.length > 0 && (
+                    <a href="#price-hike-section" className="btnJumpToHike">
+                        Go to Price Hike Section ({selectedItemIds.length}) ↓
+                    </a>
+                )}
+            </div>
+
             {errorMessage && (
                 <div style={{
                     maxWidth: '1100px',
@@ -834,7 +1791,22 @@ export default function BranchItemsPage() {
             <div className="itemsGrid">
                 {filteredItems.length > 0 ? (
                     filteredItems.map((item) => (
-                        <div key={item._id} className="itemCard">
+                        <div key={item._id} className={`itemCard ${selectedItemIds.includes(item._id) ? 'itemCardSelected' : ''}`}>
+                            <div className="cardSelectBar" onClick={(e) => e.stopPropagation()}>
+                                <label className={`cardSelectLabel ${selectedItemIds.includes(item._id) ? 'selected' : ''}`}>
+                                    <input
+                                        type="checkbox"
+                                        className="cardSelectCheckbox"
+                                        checked={selectedItemIds.includes(item._id)}
+                                        onChange={() => toggleSelectItem(item._id)}
+                                    />
+                                    <span className="cardCustomBox">{selectedItemIds.includes(item._id) ? '✓' : ''}</span>
+                                    <span>{selectedItemIds.includes(item._id) ? 'Selected for Hike' : 'Select for Hike'}</span>
+                                </label>
+                                {selectedItemIds.includes(item._id) && (
+                                    <span className="cardBadgeSelected">Selected</span>
+                                )}
+                            </div>
                             {editingId === item._id ? (
                                 <div className="editFieldsContainer">
                                     <div className="editFieldGroup">
@@ -957,6 +1929,23 @@ export default function BranchItemsPage() {
 
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px', flexWrap: 'wrap' }}>
                                             <div className="itemPrice" style={{ margin: 0 }}>₹{item.price}</div>
+                                            {item.oldprices !== undefined && item.oldprices !== null && (
+                                                <span className="cardOldPriceBadge" title="Previous price before last change">
+                                                    Old: ₹{item.oldprices}
+                                                    <button
+                                                        type="button"
+                                                        className="btnCardUndoInline"
+                                                        title="Undo and revert to old price"
+                                                        disabled={isUndoing}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleUndoPriceChange([item._id]);
+                                                        }}
+                                                    >
+                                                        ↺ Undo
+                                                    </button>
+                                                </span>
+                                            )}
                                             {item.vegOrNonVeg && (
                                                 <span style={{
                                                     padding: '3px 8px',
@@ -1034,6 +2023,324 @@ export default function BranchItemsPage() {
                     </div>
                 )}
             </div>
+
+            {/* DOWNSIDE: SELECTED ITEMS & PRICE HIKE SECTION */}
+            <div id="price-hike-section" className="priceHikeSection">
+                <div className="hikeHeader">
+                    <div className="hikeTitleBlock">
+                        <div className="hikeIcon">📈</div>
+                        <div>
+                            <h2 className="hikeTitle">Price Hike & Batch Update</h2>
+                            <p className="hikeSubtitle">
+                                Increase prices for selected items by percentage (%) or flat amount (₹)
+                            </p>
+                        </div>
+                    </div>
+                    <div className="hikeHeaderActions">
+                        {selectedItemIds.length > 0 && (
+                            <button
+                                type="button"
+                                className="btnClearSelection"
+                                onClick={handleDeselectAll}
+                            >
+                                Clear Selection ({selectedItemIds.length})
+                            </button>
+                        )}
+                        <button
+                            type="button"
+                            className="btnSelectAllBottom"
+                            onClick={handleSelectAllItems}
+                        >
+                            Select All Items ({items.length})
+                        </button>
+                    </div>
+                </div>
+
+                {hikeSuccessMsg && (
+                    <div className="hikeAlert success">
+                        <span>🎉 {hikeSuccessMsg}</span>
+                    </div>
+                )}
+
+                {hikeErrorMsg && (
+                    <div className="hikeAlert error">
+                        <span>⚠️ {hikeErrorMsg}</span>
+                    </div>
+                )}
+
+                {selectedItemIds.length === 0 ? (
+                    <div className="hikeEmptyState">
+                        <div className="hikeEmptyIcon">🛒</div>
+                        <h3 className="hikeEmptyTitle">No Items Selected Yet</h3>
+                        <p className="hikeEmptyText">
+                            Check <strong>"Select for Hike"</strong> on any items above to adjust their prices, or select all below.
+                        </p>
+                        <button
+                            type="button"
+                            className="btnSelectAllPrompt"
+                            onClick={handleSelectAllItems}
+                        >
+                            Select All {items.length} Items
+                        </button>
+                    </div>
+                ) : (
+                    <div className="hikeConfigArea">
+                        {/* Control Card */}
+                        <div className="hikeControlsCard">
+                            <div className="hikeControlsGrid">
+                                {/* 1. Action Selection: Increase or Decrease */}
+                                <div className="hikeControlGroup">
+                                    <label className="hikeFieldLabel">1. Price Action</label>
+                                    <div className="hikeModeTabs">
+                                        <button
+                                            type="button"
+                                            className={`hikeActionTab ${hikeAction === 'increase' ? 'active increase' : ''}`}
+                                            onClick={() => setHikeAction('increase')}
+                                        >
+                                            📈 Increase (Hike)
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className={`hikeActionTab ${hikeAction === 'decrease' ? 'active decrease' : ''}`}
+                                            onClick={() => setHikeAction('decrease')}
+                                        >
+                                            📉 Decrease (Cut / Off)
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* 2. Method Selection: Percentage or Flat Amount */}
+                                <div className="hikeControlGroup">
+                                    <label className="hikeFieldLabel">2. Adjustment Method</label>
+                                    <div className="hikeModeTabs">
+                                        <button
+                                            type="button"
+                                            className={`hikeModeTab ${hikeType === 'percentage' ? 'active' : ''}`}
+                                            onClick={() => setHikeType('percentage')}
+                                        >
+                                            📊 Percentage (%)
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className={`hikeModeTab ${hikeType === 'fixed' ? 'active' : ''}`}
+                                            onClick={() => setHikeType('fixed')}
+                                        >
+                                            💵 Flat Amount (₹)
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* 3. Value Input & Presets */}
+                                <div className="hikeControlGroup">
+                                    <label className="hikeFieldLabel">
+                                        {`3. Enter ${hikeAction === 'increase' ? 'Increase' : 'Decrease'} ${hikeType === 'percentage' ? 'Percentage (%)' : 'Amount (₹)'}`}
+                                    </label>
+                                    <div className="hikeInputWrapper">
+                                        <span className={`hikeInputPrefix ${hikeAction === 'decrease' ? 'decrease' : ''}`}>
+                                            {hikeType === 'percentage' ? '%' : '₹'}
+                                        </span>
+                                        <input
+                                            type="number"
+                                            className={`hikeInputField ${hikeAction === 'decrease' ? 'decrease' : ''}`}
+                                            placeholder={hikeType === 'percentage' ? (hikeAction === 'increase' ? 'e.g. 10 for 10% hike' : 'e.g. 10 for 10% off') : (hikeAction === 'increase' ? 'e.g. 20 for ₹20 hike' : 'e.g. 20 for ₹20 off')}
+                                            value={hikeValue}
+                                            onChange={(e) => setHikeValue(e.target.value)}
+                                            min="0.1"
+                                            step={hikeType === 'percentage' ? '0.5' : '1'}
+                                        />
+                                    </div>
+
+                                    {/* Preset Quick Chips */}
+                                    <div className="hikeChipsContainer">
+                                        <span className="chipsLabel">Presets:</span>
+                                        {hikeType === 'percentage' ? (
+                                            [5, 10, 15, 20, 25, 30].map(pct => (
+                                                <button
+                                                    key={pct}
+                                                    type="button"
+                                                    className={`hikeChip ${parseFloat(hikeValue) === pct ? (hikeAction === 'decrease' ? 'active-decrease' : 'active') : ''}`}
+                                                    onClick={() => setHikeValue(pct.toString())}
+                                                >
+                                                    {hikeAction === 'increase' ? `+${pct}%` : `-${pct}%`}
+                                                </button>
+                                            ))
+                                        ) : (
+                                            [10, 20, 30, 50, 100].map(amt => (
+                                                <button
+                                                    key={amt}
+                                                    type="button"
+                                                    className={`hikeChip ${parseFloat(hikeValue) === amt ? (hikeAction === 'decrease' ? 'active-decrease' : 'active') : ''}`}
+                                                    onClick={() => setHikeValue(amt.toString())}
+                                                >
+                                                    {hikeAction === 'increase' ? `+₹${amt}` : `-₹${amt}`}
+                                                </button>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* 4. Rounding & Formula */}
+                                <div className="hikeControlGroup">
+                                    <label className="hikeFieldLabel">4. Pricing Options</label>
+                                    <label className="hikeCheckboxLabel">
+                                        <input
+                                            type="checkbox"
+                                            checked={roundToWhole}
+                                            onChange={(e) => setRoundToWhole(e.target.checked)}
+                                        />
+                                        <span>Round new prices to nearest whole rupee (₹)</span>
+                                    </label>
+                                    <div className={`hikeFormulaBadge ${hikeAction === 'decrease' ? 'decrease' : ''}`}>
+                                        {hikeAction === 'increase' ? (
+                                            hikeType === 'percentage' ? (
+                                                <span>Formula: <code>Existing Price + {hikeValue && parseFloat(hikeValue) > 0 ? `${hikeValue}%` : 'X%'}</code></span>
+                                            ) : (
+                                                <span>Formula: <code>Existing Price + {hikeValue && parseFloat(hikeValue) > 0 ? `₹${hikeValue}` : '₹X'}</code></span>
+                                            )
+                                        ) : (
+                                            hikeType === 'percentage' ? (
+                                                <span>Formula: <code>Existing Price - {hikeValue && parseFloat(hikeValue) > 0 ? `${hikeValue}%` : 'X%'} (Min ₹0)</code></span>
+                                            ) : (
+                                                <span>Formula: <code>Existing Price - {hikeValue && parseFloat(hikeValue) > 0 ? `₹${hikeValue}` : '₹X'} (Min ₹0)</code></span>
+                                            )
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Action Button Bar */}
+                            <div className="hikeApplyBar">
+                                <div className="hikeApplySummary">
+                                    <strong>{selectedItemIds.length}</strong> item(s) selected
+                                    {hikeValue && parseFloat(hikeValue) > 0 && (
+                                        <span> • {hikeAction === 'increase' ? 'Hike: ' : 'Decrease: '}
+                                            <strong style={{ color: hikeAction === 'increase' ? '#059669' : '#e11d48' }}>
+                                                {hikeAction === 'increase' ? '+' : '-'}{hikeType === 'percentage' ? `${hikeValue}%` : `₹${hikeValue}`}
+                                            </strong>
+                                        </span>
+                                    )}
+                                </div>
+                                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                                    {items.some(i => i.oldprices !== undefined && i.oldprices !== null) && (
+                                        <button
+                                            type="button"
+                                            className="btnUndoHikeBottom"
+                                            onClick={() => handleUndoPriceChange()}
+                                            disabled={isUndoing}
+                                            title="Restore previous old prices and remove oldprices variable"
+                                        >
+                                            {isUndoing ? 'Restoring...' : `↺ UNDO (${items.filter(i => i.oldprices !== undefined && i.oldprices !== null).length})`}
+                                        </button>
+                                    )}
+                                    <button
+                                        type="button"
+                                        className={`btnApplyHike ${hikeAction === 'decrease' ? 'decrease' : ''}`}
+                                        disabled={isHiking || !hikeValue || parseFloat(hikeValue) <= 0}
+                                        onClick={handleApplyPriceHike}
+                                    >
+                                        {isHiking ? (
+                                            <>⏳ Updating {selectedItemIds.length} Items...</>
+                                        ) : hikeAction === 'increase' ? (
+                                            <>🚀 Increase Price for {selectedItemIds.length} Item(s)</>
+                                        ) : (
+                                            <>📉 Decrease Price for {selectedItemIds.length} Item(s)</>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Selected Items Live Preview List */}
+                        <div className="hikePreviewContainer">
+                            <div className="hikePreviewHeader">
+                                <h3 className="hikePreviewTitle">
+                                    Selected Items ({selectedItemIds.length}) & Price Preview
+                                </h3>
+                                <span className="hikePreviewHint">
+                                    Review the before & after prices below
+                                </span>
+                            </div>
+
+                            <div className="hikeItemsTableWrapper">
+                                <table className="hikeItemsTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Item Details</th>
+                                            <th>Current Price</th>
+                                            <th>{hikeAction === 'increase' ? 'Hike Amount' : 'Discount / Cut'}</th>
+                                            <th>New Price</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {selectedItemIds.map(id => {
+                                            const item = items.find(i => i._id === id);
+                                            if (!item) return null;
+                                            const oldPrice = Number(item.price) || 0;
+                                            const newPrice = calculateNewPrice(oldPrice);
+                                            const diff = newPrice - oldPrice;
+
+                                            return (
+                                                <tr key={item._id}>
+                                                    <td>
+                                                        <div className="tableItemInfo">
+                                                            {item.photoUrl ? (
+                                                                <img src={item.photoUrl} alt={item.itemName} className="tableItemImg" />
+                                                            ) : (
+                                                                <div className="tableItemImgPlaceholder">🍽️</div>
+                                                            )}
+                                                            <div>
+                                                                <div className="tableItemName">{item.itemName}</div>
+                                                                {item.itemId && <div className="tableItemId">ID: {item.itemId}</div>}
+                                                                {item.oldprices !== undefined && item.oldprices !== null && (
+                                                                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                                                                        Previous: ₹{item.oldprices}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <span className="tableOldPrice">₹{oldPrice}</span>
+                                                    </td>
+                                                    <td>
+                                                        <span className={`tableDiff ${diff > 0 ? 'positive' : diff < 0 ? 'negative' : ''}`}>
+                                                            {diff > 0 ? `+₹${diff.toFixed(roundToWhole ? 0 : 2)}` : diff < 0 ? `-₹${Math.abs(diff).toFixed(roundToWhole ? 0 : 2)}` : '—'}
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <span className={`tableNewPrice ${hikeAction === 'decrease' ? 'decrease' : ''}`}>₹{newPrice}</span>
+                                                    </td>
+                                                    <td>
+                                                        <button
+                                                            type="button"
+                                                            className="btnRemoveFromHike"
+                                                            title="Remove from selected"
+                                                            onClick={() => handleRemoveSelectedItem(item._id)}
+                                                        >
+                                                            ✕ Remove
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Floating indicator when items are selected */}
+            {selectedItemIds.length > 0 && (
+                <div className="floatingHikePill">
+                    <span>✨ <strong>{selectedItemIds.length}</strong> items selected</span>
+                    <a href="#price-hike-section" className="floatingHikeLink">
+                        Go to Price Hike Section ↓
+                    </a>
+                </div>
+            )}
         </div>
     );
 }
