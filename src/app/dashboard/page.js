@@ -3,25 +3,26 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import './dashboard.css';
-import { requestForToken, onMessageListener } from '../../../lib/firebase'; // Ensure correct path
+import { requestForToken, onMessageListener } from '../../../lib/firebase';
 
 export default function Dashboard() {
     const router = useRouter();
-    const [alertedOrders, setAlertedOrders] = useState(new Set()); // Track notified order IDs
-    const [userInteracted, setUserInteracted] = useState(false); // Browser requirement for audio
-    const [showMoreOptions, setShowMoreOptions] = useState(false); // Toggle more options
-    
-    // Add interaction listener and Firebase token registration
+    const [alertedOrders, setAlertedOrders] = useState(new Set());
+    const [userInteracted, setUserInteracted] = useState(false);
+    const [showMoreOptions, setShowMoreOptions] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
     useEffect(() => {
+        setMounted(true);
         // Request Firebase Token for Push Notifications
         requestForToken();
         
         // Handle foreground notifications
         onMessageListener()
             .then((payload) => {
-                if (typeof Notification !== "undefined") {
-                    new Notification(payload.notification.title, {
-                        body: payload.notification.body,
+                if (typeof Notification !== "undefined" && payload?.notification) {
+                    new Notification(payload.notification.title || "Notification", {
+                        body: payload.notification.body || "",
                         icon: '/next.svg'
                     });
                 }
@@ -45,14 +46,12 @@ export default function Dashboard() {
                 const data = await res.json();
                 
                 if (data.success && data.status === 'ALERT') {
-                    // Extract IDs we haven't alerted yet
-                    const newStaleOrders = data.orders.filter(o => !alertedOrders.has(o.id.toString()));
+                    const newStaleOrders = (data.orders || []).filter(o => !alertedOrders.has(String(o.id)));
                     
                     if (newStaleOrders.length > 0) {
-                        // Add new IDs to the set to prevent repeated notifications for same IDs
                         setAlertedOrders(prev => {
                             const next = new Set(prev);
-                            newStaleOrders.forEach(o => next.add(o.id.toString()));
+                            newStaleOrders.forEach(o => next.add(String(o.id)));
                             return next;
                         });
                     }
@@ -62,9 +61,8 @@ export default function Dashboard() {
             }
         };
 
-        // Check every 20 seconds
         const intervalId = setInterval(checkPendingOrders, 20000);
-        checkPendingOrders(); // Initial check
+        checkPendingOrders();
 
         return () => clearInterval(intervalId);
     }, [alertedOrders, userInteracted]);
@@ -79,7 +77,7 @@ export default function Dashboard() {
                     style={{ '--btn-color': '#E91E63' }}
                     onClick={() => router.push('/live')}
                 >
-                    Live Orders
+                    🔴 Live Orders
                 </button>
             </div>
 
@@ -109,7 +107,7 @@ export default function Dashboard() {
                     style={{ '--btn-color': '#8e44ad' }}
                     onClick={() => router.push('/viewdeliveryboys')}
                 >
-                    New Delivery Boys
+                    🚴 New Delivery Boys
                 </button>
             </div>
 
@@ -119,10 +117,9 @@ export default function Dashboard() {
                     style={{ '--btn-color': '#009688' }}
                     onClick={() => router.push('/restaurants')}
                 >
-                    Restaurants
+                    🏪 Restaurants
                 </button>
             </div>
-
 
             <div style={{ width: '90%', maxWidth: '800px', marginBottom: '20px' }}>
                 <button
@@ -130,7 +127,7 @@ export default function Dashboard() {
                     style={{ '--btn-color': '#9b59b6' }}
                     onClick={() => router.push('/deliveryboy-details')}
                 >
-                    Delivery Boy Details
+                    📋 Delivery Boy Details
                 </button>
             </div>
 
@@ -140,7 +137,7 @@ export default function Dashboard() {
                     style={{ '--btn-color': '#3F51B5' }}
                     onClick={() => router.push('/restaurant-timings')}
                 >
-                    Manage Restaurant Timings & Status
+                    ⏰ Manage Restaurant Timings & Status
                 </button>
             </div>
 
@@ -150,7 +147,7 @@ export default function Dashboard() {
                     style={{ '--btn-color': '#009688' }}
                     onClick={() => router.push('/customers')}
                 >
-                    CUSTOMERS AND DETAILS
+                    👥 Customers and Details
                 </button>
             </div>
 
@@ -160,7 +157,7 @@ export default function Dashboard() {
                     style={{ '--btn-color': '#673AB7' }}
                     onClick={() => router.push('/deliveryboypendingpayments')}
                 >
-                    Delivery Boy Pending Payments
+                    💳 Delivery Boy Pending Payments
                 </button>
             </div>
 
@@ -180,7 +177,7 @@ export default function Dashboard() {
                     style={{ '--btn-color': '#FF9800' }}
                     onClick={() => router.push('/restaurant-register')}
                 >
-                    Register New Restaurant
+                    ➕ Register New Restaurant
                 </button>
             </div>
 
@@ -190,7 +187,7 @@ export default function Dashboard() {
                     style={{ '--btn-color': '#e67e22' }}
                     onClick={() => router.push('/catagoryfilterinmainpage')}
                 >
-                    📁 Add Main Page Category Filter
+                    🏷️ Add Main Page Category Filter
                 </button>
             </div>
 
@@ -200,7 +197,7 @@ export default function Dashboard() {
                     style={{ '--btn-color': '#E91E63' }}
                     onClick={() => router.push('/restaurant-positions')}
                 >
-                    📍 Restaurants Position
+                    🔢 Restaurants Position
                 </button>
             </div>
 
@@ -210,7 +207,7 @@ export default function Dashboard() {
                     style={{ '--btn-color': '#2196F3' }}
                     onClick={() => router.push('/send-notification')}
                 >
-                    🔔 Send Customer Notification
+                    📢 Send Customer Notification
                 </button>
             </div>
 
@@ -220,7 +217,7 @@ export default function Dashboard() {
                     style={{ '--btn-color': '#16a085' }}
                     onClick={() => router.push('/income-records')}
                 >
-                    💰 Total Records of Income
+                    📊 Total Records of Income
                 </button>
             </div>
 
@@ -241,7 +238,7 @@ export default function Dashboard() {
                         style={{ '--btn-color': '#9C27B0' }}
                         onClick={() => router.push('/influencer-coupons')}
                     >
-                        Coupon Codes for Influencers
+                        🎟️ Coupon Codes for Influencers
                     </button>
                     
                     <button

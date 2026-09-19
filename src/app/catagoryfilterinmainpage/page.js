@@ -225,10 +225,7 @@ export default function CatagoryFilterPage() {
       setMsg("");
       setIsSuccess(false);
 
-      if (!name.trim()) {
-        setMsg("Category name is required");
-        return;
-      }
+      // Category name is optional
       if (!catId.trim()) {
         setMsg("Category ID is required");
         return;
@@ -281,7 +278,7 @@ export default function CatagoryFilterPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           _id: editingItem ? editingItem._id : undefined,
-          name: name.trim(),
+          name: name ? name.trim() : "",
           id: catId.trim(),
           imageUrl: s3Url,
         }),
@@ -409,11 +406,11 @@ export default function CatagoryFilterPage() {
           </div>
 
           <div style={styles.formGroup}>
-            <label style={styles.label}>Category Name</label>
+            <label style={styles.label}>Category Name (Optional)</label>
             <input
               style={styles.input}
               type="text"
-              placeholder="e.g. Fast Food, Desserts"
+              placeholder="e.g. Fast Food, Desserts (Optional)"
               value={name}
               onChange={(e) => setName(e.target.value)}
               disabled={uploading}

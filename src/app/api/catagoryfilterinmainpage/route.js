@@ -2,31 +2,9 @@ import { NextResponse } from "next/server";
 import dbConnect from "../../../../lib/mongoose";
 import Catagoryfilterinmainpage from "../../../../models/Catagoryfilterinmainpage";
 
-// Helper to normalize both 'id' and 'position' strictly to contiguous 1..N numbers
+// Helper to normalize all category positions and IDs to 1..N contiguous sequence
 async function normalizePositions(items) {
   if (!items || items.length === 0) return [];
-
-  // Check if any item needs an update to its position or id
-  const needsUpdate = items.some((item, idx) => {
-    const desiredPos = idx + 1;
-    const desiredId = desiredPos.toString();
-    return item.position !== desiredPos || item.id !== desiredId;
-  });
-
-  if (!needsUpdate) {
-    return items.map((item) => (item.toObject ? item.toObject() : item));
-  }
-
-  // Phase 1: Set temporary IDs to avoid MongoDB unique constraint errors on index 'id_1'
-  const tempOps = items.map((item, idx) => ({
-    updateOne: {
-      filter: { _id: item._id },
-      update: { $set: { id: `__temp_${idx}_${item._id}__` } },
-    },
-  }));
-  await Catagoryfilterinmainpage.bulkWrite(tempOps);
-
-  // Phase 2: Set final contiguous 1..N values for both id and position
   const finalOps = items.map((item, idx) => {
     const desiredPos = idx + 1;
     const desiredId = desiredPos.toString();
@@ -51,7 +29,7 @@ async function normalizePositions(items) {
   });
 }
 
-// Helper to reorder a category to a target position
+// Helper to reorder a category filter to a target position
 async function reorderCategory(targetIdentifier, newPosition) {
   const targetPos = parseInt(newPosition, 10);
   if (isNaN(targetPos) || targetPos < 1) {
@@ -62,14 +40,12 @@ async function reorderCategory(targetIdentifier, newPosition) {
     };
   }
 
-  // Fetch all categories sorted by current position / id
   let items = await Catagoryfilterinmainpage.find({}).sort({ position: 1, _id: 1 });
 
   if (items.length === 0) {
     return { success: false, error: "No category filters found", status: 404 };
   }
 
-  // Find the category to move by Mongo _id or custom id
   const targetStr = targetIdentifier.toString().trim();
   const movingIndex = items.findIndex(
     (it) =>
@@ -80,21 +56,15 @@ async function reorderCategory(targetIdentifier, newPosition) {
   if (movingIndex === -1) {
     return {
       success: false,
-      error: `Category with ID ${targetIdentifier} not found`,
+      error: `Category filter with ID ${targetIdentifier} not found`,
       status: 404,
     };
   }
 
-  // Clamp position within [1, items.length]
   const clampedPos = Math.min(Math.max(1, targetPos), items.length);
-
-  // Remove moving item from its current index
   const [movingItem] = items.splice(movingIndex, 1);
-
-  // Insert at new index (clampedPos - 1)
   items.splice(clampedPos - 1, 0, movingItem);
 
-  // Re-index all categories: updates both 'id' and 'position' from 1 to N in MongoDB
   const updatedItems = await normalizePositions(items);
 
   return {
@@ -105,12 +75,11 @@ async function reorderCategory(targetIdentifier, newPosition) {
   };
 }
 
-export async function GET(req) {
+export async function GET() {
   try {
     await dbConnect();
     let items = await Catagoryfilterinmainpage.find({}).lean();
 
-    // Sort items by position (non-zero first), then name / id
     items.sort((a, b) => {
       const posA = a.position || (a.id && !isNaN(parseInt(a.id, 10)) ? parseInt(a.id, 10) : 0);
       const posB = b.position || (b.id && !isNaN(parseInt(b.id, 10)) ? parseInt(b.id, 10) : 0);
@@ -120,9 +89,7 @@ export async function GET(req) {
       return (a.name || "").localeCompare(b.name || "");
     });
 
-    // Ensure both 'id' and 'position' are clean 1..N sequence in DB
     const normalized = await normalizePositions(items);
-
     return NextResponse.json({ success: true, data: normalized }, { status: 200 });
   } catch (error) {
     console.error("GET catagoryfilterinmainpage error:", error);
@@ -138,7 +105,6 @@ export async function POST(req) {
     await dbConnect();
     const body = await req.json();
 
-    // Support position reordering via POST if newPosition is provided
     if (body.newPosition !== undefined) {
       const identifier = body._id || body.id;
       if (!identifier) {
@@ -159,19 +125,21 @@ export async function POST(req) {
       );
     }
 
-    const { _id, name, imageUrl, id } = body;
+    const { _id, name, imageUrl, id, bgColor, fontSize, fontColor } = body;
 
-    if (!name || !imageUrl) {
+    if (!imageUrl) {
       return NextResponse.json(
-        { success: false, error: "Name and Image URL are required" },
+        { success: false, error: "Image URL is required" },
         { status: 400 }
       );
     }
 
-    const sanitizedName = name.trim();
+    const sanitizedName = name ? name.trim() : "";
     const sanitizedId = id ? id.toString().trim() : "";
+    const sanitizedBgColor = bgColor ? bgColor.trim() : "rgba(0, 0, 0, 0.45)";
+    const sanitizedFontSize = fontSize !== undefined && fontSize !== null && fontSize !== "" ? Number(fontSize) : 11;
+    const sanitizedFontColor = fontColor ? fontColor.trim() : "#FFFFFF";
 
-    // Check if category exists either by _id or by custom id
     let existing = null;
     if (_id) {
       existing = await Catagoryfilterinmainpage.findById(_id);
@@ -181,21 +149,24 @@ export async function POST(req) {
     }
 
     if (existing) {
-      // Check if the name is already taken by a different category
-      const nameExists = await Catagoryfilterinmainpage.findOne({
-        _id: { $ne: existing._id },
-        name: { $regex: new RegExp(`^${sanitizedName.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}$`, 'i') }
-      });
-      if (nameExists) {
-        return NextResponse.json(
-          { success: false, error: "A category filter with this name already exists on another category" },
-          { status: 409 }
-        );
+      if (sanitizedName) {
+        const nameExists = await Catagoryfilterinmainpage.findOne({
+          _id: { $ne: existing._id },
+          name: { $regex: new RegExp(`^${sanitizedName.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}$`, 'i') }
+        });
+        if (nameExists) {
+          return NextResponse.json(
+            { success: false, error: "A category filter with this name already exists on another category" },
+            { status: 409 }
+          );
+        }
       }
 
-      // Update existing document while preserving current id and position
       existing.name = sanitizedName;
       existing.imageUrl = imageUrl;
+      existing.bgColor = sanitizedBgColor;
+      existing.fontSize = sanitizedFontSize;
+      existing.fontColor = sanitizedFontColor;
       await existing.save();
 
       return NextResponse.json({
@@ -205,19 +176,19 @@ export async function POST(req) {
       }, { status: 200 });
     }
 
-    // Check if category filter with this name already exists (case-insensitive) for new categories
-    const exists = await Catagoryfilterinmainpage.findOne({
-      name: { $regex: new RegExp(`^${sanitizedName.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}$`, 'i') }
-    });
+    if (sanitizedName) {
+      const exists = await Catagoryfilterinmainpage.findOne({
+        name: { $regex: new RegExp(`^${sanitizedName.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}$`, 'i') }
+      });
 
-    if (exists) {
-      return NextResponse.json(
-        { success: false, error: "A category filter with this name already exists" },
-        { status: 409 }
-      );
+      if (exists) {
+        return NextResponse.json(
+          { success: false, error: "A category filter with this name already exists" },
+          { status: 409 }
+        );
+      }
     }
 
-    // New category: assign contiguous next position and id
     const totalCount = await Catagoryfilterinmainpage.countDocuments();
     const nextPos = totalCount + 1;
     const finalId = sanitizedId || nextPos.toString();
@@ -227,9 +198,11 @@ export async function POST(req) {
       id: finalId,
       imageUrl,
       position: nextPos,
+      bgColor: sanitizedBgColor,
+      fontSize: sanitizedFontSize,
+      fontColor: sanitizedFontColor,
     });
 
-    // Re-normalize all to ensure sequence 1..N
     let allItems = await Catagoryfilterinmainpage.find({}).sort({ position: 1, _id: 1 });
     const normalized = await normalizePositions(allItems);
 
@@ -237,6 +210,7 @@ export async function POST(req) {
       success: true,
       message: "Category filter added successfully",
       data: newEntry,
+      categories: normalized,
     }, { status: 201 });
   } catch (error) {
     console.error("POST catagoryfilterinmainpage error:", error);
@@ -261,16 +235,47 @@ export async function PUT(req) {
       );
     }
 
-    const result = await reorderCategory(identifier, newPosition);
-    return NextResponse.json(
-      {
-        success: result.success,
-        message: result.message,
-        error: result.error,
-        data: result.data,
-      },
-      { status: result.status }
-    );
+    if (newPosition !== undefined) {
+      const result = await reorderCategory(identifier, newPosition);
+      return NextResponse.json(
+        {
+          success: result.success,
+          message: result.message,
+          error: result.error,
+          data: result.data,
+        },
+        { status: result.status }
+      );
+    }
+
+    const existing = await Catagoryfilterinmainpage.findOne({
+      $or: [{ _id: identifier }, { id: identifier }]
+    });
+
+    if (!existing) {
+      return NextResponse.json(
+        { success: false, error: "Category filter not found" },
+        { status: 404 }
+      );
+    }
+
+    if (body.name !== undefined) existing.name = body.name ? body.name.trim() : "";
+    if (body.imageUrl) existing.imageUrl = body.imageUrl;
+    if (body.bgColor !== undefined) existing.bgColor = body.bgColor.trim();
+    if (body.fontSize !== undefined) existing.fontSize = Number(body.fontSize) || 11;
+    if (body.fontColor !== undefined) existing.fontColor = body.fontColor.trim();
+
+    await existing.save();
+
+    let allItems = await Catagoryfilterinmainpage.find({}).sort({ position: 1, _id: 1 });
+    const normalized = await normalizePositions(allItems);
+
+    return NextResponse.json({
+      success: true,
+      message: "Category updated successfully",
+      data: existing,
+      categories: normalized,
+    }, { status: 200 });
   } catch (error) {
     console.error("PUT catagoryfilterinmainpage error:", error);
     return NextResponse.json(
@@ -301,13 +306,13 @@ export async function DELETE(req) {
       );
     }
 
-    // Re-normalize remaining items so both 'id' and 'position' stay contiguous 1..N with no gaps
     let remaining = await Catagoryfilterinmainpage.find({}).sort({ position: 1, _id: 1 });
-    await normalizePositions(remaining);
+    const normalized = await normalizePositions(remaining);
 
     return NextResponse.json({
       success: true,
-      message: "Category filter deleted successfully"
+      message: "Category filter deleted successfully",
+      data: normalized,
     }, { status: 200 });
   } catch (error) {
     console.error("DELETE catagoryfilterinmainpage error:", error);

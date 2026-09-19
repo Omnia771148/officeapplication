@@ -94,7 +94,7 @@ export async function GET() {
           isActive = isRestaurantOpen(rest.openTime, rest.closeTime, kolkataTime.hour, kolkataTime.minute);
 
           await RestuarentUser.findOneAndUpdate(
-            { restId: rest.restId },
+            { restId: String(rest.restId) },
             {
               isActive,
               isManuallyToggled: false
@@ -105,7 +105,7 @@ export async function GET() {
           if (computedActive !== isActive) {
             isActive = computedActive;
             await RestuarentUser.findOneAndUpdate(
-              { restId: rest.restId },
+              { restId: String(rest.restId) },
               {
                 isActive,
                 isManuallyToggled: false
@@ -126,6 +126,7 @@ export async function GET() {
         isManuallyToggled,
         vegOrNonVeg: rest.vegOrNonVeg || "Both",
         offerTitle: rest.offerTitle || "",
+        rating: rest.rating !== undefined && rest.rating !== null ? Number(rest.rating) : 4.2,
       });
     }
 
@@ -139,18 +140,20 @@ export async function GET() {
 export async function PATCH(request) {
   try {
     await dbConnect();
-    const { restId, openTime, closeTime, isActive, offerTitle } = await request.json();
+    const { restId, openTime, closeTime, isActive, offerTitle, rating } = await request.json();
 
     if (!restId) {
       return NextResponse.json({ success: false, error: "Restaurant ID is required" }, { status: 400 });
     }
+
+    const restIdStr = String(restId);
 
     // Update operational hours if provided in request
     if (openTime !== undefined && closeTime !== undefined) {
       if (openTime === "" && closeTime === "") {
         // Clearing timings puts the restaurant back in manual mode
         await RestuarentUser.findOneAndUpdate(
-          { restId },
+          { restId: restIdStr },
           { 
             openTime, 
             closeTime,
@@ -165,7 +168,7 @@ export async function PATCH(request) {
         const calculatedActive = isRestaurantOpen(openTime, closeTime, kolkataTime.hour, kolkataTime.minute);
 
         await RestuarentUser.findOneAndUpdate(
-          { restId },
+          { restId: restIdStr },
           {
             openTime,
             closeTime,
@@ -181,7 +184,7 @@ export async function PATCH(request) {
     // Update active override status if provided in request
     if (isActive !== undefined) {
       await RestuarentUser.findOneAndUpdate(
-        { restId },
+        { restId: restIdStr },
         {
           isActive,
           isManuallyToggled: true,
@@ -194,12 +197,26 @@ export async function PATCH(request) {
     // Update offerTitle if provided in request
     if (offerTitle !== undefined) {
       await RestuarentUser.findOneAndUpdate(
-        { restId },
+        { restId: restIdStr },
         {
           offerTitle: typeof offerTitle === 'string' ? offerTitle.trim() : ''
         },
         { new: true }
       );
+    }
+
+    // Update rating if provided in request
+    if (rating !== undefined && rating !== null && rating !== '') {
+      const numRating = Number(rating);
+      if (!isNaN(numRating) && numRating >= 1.0 && numRating <= 5.0) {
+        await RestuarentUser.findOneAndUpdate(
+          { restId: restIdStr },
+          {
+            rating: numRating
+          },
+          { new: true }
+        );
+      }
     }
 
     return NextResponse.json({ success: true, message: "Restaurant configurations updated successfully" });

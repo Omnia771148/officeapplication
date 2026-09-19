@@ -24,6 +24,7 @@ export async function POST(req) {
       logoUrl,
       vegOrNonVeg,
       commission,
+      rating,
     } = await req.json();
 
     // validation
@@ -81,6 +82,7 @@ export async function POST(req) {
       manualStatusUpdatedAt: new Date(),
       vegOrNonVeg,
       commission: commission ? Number(commission) : 0,
+      rating: rating !== undefined && rating !== null && rating !== "" ? Number(rating) : 4.2,
     });
 
     // Automatically create a collection for this restaurant in the 'restuarents' database

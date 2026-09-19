@@ -4,7 +4,7 @@ const CatagoryfilterinmainpageSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: true,
+      required: false,
       unique: true,
       trim: true,
     },
@@ -21,6 +21,18 @@ const CatagoryfilterinmainpageSchema = new mongoose.Schema(
     position: {
       type: Number,
       default: 0,
+    },
+    bgColor: {
+      type: String,
+      default: "rgba(0, 0, 0, 0.45)",
+    },
+    fontSize: {
+      type: Number,
+      default: 11,
+    },
+    fontColor: {
+      type: String,
+      default: "#FFFFFF",
     },
   },
   {

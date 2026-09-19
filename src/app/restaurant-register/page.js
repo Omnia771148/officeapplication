@@ -93,6 +93,7 @@ export default function RestaurantRegisterPage() {
   const [uploading, setUploading] = useState(false);
   const [vegOrNonVeg, setVegOrNonVeg] = useState("Both");
   const [commission, setCommission] = useState("");
+  const [rating, setRating] = useState("4.2");
   const router = useRouter();
 
   const fetchLatestRestId = async () => {
@@ -128,6 +129,7 @@ export default function RestaurantRegisterPage() {
     setLogoFile(null);
     setVegOrNonVeg("Both");
     setCommission("");
+    setRating("4.2");
     setMsg("");
     setIsSuccess(false);
   };
@@ -186,6 +188,7 @@ export default function RestaurantRegisterPage() {
           logoUrl: uploadedLogoUrl,
           vegOrNonVeg,
           commission,
+          rating,
         }),
       });
       const data = await res.json();
@@ -249,6 +252,20 @@ export default function RestaurantRegisterPage() {
               placeholder="e.g., 20% OFF on all items" 
               value={offerTitle}
               onChange={(e) => setOfferTitle(e.target.value)} 
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Restaurant Rating (1.0 - 5.0)</label>
+            <input 
+              className="input-field" 
+              type="number"
+              step="0.1"
+              min="1.0"
+              max="5.0"
+              placeholder="e.g., 4.2" 
+              value={rating}
+              onChange={(e) => setRating(e.target.value)} 
             />
           </div>
 

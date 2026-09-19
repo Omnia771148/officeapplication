@@ -84,6 +84,10 @@ const RegisterUserSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    rating: {
+      type: Number,
+      default: 4.2,
+    },
     position: {
       type: Number,
       default: 0,

@@ -24,6 +24,11 @@ export default function RestaurantDashboardPage({ params }) {
     const [editOfferTitle, setEditOfferTitle] = useState('');
     const [updatingOfferTitle, setUpdatingOfferTitle] = useState(false);
 
+    // Rating edit states
+    const [isEditingRating, setIsEditingRating] = useState(false);
+    const [editRating, setEditRating] = useState('');
+    const [updatingRating, setUpdatingRating] = useState(false);
+
     // Active status toggle state
     const [togglingActive, setTogglingActive] = useState(false);
 
@@ -128,6 +133,41 @@ export default function RestaurantDashboardPage({ params }) {
             alert('Error updating restaurant name.');
         } finally {
             setUpdatingName(false);
+        }
+    };
+
+        const handleSaveRating = async () => {
+        const parsedRating = parseFloat(editRating);
+        if (isNaN(parsedRating) || parsedRating < 1.0 || parsedRating > 5.0) {
+            alert('Please enter a valid rating between 1.0 and 5.0');
+            return;
+        }
+        setUpdatingRating(true);
+        try {
+            const res = await fetch('/api/restaurant-timings', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    restId: id,
+                    rating: parsedRating
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setDetails(prev => ({
+                    ...prev,
+                    rating: parsedRating
+                }));
+                setIsEditingRating(false);
+                alert('Restaurant rating updated successfully!');
+            } else {
+                alert(data.error || 'Failed to update restaurant rating.');
+            }
+        } catch (err) {
+            console.error("Error updating rating:", err);
+            alert("Server communication error.");
+        } finally {
+            setUpdatingRating(false);
         }
     };
 
@@ -294,6 +334,79 @@ export default function RestaurantDashboardPage({ params }) {
                                         onClick={() => {
                                             setEditName(details.name || '');
                                             setIsEditingName(true);
+                                        }}
+                                    >
+                                        ✏️ Edit
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                        <div className="detailItem">
+                            <span className="detailLabel">Restaurant Rating</span>
+                            {isEditingRating ? (
+                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '4px' }}>
+                                    <input
+                                        type="number"
+                                        step="0.1"
+                                        min="1.0"
+                                        max="5.0"
+                                        style={{
+                                            padding: '6px 10px',
+                                            borderRadius: '6px',
+                                            border: '1px solid #cbd5e1',
+                                            fontSize: '0.95rem',
+                                            color: '#1e293b',
+                                            backgroundColor: '#ffffff',
+                                            width: '100px',
+                                            boxSizing: 'border-box'
+                                        }}
+                                        value={editRating}
+                                        onChange={(e) => setEditRating(e.target.value)}
+                                        disabled={updatingRating}
+                                    />
+                                    <button 
+                                        onClick={handleSaveRating}
+                                        disabled={updatingRating}
+                                        style={{
+                                            backgroundColor: '#2ecc71',
+                                            color: 'white',
+                                            border: 'none',
+                                            padding: '6px 12px',
+                                            borderRadius: '6px',
+                                            cursor: 'pointer',
+                                            fontWeight: '600',
+                                            fontSize: '0.85rem'
+                                        }}
+                                    >
+                                        {updatingRating ? '...' : 'Save'}
+                                    </button>
+                                    <button 
+                                        onClick={() => setIsEditingRating(false)}
+                                        disabled={updatingRating}
+                                        style={{
+                                            backgroundColor: '#e74c3c',
+                                            color: 'white',
+                                            border: 'none',
+                                            padding: '6px 12px',
+                                            borderRadius: '6px',
+                                            cursor: 'pointer',
+                                            fontWeight: '600',
+                                            fontSize: '0.85rem'
+                                        }}
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            ) : (
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                                    <span className="detailValue" style={{ display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '700', color: '#f59e0b' }}>
+                                        ★ {details.rating !== undefined && details.rating !== null && details.rating !== '' ? Number(details.rating).toFixed(1) : '4.2'}
+                                    </span>
+                                    <button 
+                                        className="passwordToggleBtn" 
+                                        onClick={() => {
+                                            setEditRating(String(details.rating !== undefined && details.rating !== null && details.rating !== '' ? details.rating : '4.2'));
+                                            setIsEditingRating(true);
                                         }}
                                     >
                                         ✏️ Edit

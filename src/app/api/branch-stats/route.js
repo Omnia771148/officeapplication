@@ -82,7 +82,8 @@ export async function GET(request) {
                 logoUrl: restaurant.logoUrl,
                 vegOrNonVeg: restaurant.vegOrNonVeg || "Both",
                 commission: restaurant.commission !== undefined ? restaurant.commission : 0,
-                isActive: restaurant.isActive !== undefined ? restaurant.isActive : true
+                isActive: restaurant.isActive !== undefined ? restaurant.isActive : true,
+                  rating: restaurant.rating !== undefined ? restaurant.rating : 4.2
             } : null
         });
     } catch (error) {
