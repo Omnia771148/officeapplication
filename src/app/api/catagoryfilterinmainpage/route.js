@@ -5,6 +5,17 @@ import Catagoryfilterinmainpage from "../../../../models/Catagoryfilterinmainpag
 // Helper to normalize all category positions and IDs to 1..N contiguous sequence
 async function normalizePositions(items) {
   if (!items || items.length === 0) return [];
+
+  // Phase 1: Set temporary IDs to avoid MongoDB unique constraint errors on index 'id_1'
+  const tempOps = items.map((item, idx) => ({
+    updateOne: {
+      filter: { _id: item._id },
+      update: { $set: { id: `__temp_${idx}_${item._id}__` } },
+    },
+  }));
+  await Catagoryfilterinmainpage.bulkWrite(tempOps);
+
+  // Phase 2: Set final contiguous 1..N values for both id and position
   const finalOps = items.map((item, idx) => {
     const desiredPos = idx + 1;
     const desiredId = desiredPos.toString();
