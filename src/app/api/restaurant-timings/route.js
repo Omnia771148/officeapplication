@@ -69,7 +69,7 @@ export async function GET() {
   try {
     await dbConnect();
 
-    const restaurants = await RestuarentUser.find({});
+    const restaurants = await RestuarentUser.find({}).lean();
     const now = new Date();
     const kolkataTime = getKolkataTime(now);
     const result = [];
@@ -93,22 +93,26 @@ export async function GET() {
           isManuallyToggled = false;
           isActive = isRestaurantOpen(rest.openTime, rest.closeTime, kolkataTime.hour, kolkataTime.minute);
 
-          await RestuarentUser.findOneAndUpdate(
-            { restId: String(rest.restId) },
+          await RestuarentUser.collection.updateOne(
+            { $or: [{ restId: String(rest.restId) }, { restId: Number(rest.restId) }] },
             {
-              isActive,
-              isManuallyToggled: false
+              $set: {
+                isActive,
+                isManuallyToggled: false
+              }
             }
           );
         } else if (!isManuallyToggled) {
           const computedActive = isRestaurantOpen(rest.openTime, rest.closeTime, kolkataTime.hour, kolkataTime.minute);
           if (computedActive !== isActive) {
             isActive = computedActive;
-            await RestuarentUser.findOneAndUpdate(
-              { restId: String(rest.restId) },
+            await RestuarentUser.collection.updateOne(
+              { $or: [{ restId: String(rest.restId) }, { restId: Number(rest.restId) }] },
               {
-                isActive,
-                isManuallyToggled: false
+                $set: {
+                  isActive,
+                  isManuallyToggled: false
+                }
               }
             );
           }
@@ -127,6 +131,8 @@ export async function GET() {
         vegOrNonVeg: rest.vegOrNonVeg || "Both",
         offerTitle: rest.offerTitle || "",
         rating: rest.rating !== undefined && rest.rating !== null ? Number(rest.rating) : 4.2,
+        packagingFee: rest.packagingFee !== undefined && rest.packagingFee !== null ? Number(rest.packagingFee) : 0,
+        isPackagingFeeActive: rest.isPackagingFeeActive !== undefined ? Boolean(rest.isPackagingFeeActive) : false,
       });
     }
 
@@ -140,26 +146,28 @@ export async function GET() {
 export async function PATCH(request) {
   try {
     await dbConnect();
-    const { restId, openTime, closeTime, isActive, offerTitle, rating } = await request.json();
+    const { restId, openTime, closeTime, isActive, offerTitle, rating, packagingFee, isPackagingFeeActive } = await request.json();
 
     if (!restId) {
       return NextResponse.json({ success: false, error: "Restaurant ID is required" }, { status: 400 });
     }
 
     const restIdStr = String(restId);
+    const filter = { $or: [{ restId: restIdStr }, { restId: Number(restIdStr) }] };
 
     // Update operational hours if provided in request
     if (openTime !== undefined && closeTime !== undefined) {
       if (openTime === "" && closeTime === "") {
         // Clearing timings puts the restaurant back in manual mode
-        await RestuarentUser.findOneAndUpdate(
-          { restId: restIdStr },
+        await RestuarentUser.collection.updateOne(
+          filter,
           { 
-            openTime, 
-            closeTime,
-            isManuallyToggled: true 
-          },
-          { new: true }
+            $set: {
+              openTime, 
+              closeTime,
+              isManuallyToggled: true 
+            }
+          }
         );
       } else {
         // Setting timings: calculate initial status based on schedule and reset manual toggle
@@ -167,41 +175,44 @@ export async function PATCH(request) {
         const kolkataTime = getKolkataTime(now);
         const calculatedActive = isRestaurantOpen(openTime, closeTime, kolkataTime.hour, kolkataTime.minute);
 
-        await RestuarentUser.findOneAndUpdate(
-          { restId: restIdStr },
+        await RestuarentUser.collection.updateOne(
+          filter,
           {
-            openTime,
-            closeTime,
-            isActive: calculatedActive,
-            isManuallyToggled: false,
-            manualStatusUpdatedAt: now,
-          },
-          { new: true }
+            $set: {
+              openTime,
+              closeTime,
+              isActive: calculatedActive,
+              isManuallyToggled: false,
+              manualStatusUpdatedAt: now,
+            }
+          }
         );
       }
     }
 
     // Update active override status if provided in request
     if (isActive !== undefined) {
-      await RestuarentUser.findOneAndUpdate(
-        { restId: restIdStr },
+      await RestuarentUser.collection.updateOne(
+        filter,
         {
-          isActive,
-          isManuallyToggled: true,
-          manualStatusUpdatedAt: new Date(),
-        },
-        { new: true }
+          $set: {
+            isActive,
+            isManuallyToggled: true,
+            manualStatusUpdatedAt: new Date(),
+          }
+        }
       );
     }
 
     // Update offerTitle if provided in request
     if (offerTitle !== undefined) {
-      await RestuarentUser.findOneAndUpdate(
-        { restId: restIdStr },
+      await RestuarentUser.collection.updateOne(
+        filter,
         {
-          offerTitle: typeof offerTitle === 'string' ? offerTitle.trim() : ''
-        },
-        { new: true }
+          $set: {
+            offerTitle: typeof offerTitle === 'string' ? offerTitle.trim() : ''
+          }
+        }
       );
     }
 
@@ -209,14 +220,31 @@ export async function PATCH(request) {
     if (rating !== undefined && rating !== null && rating !== '') {
       const numRating = Number(rating);
       if (!isNaN(numRating) && numRating >= 1.0 && numRating <= 5.0) {
-        await RestuarentUser.findOneAndUpdate(
-          { restId: restIdStr },
+        await RestuarentUser.collection.updateOne(
+          filter,
           {
-            rating: numRating
-          },
-          { new: true }
+            $set: {
+              rating: numRating
+            }
+          }
         );
       }
+    }
+
+    // Update packagingFee and isPackagingFeeActive if provided in request
+    const packagingUpdates = {};
+    if (packagingFee !== undefined) {
+      packagingUpdates.packagingFee = Math.max(0, Number(packagingFee) || 0);
+    }
+    if (isPackagingFeeActive !== undefined) {
+      packagingUpdates.isPackagingFeeActive = Boolean(isPackagingFeeActive);
+    }
+
+    if (Object.keys(packagingUpdates).length > 0) {
+      await RestuarentUser.collection.updateOne(
+        filter,
+        { $set: packagingUpdates }
+      );
     }
 
     return NextResponse.json({ success: true, message: "Restaurant configurations updated successfully" });

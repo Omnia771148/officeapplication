@@ -24,6 +24,12 @@ export default function RestaurantDashboardPage({ params }) {
     const [editOfferTitle, setEditOfferTitle] = useState('');
     const [updatingOfferTitle, setUpdatingOfferTitle] = useState(false);
 
+    // Packaging fee states
+    const [isEditingPackagingFee, setIsEditingPackagingFee] = useState(false);
+    const [editPackagingFee, setEditPackagingFee] = useState('');
+    const [updatingPackagingFee, setUpdatingPackagingFee] = useState(false);
+    const [togglingPackagingFee, setTogglingPackagingFee] = useState(false);
+
     // Rating edit states
     const [isEditingRating, setIsEditingRating] = useState(false);
     const [editRating, setEditRating] = useState('');
@@ -136,7 +142,70 @@ export default function RestaurantDashboardPage({ params }) {
         }
     };
 
-        const handleSaveRating = async () => {
+        const handleTogglePackagingFee = async (nextStatus) => {
+        setTogglingPackagingFee(true);
+        try {
+            const res = await fetch('/api/restaurant-timings', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    restId: id,
+                    isPackagingFeeActive: nextStatus
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setDetails(prev => ({
+                    ...prev,
+                    isPackagingFeeActive: nextStatus
+                }));
+            } else {
+                alert(data.error || 'Failed to update packaging fee status.');
+            }
+        } catch (err) {
+            console.error("Error toggling packaging fee status:", err);
+            alert("Server communication error.");
+        } finally {
+            setTogglingPackagingFee(false);
+        }
+    };
+
+    const handleSavePackagingFee = async () => {
+        const parsedFee = parseFloat(editPackagingFee);
+        if (isNaN(parsedFee) || parsedFee < 0) {
+            alert('Please enter a valid packaging fee amount (0 or more)');
+            return;
+        }
+        setUpdatingPackagingFee(true);
+        try {
+            const res = await fetch('/api/restaurant-timings', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    restId: id,
+                    packagingFee: parsedFee
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setDetails(prev => ({
+                    ...prev,
+                    packagingFee: parsedFee
+                }));
+                setIsEditingPackagingFee(false);
+                alert('Packaging fee updated successfully!');
+            } else {
+                alert(data.error || 'Failed to update packaging fee.');
+            }
+        } catch (err) {
+            console.error("Error updating packaging fee:", err);
+            alert("Server communication error.");
+        } finally {
+            setUpdatingPackagingFee(false);
+        }
+    };
+
+    const handleSaveRating = async () => {
         const parsedRating = parseFloat(editRating);
         if (isNaN(parsedRating) || parsedRating < 1.0 || parsedRating > 5.0) {
             alert('Please enter a valid rating between 1.0 and 5.0');
@@ -340,6 +409,114 @@ export default function RestaurantDashboardPage({ params }) {
                                     </button>
                                 </div>
                             )}
+                        </div>
+                        <div className="detailItem">
+                            <span className="detailLabel">Packaging Fee</span>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <span style={{
+                                            display: 'inline-block',
+                                            width: '8px',
+                                            height: '8px',
+                                            borderRadius: '50%',
+                                            backgroundColor: details.isPackagingFeeActive ? '#10b981' : '#94a3b8'
+                                        }}></span>
+                                        <span style={{
+                                            fontWeight: '700',
+                                            fontSize: '0.95rem',
+                                            color: details.isPackagingFeeActive ? '#059669' : '#64748b'
+                                        }}>
+                                            {details.isPackagingFeeActive ? `ON (₹${Number(details.packagingFee || 0).toFixed(2)})` : `OFF (₹${Number(details.packagingFee || 0).toFixed(2)})`}
+                                        </span>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '6px' }}>
+                                        <button
+                                            onClick={() => handleTogglePackagingFee(!details.isPackagingFeeActive)}
+                                            disabled={togglingPackagingFee}
+                                            style={{
+                                                backgroundColor: details.isPackagingFeeActive ? '#ef4444' : '#10b981',
+                                                color: 'white',
+                                                border: 'none',
+                                                padding: '4px 10px',
+                                                borderRadius: '6px',
+                                                cursor: 'pointer',
+                                                fontWeight: '600',
+                                                fontSize: '0.8rem'
+                                            }}
+                                        >
+                                            {togglingPackagingFee ? '...' : (details.isPackagingFeeActive ? 'Turn OFF' : 'Turn ON')}
+                                        </button>
+                                        {!isEditingPackagingFee && (
+                                            <button 
+                                                className="passwordToggleBtn" 
+                                                onClick={() => {
+                                                    setEditPackagingFee(String(details.packagingFee !== undefined && details.packagingFee !== null ? details.packagingFee : '0'));
+                                                    setIsEditingPackagingFee(true);
+                                                }}
+                                            >
+                                                ✏️ Edit
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {isEditingPackagingFee && (
+                                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                        <input
+                                            type="number"
+                                            step="1"
+                                            min="0"
+                                            placeholder="Enter fee in ₹"
+                                            style={{
+                                                padding: '6px 10px',
+                                                borderRadius: '6px',
+                                                border: '1px solid #cbd5e1',
+                                                fontSize: '0.95rem',
+                                                color: '#1e293b',
+                                                backgroundColor: '#ffffff',
+                                                width: '120px',
+                                                boxSizing: 'border-box'
+                                            }}
+                                            value={editPackagingFee}
+                                            onChange={(e) => setEditPackagingFee(e.target.value)}
+                                            disabled={updatingPackagingFee}
+                                        />
+                                        <button 
+                                            onClick={handleSavePackagingFee}
+                                            disabled={updatingPackagingFee}
+                                            style={{
+                                                backgroundColor: '#2ecc71',
+                                                color: 'white',
+                                                border: 'none',
+                                                padding: '6px 12px',
+                                                borderRadius: '6px',
+                                                cursor: 'pointer',
+                                                fontWeight: '600',
+                                                fontSize: '0.85rem'
+                                            }}
+                                        >
+                                            {updatingPackagingFee ? '...' : 'Save'}
+                                        </button>
+                                        <button 
+                                            onClick={() => setIsEditingPackagingFee(false)}
+                                            disabled={updatingPackagingFee}
+                                            style={{
+                                                backgroundColor: '#e74c3c',
+                                                color: 'white',
+                                                border: 'none',
+                                                padding: '6px 12px',
+                                                borderRadius: '6px',
+                                                cursor: 'pointer',
+                                                fontWeight: '600',
+                                                fontSize: '0.85rem'
+                                            }}
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                         <div className="detailItem">
                             <span className="detailLabel">Restaurant Rating</span>

@@ -83,7 +83,9 @@ export async function GET(request) {
                 vegOrNonVeg: restaurant.vegOrNonVeg || "Both",
                 commission: restaurant.commission !== undefined ? restaurant.commission : 0,
                 isActive: restaurant.isActive !== undefined ? restaurant.isActive : true,
-                  rating: restaurant.rating !== undefined ? restaurant.rating : 4.2
+                  rating: restaurant.rating !== undefined ? restaurant.rating : 4.2,
+                packagingFee: restaurant.packagingFee !== undefined && restaurant.packagingFee !== null ? Number(restaurant.packagingFee) : 0,
+                isPackagingFeeActive: restaurant.isPackagingFeeActive !== undefined ? Boolean(restaurant.isPackagingFeeActive) : false
             } : null
         });
     } catch (error) {

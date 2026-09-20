@@ -88,6 +88,14 @@ const RegisterUserSchema = new mongoose.Schema(
       type: Number,
       default: 4.2,
     },
+    packagingFee: {
+      type: Number,
+      default: 0,
+    },
+    isPackagingFeeActive: {
+      type: Boolean,
+      default: false,
+    },
     position: {
       type: Number,
       default: 0,
