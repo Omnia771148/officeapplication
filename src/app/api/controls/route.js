@@ -16,8 +16,9 @@ function getISTTimeString(date = new Date()) {
 }
 
 const DEFAULT_CONTROLS = [
-    { key: 'confirmPayButton', name: 'Confirm Pay Button', status: true },
-    { key: 'maintenanceMode', name: 'Maintenance Mode', status: false }
+    { key: 'confirmPayButton', name: 'Confirm Pay Button', status: true, title: '', description: '' },
+    { key: 'maintenanceMode', name: 'Maintenance Mode', status: false, title: '', description: '' },
+    { key: 'homeHangingBanner', name: 'Home Hanging Banner', status: false, title: 'Special Announcement 🎉', description: 'Check out our latest restaurant offers and food deals!' }
 ];
 
 export async function GET() {
@@ -32,6 +33,8 @@ export async function GET() {
                     key: item.key,
                     name: item.name,
                     status: item.status,
+                    title: item.title || '',
+                    description: item.description || '',
                     history: []
                 });
             }
@@ -51,7 +54,7 @@ export async function POST(request) {
     try {
         await dbConnect();
         const body = await request.json();
-        const { key, status, name } = body;
+        const { key, status, name, title, description } = body;
 
         if (!key || status === undefined || !name) {
             return NextResponse.json(
@@ -67,6 +70,8 @@ export async function POST(request) {
                 key,
                 name: defaultMatch ? defaultMatch.name : key,
                 status: Boolean(status),
+                title: title !== undefined ? String(title).trim() : '',
+                description: description !== undefined ? String(description).trim() : '',
                 history: []
             });
         }
@@ -75,9 +80,18 @@ export async function POST(request) {
         const istFormatted = getISTTimeString(now);
 
         control.status = Boolean(status);
+        if (title !== undefined) {
+            control.title = String(title).trim();
+        }
+        if (description !== undefined) {
+            control.description = String(description).trim();
+        }
+
         control.history.push({
             status: Boolean(status),
             name: String(name).trim(),
+            title: title !== undefined ? String(title).trim() : (control.title || ''),
+            description: description !== undefined ? String(description).trim() : (control.description || ''),
             date: istFormatted,
             istTime: istFormatted,
             timestamp: now.getTime()

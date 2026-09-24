@@ -9,7 +9,8 @@ const LOGIN_PASSWORD = '123';
 
 const CONTROL_DESCRIPTIONS = {
     confirmPayButton: 'Turn off and on the confirm pay button in the payment checkout flow.',
-    maintenanceMode: 'Turn off and on application maintenance mode.'
+    maintenanceMode: 'Turn off and on application maintenance mode.',
+    homeHangingBanner: 'Turn on and off the swinging hanging banner on the customer home page, and customize its title and text.'
 };
 
 export default function ControlsPage() {
@@ -23,6 +24,8 @@ export default function ControlsPage() {
     const [pendingControlKey, setPendingControlKey] = useState('');
     const [pendingControlName, setPendingControlName] = useState('');
     const [pendingToggleState, setPendingToggleState] = useState(null);
+    const [pendingTitle, setPendingTitle] = useState('');
+    const [pendingDescription, setPendingDescription] = useState('');
     const [authName, setAuthName] = useState('');
     const [authPassword, setAuthPassword] = useState('');
     const [authError, setAuthError] = useState('');
@@ -54,6 +57,8 @@ export default function ControlsPage() {
         setPendingControlKey(controlItem.key);
         setPendingControlName(controlItem.name);
         setPendingToggleState(targetState);
+        setPendingTitle(controlItem.title || '');
+        setPendingDescription(controlItem.description || '');
         setAuthName('');
         setAuthPassword('');
         setAuthError('');
@@ -86,7 +91,9 @@ export default function ControlsPage() {
                 body: JSON.stringify({
                     key: pendingControlKey,
                     status: pendingToggleState,
-                    name: capitalizedName
+                    name: capitalizedName,
+                    title: pendingTitle,
+                    description: pendingDescription
                 })
             });
 
@@ -97,6 +104,8 @@ export default function ControlsPage() {
                 setLastUpdatedBy(`${pendingControlName} was turned ${pendingToggleState ? 'ON' : 'OFF'} by ${capitalizedName}`);
                 setShowAuthModal(false);
                 setPendingToggleState(null);
+                setPendingTitle('');
+                setPendingDescription('');
                 setAuthName('');
                 setAuthPassword('');
             } else {
@@ -113,6 +122,8 @@ export default function ControlsPage() {
     const handleCancelAuth = () => {
         setShowAuthModal(false);
         setPendingToggleState(null);
+        setPendingTitle('');
+        setPendingDescription('');
         setAuthName('');
         setAuthPassword('');
         setAuthError('');
@@ -161,10 +172,10 @@ export default function ControlsPage() {
 
             <div className="controlsCard">
                 <h1 className="controlsTitle">
-                    <span>🎛️</span> App Controls
+                    <span>⚙️</span> App Controls
                 </h1>
                 <p className="controlsSubtitle">
-                    Manage feature toggles and operational settings for your application.
+                    Manage feature toggles, operational settings, and banners for your application.
                 </p>
 
                 {loading ? (
@@ -201,7 +212,7 @@ export default function ControlsPage() {
 
                         {lastUpdatedBy && (
                             <div className="successBanner">
-                                ✅ {lastUpdatedBy}
+                                ✓ {lastUpdatedBy}
                             </div>
                         )}
 
@@ -209,7 +220,7 @@ export default function ControlsPage() {
                         {allHistoryLogs && allHistoryLogs.length > 0 && (
                             <div className="historySection">
                                 <h3 className="historyTitle">
-                                    📋 Change History Log
+                                    📜 Change History Log
                                 </h3>
                                 <div className="historyList">
                                     {allHistoryLogs.map((item, idx) => (
@@ -256,7 +267,7 @@ export default function ControlsPage() {
                 )}
 
                 <div className="infoBanner">
-                    ℹ️ <strong>Database Connected:</strong> Separate records created in <code>controls</code> collection. Authorized names: Sai, Vineeth, or Parthu.
+                    💡 <strong>Database Connected:</strong> Separate records created in <code>controls</code> collection. Authorized names: Sai, Vineeth, or Parthu.
                 </div>
             </div>
 
@@ -304,6 +315,56 @@ export default function ControlsPage() {
                                         required
                                         disabled={submitting}
                                     />
+                                </div>
+
+                                <div>
+                                    <label className="authInputLabel">
+                                        {pendingControlKey === 'homeHangingBanner'
+                                            ? 'Banner Title (Heading)'
+                                            : 'Custom Title'}
+                                    </label>
+                                    <input
+                                        type="text"
+                                        className="authInput"
+                                        placeholder={
+                                            pendingControlKey === 'homeHangingBanner'
+                                                ? 'e.g. Special Announcement 🎉'
+                                                : 'e.g. Ordering Temporarily Disabled'
+                                        }
+                                        value={pendingTitle}
+                                        onChange={(e) => setPendingTitle(e.target.value)}
+                                        disabled={submitting}
+                                    />
+                                    <span className="authInputHint">
+                                        {pendingControlKey === 'homeHangingBanner'
+                                            ? 'Headline text displayed at the top of the hanging banner on the home page.'
+                                            : 'Title displayed at the top of the alert popup in cart.'}
+                                    </span>
+                                </div>
+
+                                <div>
+                                    <label className="authInputLabel">
+                                        {pendingControlKey === 'homeHangingBanner'
+                                            ? 'Banner Text (Description)'
+                                            : 'Custom Description'}
+                                    </label>
+                                    <textarea
+                                        className="authTextarea"
+                                        placeholder={
+                                            pendingControlKey === 'homeHangingBanner'
+                                                ? 'e.g. Enjoy flat 20% off on all restaurants today! Hurry, limited time deal.'
+                                                : 'e.g. Order placement is currently paused by admin. Please try again shortly.'
+                                        }
+                                        value={pendingDescription}
+                                        onChange={(e) => setPendingDescription(e.target.value)}
+                                        disabled={submitting}
+                                        rows={3}
+                                    />
+                                    <span className="authInputHint">
+                                        {pendingControlKey === 'homeHangingBanner'
+                                            ? 'Description text shown inside the hanging banner on the home page.'
+                                            : 'Message shown below the title when customers tap "Place the order".'}
+                                    </span>
                                 </div>
                             </div>
 
