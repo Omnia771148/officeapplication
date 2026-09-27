@@ -100,9 +100,37 @@ const RegisterUserSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    coupons: [
+      {
+        couponCode: {
+          type: String,
+          required: true,
+          trim: true,
+          uppercase: true,
+        },
+        offerType: {
+          type: String,
+          enum: ["percentage", "money"],
+          default: "percentage",
+        },
+        offerValue: {
+          type: Number,
+          required: true,
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
   },
   { timestamps: true }
 );
+
+// Delete cached model in dev mode so schema changes are picked up immediately
+if (mongoose.models.RestuarentUser) {
+  delete mongoose.models.RestuarentUser;
+}
 
 export default mongoose.models.RestuarentUser ||
   mongoose.model(
