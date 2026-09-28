@@ -234,6 +234,16 @@ export default function Dashboard() {
             <div style={{ width: '90%', maxWidth: '800px', marginBottom: '20px' }}>
                 <button
                     className="branchButton"
+                    style={{ '--btn-color': '#059669' }}
+                    onClick={() => router.push('/completed-order-coupons')}
+                >
+                    🎟️ Coupons Used in Completed Orders
+                </button>
+            </div>
+
+            <div style={{ width: '90%', maxWidth: '800px', marginBottom: '20px' }}>
+                <button
+                    className="branchButton"
                     style={{ '--btn-color': '#607D8B' }}
                     onClick={() => setShowMoreOptions(!showMoreOptions)}
                 >

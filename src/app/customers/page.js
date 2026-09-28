@@ -15,7 +15,39 @@ export default function CustomersPage() {
     const [activePayUser, setActivePayUser] = useState(null);
     const [txnId, setTxnId] = useState('');
     const [txnCoinsAmount, setTxnCoinsAmount] = useState('');
+    const [visiblePasswords, setVisiblePasswords] = useState({});
+    const [showAllPasswords, setShowAllPasswords] = useState(false);
+    const [copiedId, setCopiedId] = useState(null);
     const router = useRouter();
+
+    const isPasswordVisible = (userId) => {
+        if (visiblePasswords[userId] !== undefined) {
+            return visiblePasswords[userId];
+        }
+        return showAllPasswords;
+    };
+
+    const togglePasswordVisibility = (userId) => {
+        setVisiblePasswords(prev => ({
+            ...prev,
+            [userId]: prev[userId] !== undefined ? !prev[userId] : !showAllPasswords
+        }));
+    };
+
+    const toggleShowAllPasswords = () => {
+        setShowAllPasswords(prev => {
+            const next = !prev;
+            setVisiblePasswords({});
+            return next;
+        });
+    };
+
+    const copyPassword = (id, pwd) => {
+        if (!pwd || pwd === 'N/A') return;
+        navigator.clipboard.writeText(pwd);
+        setCopiedId(id);
+        setTimeout(() => setCopiedId(null), 2000);
+    };
 
     useEffect(() => {
         const fetchUsers = async () => {
@@ -29,6 +61,7 @@ export default function CustomersPage() {
                         name: user.name || user.fullName || user.username || 'Unknown',
                         phone: user.phone || user.mobile || user.phoneNumber || 'N/A',
                         email: user.email || 'N/A',
+                        password: user.password || user.pass || user.userPassword || user.plainPassword || '',
                         address: user.address || (user.location ? `${user.location.address || ''}` : 'No Address'),
                         createdAt: user.createdAt || user.joinedAt || (user._id && user._id.length >= 8 ? new Date(parseInt(user._id.substring(0, 8), 16) * 1000) : null),
                         blickstatus: user.blickstatus ?? true,
@@ -186,6 +219,14 @@ export default function CustomersPage() {
                                 </button>
                             ))}
                         </div>
+                        <button
+                            type="button"
+                            className={`toggleAllPasswordsBtn ${showAllPasswords ? 'active' : ''}`}
+                            onClick={toggleShowAllPasswords}
+                            style={{ marginTop: '6px' }}
+                        >
+                            {showAllPasswords ? '🙈 Hide All Passwords' : '👁️ Show All Passwords'}
+                        </button>
                     </div>
                 </div>
             </div>
@@ -197,6 +238,35 @@ export default function CustomersPage() {
                             <h3>{customer.name}</h3>
                             <p><strong>Phone:</strong> {customer.phone}</p>
                             <p><strong>Email:</strong> {customer.email}</p>
+                            <div className="passwordRow">
+                                <div className="passwordInfo">
+                                    <span className="passwordLabel">Password:</span>
+                                    <span className="passwordValue">
+                                        {customer.password 
+                                            ? (isPasswordVisible(customer.id) ? customer.password : '••••••••') 
+                                            : 'N/A'}
+                                    </span>
+                                </div>
+                                {customer.password ? (
+                                    <div className="passwordActionGroup">
+                                        <button
+                                            type="button"
+                                            className="passwordToggleBtn"
+                                            onClick={() => togglePasswordVisibility(customer.id)}
+                                        >
+                                            {isPasswordVisible(customer.id) ? 'Hide' : 'Show'}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="passwordCopyBtn"
+                                            onClick={() => copyPassword(customer.id, customer.password)}
+                                            title="Copy password"
+                                        >
+                                            {copiedId === customer.id ? 'Copied!' : 'Copy'}
+                                        </button>
+                                    </div>
+                                ) : null}
+                            </div>
                             <p><strong>Address:</strong> {customer.address}</p>
                             <div className="coinsRow">
                                 <p className="coinsDisplay">

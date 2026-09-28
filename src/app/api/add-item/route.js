@@ -4,7 +4,7 @@ import { getRestaurantItemModel } from "../../../../lib/mongoose";
 export async function POST(req) {
   try {
 
-    const { itemName, itemId, price, restaurantId, rating, photoUrl, itemStatus, itemtodisplayintherestuarentapp, vegOrNonVeg, offerpercentage, category, offerTitle } = await req.json();
+    const { itemName, itemId, price, restaurantId, rating, photoUrl, itemStatus, itemtodisplayintherestuarentapp, vegOrNonVeg, offerpercentage, category, offerTitle, description } = await req.json();
 
     if (
       !itemName || !itemName.trim() ||
@@ -33,6 +33,7 @@ export async function POST(req) {
       offerpercentage: (offerpercentage !== undefined && offerpercentage !== null && offerpercentage !== '') ? Number(offerpercentage) : 0,
       offerTitle: (offerTitle && typeof offerTitle === 'string') ? offerTitle.trim() : "",
       category: category || "",
+      description: (description && typeof description === 'string') ? description.trim() : "",
     });
 
     return NextResponse.json(

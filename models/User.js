@@ -4,6 +4,7 @@ const UserSchema = new mongoose.Schema({
     name: String,
     email: String,
     phone: String,
+    password: { type: String },
     createdAt: Date,
     blickstatus: { type: Boolean, default: true },
     blockStatus: { type: Boolean, default: false },

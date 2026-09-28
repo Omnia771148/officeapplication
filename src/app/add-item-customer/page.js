@@ -100,6 +100,7 @@ export default function AddItemCustomerPage() {
     const [itemId, setItemId] = useState('');
     const [vegOrNonVeg, setVegOrNonVeg] = useState('Veg');
     const [offerPercentage, setOfferPercentage] = useState('');
+    const [description, setDescription] = useState('');
     const fileInputRef = useRef(null);
 
     const [loading, setLoading] = useState(false);
@@ -406,7 +407,8 @@ export default function AddItemCustomerPage() {
                     itemtodisplayintherestuarentapp: true,
                     vegOrNonVeg: vegOrNonVeg,
                     offerpercentage: parsedOffer,
-                    category: selectedCategory
+                    category: selectedCategory,
+                    description: description.trim()
                 })
             });
 
@@ -417,6 +419,7 @@ export default function AddItemCustomerPage() {
                 setPrice('');
                 setVegOrNonVeg('Veg');
                 setOfferPercentage('');
+                setDescription('');
                 setPhotoFile(null);
                 setPhotoPreview(null);
                 setSelectedCategory('');
@@ -797,6 +800,18 @@ export default function AddItemCustomerPage() {
                             value={itemName}
                             onChange={(e) => setItemName(e.target.value)}
                             required
+                        />
+                    </div>
+
+                    <div className="formGroup">
+                        <label className="formLabel">Description (Optional)</label>
+                        <textarea
+                            className="formInput"
+                            placeholder="e.g. Delicious grilled burger with fresh veggies, cheddar cheese and signature house sauce."
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            rows={3}
+                            style={{ resize: 'vertical', fontFamily: 'inherit' }}
                         />
                     </div>
 

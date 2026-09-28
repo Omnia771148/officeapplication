@@ -668,3 +668,105 @@
         padding-left: 5px;
     }
 }
+
+.passwordRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 6px 0;
+    padding: 6px 10px;
+    background: #f8fbfb;
+    border: 1px solid #e0f2f1;
+    border-radius: 8px;
+    font-size: 0.92rem;
+}
+
+.passwordInfo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow: hidden;
+}
+
+.passwordLabel {
+    color: #636e72;
+    font-weight: 600;
+}
+
+.passwordValue {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #2d3436;
+    letter-spacing: 0.5px;
+    word-break: break-all;
+}
+
+.passwordActionGroup {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: 8px;
+    flex-shrink: 0;
+}
+
+.passwordToggleBtn {
+    background: #ffffff;
+    border: 1px solid #b2dfdb;
+    color: #009688;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.passwordToggleBtn:hover {
+    background-color: #009688;
+    color: white;
+}
+
+.passwordCopyBtn {
+    background: #ffffff;
+    border: 1px solid #dfe6e9;
+    color: #636e72;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.passwordCopyBtn:hover {
+    background-color: #f1f2f6;
+    color: #2d3436;
+}
+
+.toggleAllPasswordsBtn {
+    background: white;
+    border: 1px solid #b2dfdb;
+    color: #00796b;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.toggleAllPasswordsBtn:hover {
+    background: #e0f2f1;
+    border-color: #009688;
+}
+
+.toggleAllPasswordsBtn.active {
+    background: #009688;
+    color: white;
+    border-color: #00796b;
+}

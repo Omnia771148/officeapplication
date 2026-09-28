@@ -96,6 +96,7 @@ export default function TotalOrdersPage() {
                 const q = searchQuery.toLowerCase();
                 const match =
                     (order.orderId && order.orderId.toLowerCase().includes(q)) ||
+                    (order.couponCode && order.couponCode.toLowerCase().includes(q)) ||
                     (order.userName && order.userName.toLowerCase().includes(q)) ||
                     (order.userPhone && String(order.userPhone).toLowerCase().includes(q)) ||
                     (order.restaurantName && order.restaurantName.toLowerCase().includes(q)) ||
@@ -188,13 +189,22 @@ export default function TotalOrdersPage() {
                     <h1 className="pageTitle">📦 Total Orders (Completed)</h1>
                 </div>
 
-                <button
-                    className="ordersRefreshBtn"
-                    onClick={fetchOrders}
-                    disabled={loading}
-                >
-                    🔄 Refresh
-                </button>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <button
+                        className="backBtn"
+                        style={{ background: '#f0fdf4', color: '#166534', borderColor: '#bbf7d0', fontWeight: '700' }}
+                        onClick={() => router.push('/completed-order-coupons')}
+                    >
+                        🎟️ Used Coupons
+                    </button>
+                    <button
+                        className="ordersRefreshBtn"
+                        onClick={fetchOrders}
+                        disabled={loading}
+                    >
+                        🔄 Refresh
+                    </button>
+                </div>
             </header>
 
             {/* Metric Summary Cards */}
@@ -434,6 +444,22 @@ export default function TotalOrdersPage() {
                                         {/* Order ID */}
                                         <td>
                                             <span className="orderIdBadge">{order.orderId}</span>
+                                            {order.couponCode && (
+                                                <div style={{ marginTop: '4px' }}>
+                                                    <span style={{
+                                                        background: '#f0fdf4',
+                                                        color: '#166534',
+                                                        border: '1px solid #bbf7d0',
+                                                        padding: '2px 6px',
+                                                        borderRadius: '4px',
+                                                        fontSize: '0.72rem',
+                                                        fontWeight: '700',
+                                                        display: 'inline-block'
+                                                    }}>
+                                                        🎟️ {order.couponCode}
+                                                    </span>
+                                                </div>
+                                            )}
                                         </td>
 
                                         {/* Customer: userName & userPhone */}
@@ -595,6 +621,36 @@ export default function TotalOrdersPage() {
                                     <div className="infoItemLabel">Payment Status</div>
                                     <div className="infoItemValue">{selectedOrder.paymentStatus}</div>
                                 </div>
+                                {selectedOrder.couponCode && (
+                                    <div style={{
+                                        gridColumn: '1 / -1',
+                                        background: '#f0fdf4',
+                                        padding: '12px 14px',
+                                        borderRadius: '8px',
+                                        border: '1px solid #bbf7d0',
+                                        display: 'flex',
+                                        gap: '20px',
+                                        alignItems: 'center',
+                                        flexWrap: 'wrap'
+                                    }}>
+                                        <div>
+                                            <div className="infoItemLabel" style={{ color: '#166534' }}>Coupon Applied</div>
+                                            <div className="infoItemValue" style={{ color: '#15803d', fontWeight: 800 }}>🎟️ {selectedOrder.couponCode}</div>
+                                        </div>
+                                        {selectedOrder.discountAmount > 0 && (
+                                            <div>
+                                                <div className="infoItemLabel" style={{ color: '#166534' }}>Discount Given</div>
+                                                <div className="infoItemValue" style={{ color: '#b91c1c', fontWeight: 800 }}>-₹{selectedOrder.discountAmount}</div>
+                                            </div>
+                                        )}
+                                        {selectedOrder.influencerName && (
+                                            <div>
+                                                <div className="infoItemLabel" style={{ color: '#166534' }}>Influencer</div>
+                                                <div className="infoItemValue" style={{ color: '#1e293b' }}>{selectedOrder.influencerName}</div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </div>
 

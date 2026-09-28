@@ -57,9 +57,12 @@ export async function GET() {
                 // Restaurant details
                 restaurantName: order.restaurantName || order.rest || 'N/A',
                 restaurantId: order.restaurantId || 'N/A',
-                // Earnings & coins
                 coinsEarned: coinsEarned,
                 netEarnings: Number(netEarnings.toFixed(2)),
+                // Coupon details
+                couponCode: order.couponCode || null,
+                discountAmount: Number(order.discountAmount) || 0,
+                influencerName: order.influencerName || null,
                 // Delivery partner details
                 deliveryBoyId: order.deliveryBoyId || 'N/A',
                 deliveryBoyName: order.deliveryBoyName || 'N/A',

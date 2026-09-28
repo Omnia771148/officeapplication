@@ -283,6 +283,7 @@ export default function BranchItemsPage() {
     const [editPhotoUrl, setEditPhotoUrl] = useState('');
     const [editOfferPercentage, setEditOfferPercentage] = useState('');
     const [editPhotoFile, setEditPhotoFile] = useState(null);
+    const [editDescription, setEditDescription] = useState('');
     const [photoPreview, setPhotoPreview] = useState('');
     const [uploadingImage, setUploadingImage] = useState(false);
     const [savingId, setSavingId] = useState(null);
@@ -295,6 +296,7 @@ export default function BranchItemsPage() {
         setEditRating(item.rating !== undefined && item.rating !== null ? item.rating.toString() : '0');
         setEditPhotoUrl(item.photoUrl || '');
         setEditOfferPercentage(item.offerpercentage !== undefined && item.offerpercentage !== null && Number(item.offerpercentage) > 0 ? item.offerpercentage.toString() : '');
+        setEditDescription(item.description || '');
         setEditPhotoFile(null);
         setPhotoPreview(item.photoUrl || '');
     };
@@ -307,6 +309,7 @@ export default function BranchItemsPage() {
         setEditRating('0');
         setEditPhotoUrl('');
         setEditOfferPercentage('');
+        setEditDescription('');
         setEditPhotoFile(null);
         setPhotoPreview('');
         setUploadingImage(false);
@@ -381,7 +384,8 @@ export default function BranchItemsPage() {
                     rating: parsedRating,
                     photoUrl: finalPhotoUrl,
                     offerpercentage: parsedOffer,
-                    restaurantId
+                    restaurantId,
+                    description: editDescription.trim()
                 })
             });
             const data = await res.json();
@@ -1868,6 +1872,18 @@ export default function BranchItemsPage() {
                                         />
                                     </div>
                                     <div className="editFieldGroup">
+                                        <span className="editFieldLabel">Description (Optional)</span>
+                                        <textarea
+                                            className="editInputField"
+                                            value={editDescription}
+                                            disabled={savingId === item._id || uploadingImage}
+                                            onChange={(e) => setEditDescription(e.target.value)}
+                                            placeholder="Enter item description"
+                                            rows={2}
+                                            style={{ resize: 'vertical', fontFamily: 'inherit' }}
+                                        />
+                                    </div>
+                                    <div className="editFieldGroup">
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <span className="editFieldLabel">Offer Percentage (%)</span>
                                             {editOfferPercentage !== '' && editOfferPercentage !== '0' && (
@@ -2054,6 +2070,21 @@ export default function BranchItemsPage() {
                                                 </button>
                                             </div>
                                         </div>
+
+                                        {item.description ? (
+                                            <p style={{
+                                                fontSize: '0.85rem',
+                                                color: '#64748b',
+                                                margin: '6px 0 2px 0',
+                                                lineHeight: '1.4',
+                                                display: '-webkit-box',
+                                                WebkitLineClamp: 2,
+                                                WebkitBoxOrient: 'vertical',
+                                                overflow: 'hidden'
+                                            }}>
+                                                {item.description}
+                                            </p>
+                                        ) : null}
 
                                         {item.offerpercentage !== undefined && item.offerpercentage !== null && Number(item.offerpercentage) > 0 ? (
                                             <div style={{
