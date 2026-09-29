@@ -133,6 +133,7 @@ export async function GET() {
         rating: rest.rating !== undefined && rest.rating !== null ? Number(rest.rating) : 4.2,
         packagingFee: rest.packagingFee !== undefined && rest.packagingFee !== null ? Number(rest.packagingFee) : 0,
         isPackagingFeeActive: rest.isPackagingFeeActive !== undefined ? Boolean(rest.isPackagingFeeActive) : false,
+        todisplaytocustomer: rest.todisplaytocustomer !== undefined ? Boolean(rest.todisplaytocustomer) : true,
       });
     }
 
@@ -146,7 +147,7 @@ export async function GET() {
 export async function PATCH(request) {
   try {
     await dbConnect();
-    const { restId, openTime, closeTime, isActive, offerTitle, rating, packagingFee, isPackagingFeeActive } = await request.json();
+    const { restId, openTime, closeTime, isActive, offerTitle, rating, packagingFee, isPackagingFeeActive, todisplaytocustomer } = await request.json();
 
     if (!restId) {
       return NextResponse.json({ success: false, error: "Restaurant ID is required" }, { status: 400 });
@@ -244,6 +245,18 @@ export async function PATCH(request) {
       await RestuarentUser.collection.updateOne(
         filter,
         { $set: packagingUpdates }
+      );
+    }
+
+    // Update todisplaytocustomer if provided in request
+    if (todisplaytocustomer !== undefined) {
+      await RestuarentUser.collection.updateOne(
+        filter,
+        {
+          $set: {
+            todisplaytocustomer: Boolean(todisplaytocustomer)
+          }
+        }
       );
     }
 

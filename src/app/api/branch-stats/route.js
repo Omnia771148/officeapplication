@@ -85,7 +85,8 @@ export async function GET(request) {
                 isActive: restaurant.isActive !== undefined ? restaurant.isActive : true,
                   rating: restaurant.rating !== undefined ? restaurant.rating : 4.2,
                 packagingFee: restaurant.packagingFee !== undefined && restaurant.packagingFee !== null ? Number(restaurant.packagingFee) : 0,
-                isPackagingFeeActive: restaurant.isPackagingFeeActive !== undefined ? Boolean(restaurant.isPackagingFeeActive) : false
+                isPackagingFeeActive: restaurant.isPackagingFeeActive !== undefined ? Boolean(restaurant.isPackagingFeeActive) : false,
+                todisplaytocustomer: restaurant.todisplaytocustomer !== undefined ? Boolean(restaurant.todisplaytocustomer) : true
             } : null
         });
     } catch (error) {

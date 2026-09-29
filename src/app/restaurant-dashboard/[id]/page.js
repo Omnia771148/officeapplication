@@ -38,6 +38,9 @@ export default function RestaurantDashboardPage({ params }) {
     // Active status toggle state
     const [togglingActive, setTogglingActive] = useState(false);
 
+    // Customer display toggle state
+    const [togglingDisplayToCustomer, setTogglingDisplayToCustomer] = useState(false);
+
     // Timings edit state
     const [isEditingTimings, setIsEditingTimings] = useState(false);
     const [editOpenTime, setEditOpenTime] = useState('');
@@ -105,6 +108,34 @@ export default function RestaurantDashboardPage({ params }) {
             alert("Server communication error.");
         } finally {
             setTogglingActive(false);
+        }
+    };
+
+    const handleToggleDisplayToCustomer = async (nextStatus) => {
+        setTogglingDisplayToCustomer(true);
+        try {
+            const res = await fetch('/api/restaurant-timings', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    restId: id,
+                    todisplaytocustomer: nextStatus
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setDetails(prev => ({
+                    ...prev,
+                    todisplaytocustomer: nextStatus
+                }));
+            } else {
+                alert(data.error || 'Failed to update customer display status.');
+            }
+        } catch (err) {
+            console.error("Error toggling customer display status:", err);
+            alert("Server communication error.");
+        } finally {
+            setTogglingDisplayToCustomer(false);
         }
     };
 
@@ -332,6 +363,49 @@ export default function RestaurantDashboardPage({ params }) {
                         Add Customer Item
                     </button>
                 </Link>
+
+                <button 
+                    onClick={() => {
+                        const currentStatus = details?.todisplaytocustomer !== false;
+                        handleToggleDisplayToCustomer(!currentStatus);
+                    }}
+                    disabled={togglingDisplayToCustomer}
+                    className="branchActionButton"
+                    style={{ 
+                        backgroundColor: (details?.todisplaytocustomer !== false) ? '#10b981' : '#ef4444', 
+                        color: 'white',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        cursor: togglingDisplayToCustomer ? 'not-allowed' : 'pointer',
+                        boxShadow: (details?.todisplaytocustomer !== false)
+                            ? '0 4px 12px rgba(16, 185, 129, 0.35)'
+                            : '0 4px 12px rgba(239, 68, 68, 0.35)',
+                        transition: 'all 0.2s ease',
+                        border: 'none',
+                        minWidth: '220px'
+                    }}
+                    title="Click to toggle restaurant display to customers"
+                >
+                    <span style={{ fontSize: '1.15rem' }}>
+                        {(details?.todisplaytocustomer !== false) ? '👁️' : '🙈'}
+                    </span>
+                    <span>
+                        {togglingDisplayToCustomer 
+                            ? 'Updating...' 
+                            : ((details?.todisplaytocustomer !== false) ? 'Display to Customer: ON' : 'Display to Customer: OFF')}
+                    </span>
+                    <span style={{
+                        display: 'inline-block',
+                        width: '9px',
+                        height: '9px',
+                        borderRadius: '50%',
+                        backgroundColor: '#ffffff',
+                        opacity: (details?.todisplaytocustomer !== false) ? 1 : 0.6,
+                        boxShadow: '0 0 6px rgba(255,255,255,0.8)'
+                    }} />
+                </button>
             </div>
 
             {details && (
@@ -885,6 +959,49 @@ export default function RestaurantDashboardPage({ params }) {
                                             height: '18px',
                                             width: '18px',
                                             left: (details.isActive !== false) ? '24px' : '4px',
+                                            bottom: '3px',
+                                            backgroundColor: 'white',
+                                            transition: '.3s',
+                                            borderRadius: '50%',
+                                            boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                                        }} />
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+                        <div className="detailItem">
+                            <span className="detailLabel">Display to Customer</span>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px' }}>
+                                <span style={{
+                                    fontSize: '0.9rem',
+                                    fontWeight: '700',
+                                    color: (details.todisplaytocustomer !== false) ? '#2ecc71' : '#e74c3c'
+                                }}>
+                                    {(details.todisplaytocustomer !== false) ? '● Displayed' : '○ Hidden'}
+                                </span>
+                                <label style={{ position: 'relative', display: 'inline-block', width: '46px', height: '24px', flexShrink: 0 }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={details.todisplaytocustomer !== false}
+                                        disabled={togglingDisplayToCustomer}
+                                        onChange={(e) => handleToggleDisplayToCustomer(e.target.checked)}
+                                        style={{ opacity: 0, width: 0, height: 0 }}
+                                    />
+                                    <span style={{
+                                        position: 'absolute',
+                                        cursor: togglingDisplayToCustomer ? 'not-allowed' : 'pointer',
+                                        top: 0, left: 0, right: 0, bottom: 0,
+                                        backgroundColor: (details.todisplaytocustomer !== false) ? '#2ecc71' : '#cbd5e1',
+                                        transition: '.3s',
+                                        borderRadius: '24px',
+                                        opacity: togglingDisplayToCustomer ? 0.6 : 1
+                                    }}>
+                                        <span style={{
+                                            position: 'absolute',
+                                            content: '""',
+                                            height: '18px',
+                                            width: '18px',
+                                            left: (details.todisplaytocustomer !== false) ? '24px' : '4px',
                                             bottom: '3px',
                                             backgroundColor: 'white',
                                             transition: '.3s',

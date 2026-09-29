@@ -66,6 +66,10 @@ const RegisterUserSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    todisplaytocustomer: {
+      type: Boolean,
+      default: true,
+    },
     isManuallyToggled: {
       type: Boolean,
       default: false,

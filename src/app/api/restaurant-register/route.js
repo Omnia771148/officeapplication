@@ -78,6 +78,7 @@ export async function POST(req) {
       },
       logoUrl: logoUrl || "",
       isActive: true,
+      todisplaytocustomer: true,
       isManuallyToggled: true,
       manualStatusUpdatedAt: new Date(),
       vegOrNonVeg,
