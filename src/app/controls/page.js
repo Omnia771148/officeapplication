@@ -10,7 +10,8 @@ const LOGIN_PASSWORD = '123';
 const CONTROL_DESCRIPTIONS = {
     confirmPayButton: 'Turn off and on the confirm pay button in the payment checkout flow.',
     maintenanceMode: 'Turn off and on application maintenance mode.',
-    homeHangingBanner: 'Turn on and off the swinging hanging banner on the customer home page, and customize its title and text.'
+    homeHangingBanner: 'Turn on and off the swinging hanging banner on the customer home page, and customize its title and text.',
+    appVersion: 'Turn on and off app version enforcement and mandatory update prompts.'
 };
 
 export default function ControlsPage() {
@@ -54,8 +55,9 @@ export default function ControlsPage() {
     const handleToggleClick = (controlItem, e) => {
         e.preventDefault();
         const targetState = !controlItem.status;
-        setPendingControlKey(controlItem.key);
-        setPendingControlName(controlItem.name);
+        const displayName = controlItem.name || controlItem.key || 'Control';
+        setPendingControlKey(controlItem.key || '');
+        setPendingControlName(displayName);
         setPendingToggleState(targetState);
         setPendingTitle(controlItem.title || '');
         setPendingDescription(controlItem.description || '');
@@ -129,6 +131,19 @@ export default function ControlsPage() {
         setAuthError('');
     };
 
+    // Helper to get a human-readable display name for any control item
+    const getControlDisplayName = (item) => {
+        if (item.name && item.name.trim()) return item.name;
+        if (item.key) {
+            // Convert camelCase like "appVersion" to "App Version"
+            return item.key
+                .replace(/([A-Z])/g, ' $1')
+                .replace(/^./, (str) => str.toUpperCase())
+                .trim();
+        }
+        return 'Control';
+    };
+
     // Robust parser to convert any history date/timestamp into milliseconds for sorting
     const parseHistoryTime = (item) => {
         if (item.timestamp && !isNaN(Number(item.timestamp))) {
@@ -154,7 +169,7 @@ export default function ControlsPage() {
     const allHistoryLogs = controlsList.flatMap(control =>
         (control.history || []).map(h => ({
             ...h,
-            featureName: control.name
+            featureName: getControlDisplayName(control)
         }))
     ).sort((a, b) => parseHistoryTime(b) - parseHistoryTime(a));
 
@@ -184,31 +199,37 @@ export default function ControlsPage() {
                     </div>
                 ) : (
                     <>
-                        {controlsList.map((item) => (
-                            <div key={item.key || item._id} className="controlItem">
-                                <div className="controlInfo">
-                                    <div className="controlLabel">
-                                        <span>{item.name}</span>
-                                        <span className={`statusBadge ${item.status ? 'active' : 'inactive'}`}>
-                                            {item.status ? 'ON' : 'OFF'}
-                                        </span>
-                                    </div>
-                                    <div className="controlDescription">
-                                        {CONTROL_DESCRIPTIONS[item.key] || `Turn off and on ${item.name.toLowerCase()}.`}
-                                    </div>
-                                </div>
+                        {controlsList.map((item) => {
+                            const displayName = getControlDisplayName(item);
+                            const description = CONTROL_DESCRIPTIONS[item.key] || 
+                                (item.description && item.description.trim() ? item.description : `Turn off and on ${displayName.toLowerCase()}.`);
 
-                                <label className="switch" aria-label={`Toggle ${item.name}`}>
-                                    <input
-                                        type="checkbox"
-                                        checked={Boolean(item.status)}
-                                        onClick={(e) => handleToggleClick(item, e)}
-                                        onChange={() => {}}
-                                    />
-                                    <span className="slider"></span>
-                                </label>
-                            </div>
-                        ))}
+                            return (
+                                <div key={item.key || item._id} className="controlItem">
+                                    <div className="controlInfo">
+                                        <div className="controlLabel">
+                                            <span>{displayName}</span>
+                                            <span className={`statusBadge ${item.status ? 'active' : 'inactive'}`}>
+                                                {item.status ? 'ON' : 'OFF'}
+                                            </span>
+                                        </div>
+                                        <div className="controlDescription">
+                                            {description}
+                                        </div>
+                                    </div>
+
+                                    <label className="switch" aria-label={`Toggle ${displayName}`}>
+                                        <input
+                                            type="checkbox"
+                                            checked={Boolean(item.status)}
+                                            onClick={(e) => handleToggleClick({ ...item, name: displayName }, e)}
+                                            onChange={() => {}}
+                                        />
+                                        <span className="slider"></span>
+                                    </label>
+                                </div>
+                            );
+                        })}
 
                         {lastUpdatedBy && (
                             <div className="successBanner">

@@ -41,6 +41,18 @@ export async function GET() {
         }
 
         const allControls = await Controls.find({}).sort({ createdAt: 1 });
+
+        // Ensure every control has a readable name if not already set in the database
+        for (const c of allControls) {
+            if (!c.name || !c.name.trim()) {
+                const generatedName = c.key
+                    ? c.key.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase()).trim()
+                    : 'Control';
+                c.name = generatedName;
+                await Controls.updateOne({ _id: c._id }, { $set: { name: generatedName } });
+            }
+        }
+
         return NextResponse.json({
             success: true,
             controls: allControls

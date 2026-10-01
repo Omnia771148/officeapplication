@@ -85,7 +85,7 @@ export default function CompletedOrderCouponsPage() {
             }
             if (searchQuery.trim()) {
                 const q = searchQuery.toLowerCase();
-                return item.couponCode.toLowerCase().includes(q) ||
+                return (item.couponCode || '').toLowerCase().includes(q) ||
                     (item.influencerName && item.influencerName.toLowerCase().includes(q));
             }
             return true;
