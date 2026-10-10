@@ -104,6 +104,14 @@ const RegisterUserSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    subrestaurentsId: {
+      type: [String],
+      default: [],
+    },
+    subrestaurents_id: {
+      type: [String],
+      default: [],
+    },
     coupons: [
       {
         couponCode: {

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import "./register.css";
 
@@ -44,7 +44,6 @@ const compressImage = (file, targetSizeKb = 65) => {
             (blob) => {
               if (!blob) {
                 resolve(file);
-                return;
               }
               const blobSizeKb = blob.size / 1024;
               if (blobSizeKb > targetSizeKb && quality > 0.15) {
@@ -94,23 +93,69 @@ export default function RestaurantRegisterPage() {
   const [vegOrNonVeg, setVegOrNonVeg] = useState("Both");
   const [commission, setCommission] = useState("");
   const [rating, setRating] = useState("4.2");
+
+  // Sub-restaurants multi-select dropdown states
+  const [availableRestaurants, setAvailableRestaurants] = useState([]);
+  const [selectedSubRestaurants, setSelectedSubRestaurants] = useState([]);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [dropdownSearch, setDropdownSearch] = useState("");
+  const dropdownRef = useRef(null);
+
   const router = useRouter();
 
-  const fetchLatestRestId = async () => {
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const fetchInitialData = async () => {
     try {
       const res = await fetch("/api/restaurant-register");
       const data = await res.json();
-      if (data.success && data.latestRestId) {
-        setLatestRestId(data.latestRestId);
+      if (data.success) {
+        if (data.latestRestId) {
+          setLatestRestId(data.latestRestId);
+        }
+        if (Array.isArray(data.restaurants)) {
+          setAvailableRestaurants(data.restaurants);
+        }
       }
     } catch (err) {
-      console.error("Error fetching latest rest ID:", err);
+      console.error("Error fetching initial restaurant data:", err);
     }
   };
 
   useEffect(() => {
-    fetchLatestRestId();
+    fetchInitialData();
   }, []);
+
+  const toggleRestaurantSelection = (id) => {
+    setSelectedSubRestaurants((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAll = () => {
+    setSelectedSubRestaurants(availableRestaurants.map((r) => r.restId));
+  };
+
+  const handleClearAll = () => {
+    setSelectedSubRestaurants([]);
+  };
+
+  const filteredRestaurants = availableRestaurants.filter((r) => {
+    const term = dropdownSearch.toLowerCase();
+    return (
+      (r.name && r.name.toLowerCase().includes(term)) ||
+      (r.restId && String(r.restId).toLowerCase().includes(term))
+    );
+  });
 
   const handleResetForm = () => {
     setEmail("");
@@ -130,6 +175,9 @@ export default function RestaurantRegisterPage() {
     setVegOrNonVeg("Both");
     setCommission("");
     setRating("4.2");
+    setSelectedSubRestaurants([]);
+    setDropdownOpen(false);
+    setDropdownSearch("");
     setMsg("");
     setIsSuccess(false);
   };
@@ -189,13 +237,15 @@ export default function RestaurantRegisterPage() {
           vegOrNonVeg,
           commission,
           rating,
+          subrestaurentsId: selectedSubRestaurants,
+          subrestaurents_id: selectedSubRestaurants,
         }),
       });
       const data = await res.json();
       setMsg(data.message);
       if (res.status === 201) {
         setIsSuccess(true);
-        fetchLatestRestId();
+        fetchInitialData();
       }
     } catch (error) {
       setMsg("Registration failed: " + error.message);
@@ -390,6 +440,147 @@ export default function RestaurantRegisterPage() {
               <option value="Veg">Veg Only</option>
               <option value="Non-Veg">Non-Veg Only</option>
             </select>
+          </div>
+
+          {/* Sub-Restaurants Multi-Select Dropdown */}
+          <div className="form-group full-width" ref={dropdownRef}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+              <label className="form-label" style={{ margin: 0 }}>
+                Sub-Restaurants (Link Branches / Outlets)
+              </label>
+              <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                Optional • Single, Multiple, or None ({selectedSubRestaurants.length} selected)
+              </span>
+            </div>
+
+            <div className="multiselect-wrapper">
+              <div 
+                className={`multiselect-trigger ${dropdownOpen ? 'active' : ''}`}
+                onClick={() => setDropdownOpen((prev) => !prev)}
+              >
+                {selectedSubRestaurants.length === 0 ? (
+                  <span className="placeholder-text">Select sub-restaurants (Optional • Single, Multiple, or None)...</span>
+                ) : (
+                  <div className="selected-chips-container">
+                    {selectedSubRestaurants.map((id) => {
+                      const found = availableRestaurants.find((r) => r.restId === id);
+                      return (
+                        <span key={id} className="selected-chip">
+                          {found ? found.name : `Restaurant ${id}`} (ID: {id})
+                          <button
+                            type="button"
+                            className="chip-remove-btn"
+                            title="Remove"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleRestaurantSelection(id);
+                            }}
+                          >
+                            ×
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+                <span className={`multiselect-arrow ${dropdownOpen ? 'rotated' : ''}`}>
+                  ▼
+                </span>
+              </div>
+
+              {dropdownOpen && (
+                <div className="multiselect-dropdown-menu">
+                  <div className="dropdown-search-wrapper">
+                    <input 
+                      type="text"
+                      className="dropdown-search-input"
+                      placeholder="🔍 Search restaurant name or restId..."
+                      value={dropdownSearch}
+                      onChange={(e) => setDropdownSearch(e.target.value)}
+                      onClick={(e) => e.stopPropagation()}
+                      autoFocus
+                    />
+                  </div>
+
+                  <div className="dropdown-toolbar">
+                    <span>
+                      {selectedSubRestaurants.length} of {availableRestaurants.length} selected
+                    </span>
+                    <div className="toolbar-actions">
+                      <button 
+                        type="button" 
+                        className="toolbar-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSelectAll();
+                        }}
+                      >
+                        Select All
+                      </button>
+                      <button 
+                        type="button" 
+                        className="toolbar-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleClearAll();
+                        }}
+                      >
+                        Clear All
+                      </button>
+                      <button 
+                        type="button" 
+                        className="toolbar-btn"
+                        style={{ background: '#6366f1', color: '#ffffff', borderColor: '#6366f1' }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDropdownOpen(false);
+                        }}
+                      >
+                        Done
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="dropdown-items-list">
+                    {filteredRestaurants.length === 0 ? (
+                      <div className="dropdown-empty-msg">
+                        {availableRestaurants.length === 0 
+                          ? "No restaurants found in database." 
+                          : "No matching restaurants found."}
+                      </div>
+                    ) : (
+                      filteredRestaurants.map((restaurant) => {
+                        const isSelected = selectedSubRestaurants.includes(restaurant.restId);
+                        return (
+                          <div 
+                            key={restaurant.restId}
+                            className={`dropdown-item-row ${isSelected ? 'selected' : ''}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleRestaurantSelection(restaurant.restId);
+                            }}
+                          >
+                            <input 
+                              type="checkbox"
+                              className="dropdown-checkbox"
+                              checked={isSelected}
+                              onChange={() => {}}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <span className="dropdown-item-name">
+                              {restaurant.name}
+                            </span>
+                            <span className="dropdown-item-id-badge">
+                              restId: "{restaurant.restId}"
+                            </span>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="form-group full-width">

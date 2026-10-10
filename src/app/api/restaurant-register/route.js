@@ -25,7 +25,18 @@ export async function POST(req) {
       vegOrNonVeg,
       commission,
       rating,
+      subrestaurentsId,
+      subrestaurents_id,
     } = await req.json();
+
+    let finalSubRestIds = [];
+    if (Array.isArray(subrestaurentsId)) {
+      finalSubRestIds = subrestaurentsId.map(id => String(id));
+    } else if (Array.isArray(subrestaurents_id)) {
+      finalSubRestIds = subrestaurents_id.map(id => String(id));
+    } else if (typeof subrestaurentsId === 'string' && subrestaurentsId.trim()) {
+      finalSubRestIds = [subrestaurentsId.trim()];
+    }
 
     // validation
     if (
@@ -84,6 +95,8 @@ export async function POST(req) {
       vegOrNonVeg,
       commission: commission ? Number(commission) : 0,
       rating: rating !== undefined && rating !== null && rating !== "" ? Number(rating) : 4.2,
+      subrestaurentsId: finalSubRestIds,
+      subrestaurents_id: finalSubRestIds,
     });
 
     // Automatically create a collection for this restaurant in the 'restuarents' database
@@ -265,10 +278,10 @@ export async function PUT(req) {
 export async function GET(req) {
   try {
     await dbConnect();
-    const restaurants = await RestuarentUser.find({}, { restId: 1, createdAt: 1 }).sort({ createdAt: -1 }).lean();
+    const restaurants = await RestuarentUser.find({}, { restId: 1, name: 1, phone: 1, createdAt: 1 }).sort({ createdAt: -1 }).lean();
 
     if (!restaurants || restaurants.length === 0) {
-      return NextResponse.json({ success: true, latestRestId: "None" });
+      return NextResponse.json({ success: true, latestRestId: "None", restaurants: [] });
     }
 
     const latestCreated = restaurants[0]?.restId || "None";
@@ -283,9 +296,19 @@ export async function GET(req) {
 
     const displayLatest = maxNumericId > 0 ? String(maxNumericId) : latestCreated;
 
+    // Filter and map existing restaurants for dropdown selection
+    const restaurantList = restaurants
+      .filter(r => r.restId)
+      .map(r => ({
+        restId: String(r.restId),
+        name: r.name || r.phone || `Restaurant ${r.restId}`
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
     return NextResponse.json({
       success: true,
-      latestRestId: displayLatest
+      latestRestId: displayLatest,
+      restaurants: restaurantList
     });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
