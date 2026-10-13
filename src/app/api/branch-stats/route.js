@@ -86,7 +86,8 @@ export async function GET(request) {
                   rating: restaurant.rating !== undefined ? restaurant.rating : 4.2,
                 packagingFee: restaurant.packagingFee !== undefined && restaurant.packagingFee !== null ? Number(restaurant.packagingFee) : 0,
                 isPackagingFeeActive: restaurant.isPackagingFeeActive !== undefined ? Boolean(restaurant.isPackagingFeeActive) : false,
-                todisplaytocustomer: restaurant.todisplaytocustomer !== undefined ? Boolean(restaurant.todisplaytocustomer) : true
+                todisplaytocustomer: restaurant.todisplaytocustomer !== undefined ? Boolean(restaurant.todisplaytocustomer) : true,
+                subrestaurentsId: restaurant.subrestaurentsId || restaurant.subrestaurents_id || []
             } : null
         });
     } catch (error) {

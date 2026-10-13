@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, use } from 'react';
+import React, { useState, useEffect, useRef, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import BranchStats from '@/components/BranchStats';
@@ -88,6 +88,155 @@ export default function RestaurantDashboardPage({ params }) {
     const [savingProfile, setSavingProfile] = useState(false);
     const [profileStatusText, setProfileStatusText] = useState('');
     const [profileError, setProfileError] = useState('');
+
+    // Sub-restaurants multi-select states
+    const [availableRestaurants, setAvailableRestaurants] = useState([]);
+    const [selectedSubRestaurants, setSelectedSubRestaurants] = useState([]);
+    const [isSubModalOpen, setIsSubModalOpen] = useState(false);
+    const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [dropdownSearch, setDropdownSearch] = useState('');
+    const [savingSubRestaurants, setSavingSubRestaurants] = useState(false);
+    const [subError, setSubError] = useState('');
+    const dropdownRef = useRef(null);
+
+    // Fetch available restaurants for sub-restaurant dropdown
+    const fetchRestaurants = async () => {
+        try {
+            const res = await fetch('/api/restaurant-register');
+            const data = await res.json();
+            if (data.success && Array.isArray(data.restaurants)) {
+                let list = [...data.restaurants];
+                if (details?.name) {
+                    const idx = list.findIndex(r => String(r.restId) === String(id));
+                    if (idx !== -1) {
+                        list[idx] = { ...list[idx], name: details.name };
+                    } else {
+                        list.push({ restId: String(id), name: details.name });
+                    }
+                }
+                list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+                setAvailableRestaurants(list);
+            }
+        } catch (err) {
+            console.error('Error fetching available restaurants:', err);
+        }
+    };
+
+    useEffect(() => {
+        fetchRestaurants();
+    }, []);
+
+    // Sync selectedSubRestaurants and synchronize current restaurant name whenever details loads or updates
+    useEffect(() => {
+        if (details) {
+            const subs = Array.isArray(details.subrestaurentsId) 
+                ? details.subrestaurentsId 
+                : (Array.isArray(details.subrestaurents_id) ? details.subrestaurents_id : []);
+            setSelectedSubRestaurants(subs.map(String));
+
+            if (details.name) {
+                setAvailableRestaurants(prev => {
+                    const idx = prev.findIndex(r => String(r.restId) === String(id));
+                    if (idx !== -1) {
+                        const copy = [...prev];
+                        copy[idx] = { ...copy[idx], name: details.name };
+                        return copy;
+                    } else if (prev.length > 0) {
+                        return [...prev, { restId: String(id), name: details.name }].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+                    }
+                    return prev;
+                });
+            }
+        }
+    }, [details, id]);
+
+    // Close dropdown on outside click
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setDropdownOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const handleOpenSubRestaurantsModal = () => {
+        fetchRestaurants();
+        const subs = Array.isArray(details?.subrestaurentsId) 
+            ? details.subrestaurentsId 
+            : (Array.isArray(details?.subrestaurents_id) ? details.subrestaurents_id : []);
+        setSelectedSubRestaurants(subs.map(String));
+        setDropdownSearch('');
+        setDropdownOpen(false);
+        setSubError('');
+        setIsSubModalOpen(true);
+    };
+
+    const handleCloseSubRestaurantsModal = () => {
+        if (savingSubRestaurants) return;
+        setIsSubModalOpen(false);
+        setDropdownOpen(false);
+        setDropdownSearch('');
+        setSubError('');
+    };
+
+    const toggleSubRestaurantSelection = (restIdToToggle) => {
+        const strId = String(restIdToToggle);
+        setSelectedSubRestaurants(prev => 
+            prev.includes(strId) ? prev.filter(item => item !== strId) : [...prev, strId]
+        );
+    };
+
+    const handleSelectAllSubs = () => {
+        const allIds = availableRestaurants.map(r => String(r.restId));
+        setSelectedSubRestaurants(allIds);
+    };
+
+    const handleClearAllSubs = () => {
+        setSelectedSubRestaurants([]);
+    };
+
+    const handleSaveSubRestaurants = async () => {
+        setSavingSubRestaurants(true);
+        setSubError('');
+        try {
+            const res = await fetch('/api/restaurant-register', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    restId: id,
+                    subrestaurentsId: selectedSubRestaurants
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setDetails(prev => ({
+                    ...prev,
+                    subrestaurentsId: selectedSubRestaurants
+                }));
+                setIsSubModalOpen(false);
+                setDropdownOpen(false);
+                alert('Sub-restaurants updated successfully!');
+            } else {
+                setSubError(data.error || 'Failed to update sub-restaurants.');
+            }
+        } catch (err) {
+            console.error('Error saving sub-restaurants:', err);
+            setSubError('Server error while saving sub-restaurants.');
+        } finally {
+            setSavingSubRestaurants(false);
+        }
+    };
+
+    // Include all available restaurants including this main restaurant
+    const filteredAvailableRestaurants = availableRestaurants.filter(r => {
+        const term = dropdownSearch.toLowerCase();
+        return (
+            (r.name && r.name.toLowerCase().includes(term)) ||
+            (r.restId && String(r.restId).toLowerCase().includes(term))
+        );
+    });
 
     // Restaurant name inline edit states
     const [isEditingName, setIsEditingName] = useState(false);
@@ -201,6 +350,17 @@ export default function RestaurantDashboardPage({ params }) {
                     phone: data.data.phone,
                     logoUrl: data.data.logoUrl || prev.logoUrl
                 }));
+
+                setAvailableRestaurants(prev => {
+                    const idx = prev.findIndex(r => String(r.restId) === String(id));
+                    if (idx !== -1) {
+                        const copy = [...prev];
+                        copy[idx] = { ...copy[idx], name: data.data.name };
+                        return copy;
+                    } else {
+                        return [...prev, { restId: String(id), name: data.data.name }].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+                    }
+                });
 
                 const cached = localStorage.getItem('registeredRestaurantsCache');
                 if (cached) {
@@ -370,8 +530,11 @@ export default function RestaurantDashboardPage({ params }) {
                     name: data.data.name,
                     phone: data.data.phone
                 }));
+                setAvailableRestaurants(prev =>
+                    prev.map(r => String(r.restId) === String(id) ? { ...r, name: data.data.name } : r)
+                );
                 setIsEditingName(false);
-                alert('Restaurant name and collection updated successfully!');
+                alert('Restaurant name updated successfully!');
             } else {
                 alert(data.error || 'Failed to update restaurant name.');
             }
@@ -637,33 +800,78 @@ export default function RestaurantDashboardPage({ params }) {
                     <span style={{ fontSize: '1.15rem' }}>✏️</span>
                     <span>Edit Name & Picture</span>
                 </button>
+
+                <button 
+                    onClick={handleOpenSubRestaurantsModal}
+                    className="branchActionButton"
+                    style={{ 
+                        backgroundColor: '#6366f1', 
+                        color: 'white',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        cursor: 'pointer',
+                        boxShadow: '0 4px 12px rgba(99, 102, 241, 0.35)',
+                        transition: 'all 0.2s ease',
+                        border: 'none',
+                        minWidth: '220px'
+                    }}
+                    title="Click to add or edit sub-restaurants"
+                >
+                    <span style={{ fontSize: '1.15rem' }}>🔗</span>
+                    <span>Edit Sub-Restaurants</span>
+                </button>
             </div>
 
             {details && (
                 <div className="branchDetailsCard">
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px', marginBottom: '20px' }}>
                         <h3 className="detailsCardTitle" style={{ margin: 0 }}>📋 Restaurant Profile</h3>
-                        <button
-                            onClick={handleOpenEditModal}
-                            style={{
-                                backgroundColor: '#8e44ad',
-                                color: 'white',
-                                border: 'none',
-                                padding: '8px 16px',
-                                borderRadius: '8px',
-                                cursor: 'pointer',
-                                fontWeight: '600',
-                                fontSize: '0.9rem',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                boxShadow: '0 2px 8px rgba(142, 68, 173, 0.25)',
-                                transition: 'all 0.2s'
-                            }}
-                            title="Edit restaurant name and replace picture"
-                        >
-                            ✏️ Edit Restaurant
-                        </button>
+                        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                            <button
+                                onClick={handleOpenSubRestaurantsModal}
+                                style={{
+                                    backgroundColor: '#6366f1',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '8px 16px',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer',
+                                    fontWeight: '600',
+                                    fontSize: '0.9rem',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    boxShadow: '0 2px 8px rgba(99, 102, 241, 0.25)',
+                                    transition: 'all 0.2s'
+                                }}
+                                title="Edit sub-restaurants linked to this outlet"
+                            >
+                                🔗 Edit Sub-Restaurants
+                            </button>
+                            <button
+                                onClick={handleOpenEditModal}
+                                style={{
+                                    backgroundColor: '#8e44ad',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '8px 16px',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer',
+                                    fontWeight: '600',
+                                    fontSize: '0.9rem',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    boxShadow: '0 2px 8px rgba(142, 68, 173, 0.25)',
+                                    transition: 'all 0.2s'
+                                }}
+                                title="Edit restaurant name and replace picture"
+                            >
+                                ✏️ Edit Restaurant
+                            </button>
+                        </div>
                     </div>
 
                     {/* Prominent Restaurant Logo / Picture with Replace Option */}
@@ -801,6 +1009,48 @@ export default function RestaurantDashboardPage({ params }) {
                                     </div>
                                 </div>
                             )}
+                        </div>
+                        <div className="detailItem">
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                                <span className="detailLabel" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <span>🔗 Sub-Restaurants (Outlets)</span>
+                                </span>
+                                <button 
+                                    className="passwordToggleBtn" 
+                                    onClick={handleOpenSubRestaurantsModal}
+                                    title="Edit sub-restaurants"
+                                    style={{ padding: '2px 8px', fontSize: '0.8rem' }}
+                                >
+                                    ✏️ Edit
+                                </button>
+                            </div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
+                                {((details.subrestaurentsId && details.subrestaurentsId.length > 0) || (details.subrestaurents_id && details.subrestaurents_id.length > 0)) ? (
+                                    (details.subrestaurentsId || details.subrestaurents_id).map((subId) => {
+                                        const found = availableRestaurants.find(r => String(r.restId) === String(subId));
+                                        return (
+                                            <span 
+                                                key={subId}
+                                                style={{
+                                                    background: '#e0e7ff',
+                                                    color: '#3730a3',
+                                                    padding: '2px 8px',
+                                                    borderRadius: '12px',
+                                                    fontSize: '0.78rem',
+                                                    fontWeight: '600',
+                                                    border: '1px solid #c7d2fe'
+                                                }}
+                                            >
+                                                {found ? found.name : `Rest #${subId}`} (ID: {subId})
+                                            </span>
+                                        );
+                                    })
+                                ) : (
+                                    <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic' }}>
+                                        No sub-restaurants linked
+                                    </span>
+                                )}
+                            </div>
                         </div>
                         <div className="detailItem">
                             <span className="detailLabel">Packaging Fee</span>
@@ -1666,6 +1916,298 @@ export default function RestaurantDashboardPage({ params }) {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Sub-Restaurants Edit Modal */}
+            {isSubModalOpen && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(15, 23, 42, 0.75)',
+                    backdropFilter: 'blur(8px)',
+                    WebkitBackdropFilter: 'blur(8px)',
+                    zIndex: 99999,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '20px'
+                }}>
+                    <div style={{
+                        backgroundColor: '#0f172a',
+                        borderRadius: '20px',
+                        width: '100%',
+                        maxWidth: '650px',
+                        boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.1)',
+                        padding: '28px',
+                        position: 'relative',
+                        color: '#f8fafc',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '20px'
+                    }}>
+                        {/* Modal Header */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div>
+                                <h3 style={{ margin: 0, fontSize: '1.35rem', fontWeight: '700', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <span>🔗</span> Sub-Restaurants (Link Branches / Outlets)
+                                </h3>
+                                <p style={{ margin: '6px 0 0 0', fontSize: '0.85rem', color: '#94a3b8' }}>
+                                    Link other branches/outlets to this restaurant for unified control and multi-location management.
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={handleCloseSubRestaurantsModal}
+                                disabled={savingSubRestaurants}
+                                style={{
+                                    background: 'rgba(255, 255, 255, 0.08)',
+                                    border: 'none',
+                                    borderRadius: '50%',
+                                    width: '32px',
+                                    height: '32px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: '#cbd5e1',
+                                    fontSize: '1.25rem',
+                                    cursor: savingSubRestaurants ? 'not-allowed' : 'pointer',
+                                    lineHeight: 1
+                                }}
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        {subError && (
+                            <div style={{
+                                backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                                border: '1px solid rgba(239, 68, 68, 0.4)',
+                                color: '#fca5a5',
+                                padding: '10px 14px',
+                                borderRadius: '8px',
+                                fontSize: '0.85rem'
+                            }}>
+                                ⚠️ {subError}
+                            </div>
+                        )}
+
+                        {/* Sub-Restaurants Multi-Select Dropdown matching /restaurant-register exactly */}
+                        <div className="form-group full-width" ref={dropdownRef} style={{ margin: 0 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                <label style={{ margin: 0, fontSize: '0.95rem', fontWeight: '600', color: '#f1f5f9' }}>
+                                    Sub-Restaurants (Link Branches / Outlets)
+                                </label>
+                                <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                                    Optional • Single, Multiple, or None ({selectedSubRestaurants.length} selected)
+                                </span>
+                            </div>
+
+                            <div className="multiselect-wrapper">
+                                <div 
+                                    className={`multiselect-trigger ${dropdownOpen ? 'active' : ''}`}
+                                    onClick={() => setDropdownOpen((prev) => !prev)}
+                                >
+                                    {selectedSubRestaurants.length === 0 ? (
+                                        <span className="placeholder-text">Select sub-restaurants (Optional • Single, Multiple, or None)...</span>
+                                    ) : (
+                                        <div className="selected-chips-container">
+                                            {selectedSubRestaurants.map((subId) => {
+                                                const found = availableRestaurants.find((r) => String(r.restId) === String(subId));
+                                                return (
+                                                    <span key={subId} className="selected-chip">
+                                                        {found ? found.name : `Restaurant ${subId}`} (ID: {subId})
+                                                        <button
+                                                            type="button"
+                                                            className="chip-remove-btn"
+                                                            title="Remove"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                toggleSubRestaurantSelection(subId);
+                                                            }}
+                                                        >
+                                                            ×
+                                                        </button>
+                                                    </span>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                    <span className={`multiselect-arrow ${dropdownOpen ? 'rotated' : ''}`}>
+                                        ▼
+                                    </span>
+                                </div>
+
+                                {dropdownOpen && (
+                                    <div className="multiselect-dropdown-menu">
+                                        <div className="dropdown-search-wrapper">
+                                            <input 
+                                                type="text"
+                                                className="dropdown-search-input"
+                                                placeholder="🔍 Search restaurant name or restId..."
+                                                value={dropdownSearch}
+                                                onChange={(e) => setDropdownSearch(e.target.value)}
+                                                onClick={(e) => e.stopPropagation()}
+                                                autoFocus
+                                            />
+                                        </div>
+
+                                        <div className="dropdown-toolbar">
+                                            <span>
+                                                {selectedSubRestaurants.length} of {availableRestaurants.length} selected
+                                            </span>
+                                            <div className="toolbar-actions">
+                                                <button 
+                                                    type="button" 
+                                                    className="toolbar-btn"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleSelectAllSubs();
+                                                    }}
+                                                >
+                                                    Select All
+                                                </button>
+                                                <button 
+                                                    type="button" 
+                                                    className="toolbar-btn"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleClearAllSubs();
+                                                    }}
+                                                >
+                                                    Clear All
+                                                </button>
+                                                <button 
+                                                    type="button" 
+                                                    className="toolbar-btn"
+                                                    style={{ background: '#6366f1', color: '#ffffff', borderColor: '#6366f1' }}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setDropdownOpen(false);
+                                                    }}
+                                                >
+                                                    Done
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="dropdown-items-list">
+                                            {filteredAvailableRestaurants.length === 0 ? (
+                                                <div className="dropdown-empty-msg">
+                                                    {availableRestaurants.length === 0 
+                                                        ? "Loading restaurants or none found..." 
+                                                        : "No matching restaurants found."}
+                                                </div>
+                                            ) : (
+                                                filteredAvailableRestaurants.map((restaurant) => {
+                                                    const isSelected = selectedSubRestaurants.includes(String(restaurant.restId));
+                                                    return (
+                                                        <div 
+                                                            key={restaurant.restId}
+                                                            className={`dropdown-item-row ${isSelected ? 'selected' : ''}`}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                toggleSubRestaurantSelection(restaurant.restId);
+                                                            }}
+                                                        >
+                                                            <input 
+                                                                type="checkbox"
+                                                                className="dropdown-checkbox"
+                                                                checked={isSelected}
+                                                                onChange={() => {}}
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            />
+                                                            <span className="dropdown-item-name">
+                                                                {restaurant.name}
+                                                                {String(restaurant.restId) === String(id) && (
+                                                                    <span style={{
+                                                                        marginLeft: '8px',
+                                                                        fontSize: '0.72rem',
+                                                                        background: 'rgba(99, 102, 241, 0.3)',
+                                                                        color: '#a5b4fc',
+                                                                        padding: '2px 7px',
+                                                                        borderRadius: '4px',
+                                                                        fontWeight: '600'
+                                                                    }}>
+                                                                        (This Restaurant / Main)
+                                                                    </span>
+                                                                )}
+                                                            </span>
+                                                            <span className="dropdown-item-id-badge">
+                                                                restId: "{restaurant.restId}"
+                                                            </span>
+                                                        </div>
+                                                    );
+                                                })
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div style={{
+                            display: 'flex',
+                            justifyContent: 'flex-end',
+                            gap: '12px',
+                            marginTop: '10px',
+                            paddingTop: '16px',
+                            borderTop: '1px solid rgba(255, 255, 255, 0.1)'
+                        }}>
+                            <button
+                                type="button"
+                                onClick={handleCloseSubRestaurantsModal}
+                                disabled={savingSubRestaurants}
+                                style={{
+                                    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                                    color: '#cbd5e1',
+                                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                                    padding: '10px 18px',
+                                    borderRadius: '10px',
+                                    cursor: savingSubRestaurants ? 'not-allowed' : 'pointer',
+                                    fontWeight: '600',
+                                    fontSize: '0.9rem'
+                                }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleSaveSubRestaurants}
+                                disabled={savingSubRestaurants}
+                                style={{
+                                    backgroundColor: '#6366f1',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '10px 24px',
+                                    borderRadius: '10px',
+                                    cursor: savingSubRestaurants ? 'not-allowed' : 'pointer',
+                                    fontWeight: '700',
+                                    fontSize: '0.9rem',
+                                    boxShadow: '0 4px 14px rgba(99, 102, 241, 0.4)',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px'
+                                }}
+                            >
+                                {savingSubRestaurants ? (
+                                    <>
+                                        <span>⏳</span>
+                                        <span>Saving...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <span>💾</span>
+                                        <span>Save Sub-Restaurants</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

@@ -179,7 +179,7 @@ export async function DELETE(req) {
 export async function PUT(req) {
   try {
     await dbConnect();
-    const { restId, newName, logoUrl } = await req.json();
+    const { restId, newName, logoUrl, subrestaurentsId } = await req.json();
 
     if (!restId) {
       return NextResponse.json(
@@ -188,9 +188,13 @@ export async function PUT(req) {
       );
     }
 
-    if ((newName === undefined || newName === null || !newName.trim()) && !logoUrl) {
+    if (
+      (newName === undefined || newName === null || !newName.trim()) &&
+      !logoUrl &&
+      subrestaurentsId === undefined
+    ) {
       return NextResponse.json(
-        { success: false, error: "Either New Name or New Logo URL is required" },
+        { success: false, error: "Either New Name, New Logo URL, or Sub-Restaurants is required" },
         { status: 400 }
       );
     }
@@ -214,6 +218,15 @@ export async function PUT(req) {
       restaurant.logoUrl = logoUrl;
     }
 
+    // Update sub-restaurants list if provided
+    if (subrestaurentsId !== undefined) {
+      const cleanSubIds = Array.isArray(subrestaurentsId)
+        ? subrestaurentsId.map((id) => String(id).trim()).filter(Boolean)
+        : [];
+      restaurant.subrestaurentsId = cleanSubIds;
+      restaurant.subrestaurents_id = cleanSubIds;
+    }
+
     // Save only to the restuarentusers collection
     await restaurant.save();
 
@@ -223,7 +236,8 @@ export async function PUT(req) {
       data: {
         name: restaurant.name,
         phone: restaurant.phone,
-        logoUrl: restaurant.logoUrl
+        logoUrl: restaurant.logoUrl,
+        subrestaurentsId: restaurant.subrestaurentsId
       }
     });
 
