@@ -195,7 +195,7 @@ export async function PUT(req) {
       );
     }
 
-    // Find the restaurant user
+    // Find the restaurant user in restuarentusers collection
     const restaurant = await RestuarentUser.findOne({ restId });
     if (!restaurant) {
       return NextResponse.json(
@@ -204,64 +204,9 @@ export async function PUT(req) {
       );
     }
 
-    let updatedCollectionName = undefined;
-
-    // If newName is provided and different from current name
-    if (newName && newName.trim() && newName.trim() !== restaurant.name) {
-      const sanitizedNewName = newName.trim();
-      const newPhone = sanitizedNewName;
-      const oldName = restaurant.name;
-      const oldPhone = restaurant.phone;
-
-      // Generate sanitized collection names
-      const oldCollectionName = (oldName || oldPhone || "").trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
-      const newCollectionName = sanitizedNewName.toLowerCase().replace(/[^a-z0-9_-]/g, '_');
-
-      // Check if new name/phone is already taken by another user
-      const exists = await RestuarentUser.findOne({
-        restId: { $ne: restId },
-        $or: [{ phone: newPhone }]
-      });
-
-      if (exists) {
-        return NextResponse.json(
-          { success: false, error: "A restaurant with this name already exists" },
-          { status: 409 }
-        );
-      }
-
-      // Rename the MongoDB collection if it exists in the 'restuarents' database
-      if (oldCollectionName !== newCollectionName) {
-        try {
-          const restDb = mongoose.connection.useDb('restuarents', { useCache: true });
-          const collections = await restDb.db.listCollections({ name: oldCollectionName }).toArray();
-          if (collections.length > 0) {
-            // Check if new collection already exists
-            const newCollections = await restDb.db.listCollections({ name: newCollectionName }).toArray();
-            if (newCollections.length > 0) {
-              return NextResponse.json(
-                { success: false, error: "Database collection for the new name already exists." },
-                { status: 409 }
-              );
-            }
-            await restDb.db.collection(oldCollectionName).rename(newCollectionName);
-          } else {
-            // If old collection didn't exist, create the new collection
-            await restDb.createCollection(newCollectionName);
-          }
-        } catch (dbErr) {
-          console.error("Failed to rename MongoDB collection:", dbErr);
-          return NextResponse.json(
-            { success: false, error: "Database error renaming collection: " + dbErr.message },
-            { status: 500 }
-          );
-        }
-      }
-
-      // Update name and phone
-      restaurant.name = sanitizedNewName;
-      restaurant.phone = newPhone;
-      updatedCollectionName = newCollectionName;
+    // Only update the name variable in the restuarentusers collection
+    if (newName && newName.trim()) {
+      restaurant.name = newName.trim();
     }
 
     // Update logoUrl if provided
@@ -269,6 +214,7 @@ export async function PUT(req) {
       restaurant.logoUrl = logoUrl;
     }
 
+    // Save only to the restuarentusers collection
     await restaurant.save();
 
     return NextResponse.json({
@@ -277,8 +223,7 @@ export async function PUT(req) {
       data: {
         name: restaurant.name,
         phone: restaurant.phone,
-        logoUrl: restaurant.logoUrl,
-        collectionName: updatedCollectionName
+        logoUrl: restaurant.logoUrl
       }
     });
 
