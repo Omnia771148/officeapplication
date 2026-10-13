@@ -179,16 +179,21 @@ export async function DELETE(req) {
 export async function PUT(req) {
   try {
     await dbConnect();
-    const { restId, newName } = await req.json();
+    const { restId, newName, logoUrl } = await req.json();
 
-    if (!restId || !newName || !newName.trim()) {
+    if (!restId) {
       return NextResponse.json(
-        { success: false, error: "Restaurant ID and New Name are required" },
+        { success: false, error: "Restaurant ID is required" },
         { status: 400 }
       );
     }
 
-    const sanitizedNewName = newName.trim();
+    if ((newName === undefined || newName === null || !newName.trim()) && !logoUrl) {
+      return NextResponse.json(
+        { success: false, error: "Either New Name or New Logo URL is required" },
+        { status: 400 }
+      );
+    }
 
     // Find the restaurant user
     const restaurant = await RestuarentUser.findOne({ restId });
@@ -199,70 +204,81 @@ export async function PUT(req) {
       );
     }
 
-    const oldPhone = restaurant.phone;
-    // Derive the new phone (since phone is used as the unique name/login identifier in this app)
-    const newPhone = sanitizedNewName;
+    let updatedCollectionName = undefined;
 
-    const oldName = restaurant.name;
-    const newNameVal = sanitizedNewName;
+    // If newName is provided and different from current name
+    if (newName && newName.trim() && newName.trim() !== restaurant.name) {
+      const sanitizedNewName = newName.trim();
+      const newPhone = sanitizedNewName;
+      const oldName = restaurant.name;
+      const oldPhone = restaurant.phone;
 
-    // Generate sanitized collection names
-    const oldCollectionName = (oldName || oldPhone || "").trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
-    const newCollectionName = newNameVal.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+      // Generate sanitized collection names
+      const oldCollectionName = (oldName || oldPhone || "").trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+      const newCollectionName = sanitizedNewName.toLowerCase().replace(/[^a-z0-9_-]/g, '_');
 
-    // Check if new name/phone is already taken by another user
-    const exists = await RestuarentUser.findOne({
-      restId: { $ne: restId },
-      $or: [{ phone: newPhone }]
-    });
+      // Check if new name/phone is already taken by another user
+      const exists = await RestuarentUser.findOne({
+        restId: { $ne: restId },
+        $or: [{ phone: newPhone }]
+      });
 
-    if (exists) {
-      return NextResponse.json(
-        { success: false, error: "A restaurant with this name already exists" },
-        { status: 409 }
-      );
-    }
-
-    // Rename the MongoDB collection if it exists in the 'restuarents' database
-    if (oldCollectionName !== newCollectionName) {
-      try {
-        const restDb = mongoose.connection.useDb('restuarents', { useCache: true });
-        const collections = await restDb.db.listCollections({ name: oldCollectionName }).toArray();
-        if (collections.length > 0) {
-          // Check if new collection already exists
-          const newCollections = await restDb.db.listCollections({ name: newCollectionName }).toArray();
-          if (newCollections.length > 0) {
-            return NextResponse.json(
-              { success: false, error: "Database collection for the new name already exists." },
-              { status: 409 }
-            );
-          }
-          await restDb.db.collection(oldCollectionName).rename(newCollectionName);
-        } else {
-          // If old collection didn't exist, create the new collection
-          await restDb.createCollection(newCollectionName);
-        }
-      } catch (dbErr) {
-        console.error("Failed to rename MongoDB collection:", dbErr);
+      if (exists) {
         return NextResponse.json(
-          { success: false, error: "Database error renaming collection: " + dbErr.message },
-          { status: 500 }
+          { success: false, error: "A restaurant with this name already exists" },
+          { status: 409 }
         );
       }
+
+      // Rename the MongoDB collection if it exists in the 'restuarents' database
+      if (oldCollectionName !== newCollectionName) {
+        try {
+          const restDb = mongoose.connection.useDb('restuarents', { useCache: true });
+          const collections = await restDb.db.listCollections({ name: oldCollectionName }).toArray();
+          if (collections.length > 0) {
+            // Check if new collection already exists
+            const newCollections = await restDb.db.listCollections({ name: newCollectionName }).toArray();
+            if (newCollections.length > 0) {
+              return NextResponse.json(
+                { success: false, error: "Database collection for the new name already exists." },
+                { status: 409 }
+              );
+            }
+            await restDb.db.collection(oldCollectionName).rename(newCollectionName);
+          } else {
+            // If old collection didn't exist, create the new collection
+            await restDb.createCollection(newCollectionName);
+          }
+        } catch (dbErr) {
+          console.error("Failed to rename MongoDB collection:", dbErr);
+          return NextResponse.json(
+            { success: false, error: "Database error renaming collection: " + dbErr.message },
+            { status: 500 }
+          );
+        }
+      }
+
+      // Update name and phone
+      restaurant.name = sanitizedNewName;
+      restaurant.phone = newPhone;
+      updatedCollectionName = newCollectionName;
     }
 
-    // Update restaurant details in database
-    restaurant.name = sanitizedNewName;
-    restaurant.phone = newPhone;
+    // Update logoUrl if provided
+    if (logoUrl) {
+      restaurant.logoUrl = logoUrl;
+    }
+
     await restaurant.save();
 
     return NextResponse.json({
       success: true,
-      message: "Restaurant name and collection updated successfully",
+      message: "Restaurant details updated successfully",
       data: {
         name: restaurant.name,
         phone: restaurant.phone,
-        collectionName: newCollectionName
+        logoUrl: restaurant.logoUrl,
+        collectionName: updatedCollectionName
       }
     });
 
