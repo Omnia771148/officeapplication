@@ -99,19 +99,6 @@ export async function POST(req) {
       subrestaurents_id: finalSubRestIds,
     });
 
-    // Automatically create a collection for this restaurant in the 'restuarents' database
-    try {
-      const restDb = mongoose.connection.useDb('restuarents', { useCache: true });
-      const collectionName = name.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
-      
-      const collections = await restDb.db.listCollections({ name: collectionName }).toArray();
-      if (collections.length === 0) {
-        await restDb.createCollection(collectionName);
-      }
-    } catch (dbErr) {
-      console.error("Failed to automatically create collection during registration:", dbErr);
-    }
-
     return NextResponse.json(
       { message: "Restaurant user created successfully" },
       { status: 201 }
@@ -148,21 +135,6 @@ export async function DELETE(req) {
 
     // Delete restaurant user document
     await RestuarentUser.deleteOne({ restId });
-
-    // Try to drop the restaurant's menu items collection in 'restuarents' database
-    try {
-      if (name) {
-        const restDb = mongoose.connection.useDb('restuarents', { useCache: true });
-        const collectionName = name.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
-        
-        const collections = await restDb.db.listCollections({ name: collectionName }).toArray();
-        if (collections.length > 0) {
-          await restDb.db.dropCollection(collectionName);
-        }
-      }
-    } catch (dbErr) {
-      console.error("Failed to drop restaurant collection during deletion:", dbErr);
-    }
 
     return NextResponse.json(
       { message: "Restaurant deleted successfully" },
