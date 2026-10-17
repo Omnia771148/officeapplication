@@ -18,7 +18,8 @@ function getISTTimeString(date = new Date()) {
 const DEFAULT_CONTROLS = [
     { key: 'confirmPayButton', name: 'Confirm Pay Button', status: true, title: '', description: '' },
     { key: 'maintenanceMode', name: 'Maintenance Mode', status: false, title: '', description: '' },
-    { key: 'homeHangingBanner', name: 'Home Hanging Banner', status: false, title: 'Special Announcement 🎉', description: 'Check out our latest restaurant offers and food deals!' }
+    { key: 'homeHangingBanner', name: 'Home Hanging Banner', status: false, title: 'Special Announcement 🎉', description: 'Check out our latest restaurant offers and food deals!' },
+    { key: 'upiOnDelivery', name: 'Upi on delivery button', status: true, title: '', description: '' }
 ];
 
 export async function GET() {

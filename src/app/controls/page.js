@@ -11,7 +11,8 @@ const CONTROL_DESCRIPTIONS = {
     confirmPayButton: 'Turn off and on the confirm pay button in the payment checkout flow.',
     maintenanceMode: 'Turn off and on application maintenance mode.',
     homeHangingBanner: 'Turn on and off the swinging hanging banner on the customer home page, and customize its title and text.',
-    appVersion: 'Turn on and off app version enforcement and mandatory update prompts.'
+    appVersion: 'Turn on and off app version enforcement and mandatory update prompts.',
+    upiOnDelivery: 'Turn off and on the UPI on delivery payment option in the cart checkout flow.'
 };
 
 export default function ControlsPage() {
