@@ -235,7 +235,14 @@ export default function CustomersPage() {
                 {filteredCustomers.length > 0 ? (
                     filteredCustomers.map((customer, index) => (
                         <div key={index} className="customerCard">
-                            <h3>{customer.name}</h3>
+                            <h3>
+                                {customer.name}
+                                {customer.isWhitelisted && (
+                                    <span style={{ marginLeft: '8px', background: '#dcfce7', color: '#15803d', fontSize: '11px', padding: '3px 8px', borderRadius: '6px', fontWeight: 'bold', verticalAlign: 'middle' }}>
+                                        🛡️ Whitelisted
+                                    </span>
+                                )}
+                            </h3>
                             <p><strong>Phone:</strong> {customer.phone}</p>
                             <p><strong>Email:</strong> {customer.email}</p>
                             <div className="passwordRow">

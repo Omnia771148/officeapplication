@@ -28,7 +28,7 @@ export async function GET(request) {
 export async function PATCH(request) {
     try {
         const body = await request.json();
-        const { itemId, itemStatus, itemtodisplayintherestuarentapp, itemName, price, offerpercentage, restaurantId, applyToAll, vegOrNonVeg, rating, photoUrl, bulkPriceUpdates, offerTitle, description } = body;
+        const { itemId, itemStatus, itemtodisplayintherestuarentapp, itemName, price, offerpercentage, restaurantId, applyToAll, vegOrNonVeg, rating, photoUrl, bulkPriceUpdates, offerTitle, description, category } = body;
 
         if (!restaurantId) {
             return NextResponse.json({ success: false, error: 'Restaurant ID is required' }, { status: 400 });
@@ -169,6 +169,9 @@ export async function PATCH(request) {
         }
         if (description !== undefined) {
             updateData.description = typeof description === 'string' ? description.trim() : '';
+        }
+        if (category !== undefined) {
+            updateData.category = typeof category === 'string' ? category.trim() : '';
         }
 
         const updatedItem = await RestaurantItem.findByIdAndUpdate(

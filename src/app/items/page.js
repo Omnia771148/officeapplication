@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -81,6 +81,8 @@ export default function BranchItemsPage() {
     const [errorMessage, setErrorMessage] = useState('');
     const [deletingId, setDeletingId] = useState(null);
     const [deletingAll, setDeletingAll] = useState(false);
+    const [selectedCategory, setSelectedCategory] = useState('All');
+    const [restaurantCategories, setRestaurantCategories] = useState([]);
 
     // Item Selection & Price Adjustment (Hike / Decrease) States
     const [selectedItemIds, setSelectedItemIds] = useState([]);
@@ -284,6 +286,7 @@ export default function BranchItemsPage() {
     const [editOfferPercentage, setEditOfferPercentage] = useState('');
     const [editPhotoFile, setEditPhotoFile] = useState(null);
     const [editDescription, setEditDescription] = useState('');
+    const [editCategory, setEditCategory] = useState('');
     const [photoPreview, setPhotoPreview] = useState('');
     const [uploadingImage, setUploadingImage] = useState(false);
     const [savingId, setSavingId] = useState(null);
@@ -297,6 +300,7 @@ export default function BranchItemsPage() {
         setEditPhotoUrl(item.photoUrl || '');
         setEditOfferPercentage(item.offerpercentage !== undefined && item.offerpercentage !== null && Number(item.offerpercentage) > 0 ? item.offerpercentage.toString() : '');
         setEditDescription(item.description || '');
+        setEditCategory(item.category || '');
         setEditPhotoFile(null);
         setPhotoPreview(item.photoUrl || '');
     };
@@ -310,6 +314,7 @@ export default function BranchItemsPage() {
         setEditPhotoUrl('');
         setEditOfferPercentage('');
         setEditDescription('');
+        setEditCategory('');
         setEditPhotoFile(null);
         setPhotoPreview('');
         setUploadingImage(false);
@@ -385,7 +390,8 @@ export default function BranchItemsPage() {
                     photoUrl: finalPhotoUrl,
                     offerpercentage: parsedOffer,
                     restaurantId,
-                    description: editDescription.trim()
+                    description: editDescription.trim(),
+                    category: editCategory.trim()
                 })
             });
             const data = await res.json();
@@ -434,6 +440,19 @@ export default function BranchItemsPage() {
         };
 
         fetchItems();
+
+        const fetchCategories = async () => {
+            try {
+                const res = await fetch(`/api/categories?restaurantId=${encodeURIComponent(storedId)}`);
+                const data = await res.json();
+                if (data.success && Array.isArray(data.data)) {
+                    setRestaurantCategories(data.data);
+                }
+            } catch (err) {
+                console.error("Failed to load categories:", err);
+            }
+        };
+        fetchCategories();
     }, []);
 
     const handleToggleProperty = async (itemId, propertyName, currentStatus) => {
@@ -517,10 +536,71 @@ export default function BranchItemsPage() {
         }
     };
 
-    const filteredItems = items.filter(item =>
-        item.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (item.offerpercentage !== undefined && item.offerpercentage !== null && item.offerpercentage.toString().includes(searchTerm))
-    );
+    // Extract all unique categories and item counts for this restaurant
+    const availableCategories = useMemo(() => {
+        const catMap = new Map();
+        let uncategorizedCount = 0;
+
+        items.forEach(item => {
+            const cat = item.category?.trim();
+            if (cat) {
+                catMap.set(cat, (catMap.get(cat) || 0) + 1);
+            } else {
+                uncategorizedCount++;
+            }
+        });
+
+        if (Array.isArray(restaurantCategories)) {
+            restaurantCategories.forEach(c => {
+                const name = c.name?.trim();
+                if (name && !catMap.has(name)) {
+                    catMap.set(name, 0);
+                }
+            });
+        }
+
+        const sortedNames = Array.from(catMap.keys()).sort((a, b) => a.localeCompare(b));
+
+        const list = [
+            { name: 'All', count: items.length },
+            ...sortedNames.map(name => ({ name, count: catMap.get(name) || 0 }))
+        ];
+
+        if (uncategorizedCount > 0) {
+            list.push({ name: 'Uncategorized', count: uncategorizedCount });
+        }
+
+        return list;
+    }, [items, restaurantCategories]);
+
+    // Filter items by selected Category AND Search term
+    const filteredItems = useMemo(() => {
+        return items.filter(item => {
+            // Category filtering
+            const itemCat = item.category?.trim() || '';
+            let matchesCategory = true;
+            if (selectedCategory !== 'All') {
+                if (selectedCategory === 'Uncategorized') {
+                    matchesCategory = !itemCat;
+                } else {
+                    matchesCategory = itemCat.toLowerCase() === selectedCategory.toLowerCase();
+                }
+            }
+
+            // Search filtering
+            const search = searchTerm.toLowerCase().trim();
+            let matchesSearch = true;
+            if (search) {
+                const nameMatches = item.itemName && item.itemName.toLowerCase().includes(search);
+                const catMatches = item.category && item.category.toLowerCase().includes(search);
+                const idMatches = item.itemId && item.itemId.toLowerCase().includes(search);
+                const offerMatches = item.offerpercentage !== undefined && item.offerpercentage !== null && item.offerpercentage.toString().includes(search);
+                matchesSearch = Boolean(nameMatches || catMatches || idMatches || offerMatches);
+            }
+
+            return matchesCategory && matchesSearch;
+        });
+    }, [items, selectedCategory, searchTerm]);
 
     if (loading) {
         return (
@@ -690,6 +770,158 @@ export default function BranchItemsPage() {
                     font-size: 1.1rem;
                     margin-bottom: 40px;
                 }
+                                /* Category Filter Section Styles */
+                .categoryFilterContainer {
+                    max-width: 1100px;
+                    margin: 0 auto 24px auto;
+                    background: #ffffff;
+                    border: 1.5px solid #e2e8f0;
+                    border-radius: 12px;
+                    padding: 16px 20px;
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+                }
+                .categoryFilterTopBar {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    flex-wrap: wrap;
+                    gap: 12px;
+                    margin-bottom: 12px;
+                }
+                .categoryFilterLeft {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    flex-wrap: wrap;
+                }
+                .categoryFilterIcon {
+                    font-size: 1.15rem;
+                }
+                .categoryFilterHeading {
+                    font-size: 0.95rem;
+                    font-weight: 700;
+                    color: #1e293b;
+                }
+                .categoryActiveTag {
+                    background: #ecfdf5;
+                    color: #065f46;
+                    border: 1px solid #a7f3d0;
+                    padding: 3px 10px;
+                    border-radius: 9999px;
+                    font-size: 0.8rem;
+                    font-weight: 600;
+                }
+                .categoryFilterRight {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                }
+                .categoryQuickSelect {
+                    padding: 7px 12px;
+                    border-radius: 8px;
+                    border: 1.5px solid #cbd5e1;
+                    background: #f8fafc;
+                    color: #1e293b;
+                    font-size: 0.88rem;
+                    font-weight: 600;
+                    outline: none;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                .categoryQuickSelect:focus {
+                    border-color: #2ecc71;
+                    box-shadow: 0 0 0 3px rgba(46, 204, 113, 0.15);
+                }
+                .btnResetCategoryFilter {
+                    background: #fee2e2;
+                    border: 1px solid #fecaca;
+                    color: #dc2626;
+                    font-size: 0.8rem;
+                    font-weight: 600;
+                    padding: 6px 12px;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    transition: all 0.15s;
+                }
+                .btnResetCategoryFilter:hover {
+                    background: #fca5a5;
+                    color: #991b1b;
+                }
+                .categoryPillsScroll {
+                    display: flex;
+                    gap: 8px;
+                    overflow-x: auto;
+                    padding-bottom: 4px;
+                    scrollbar-width: thin;
+                    -webkit-overflow-scrolling: touch;
+                }
+                .categoryPillsScroll::-webkit-scrollbar {
+                    height: 5px;
+                }
+                .categoryPillsScroll::-webkit-scrollbar-thumb {
+                    background: #cbd5e1;
+                    border-radius: 4px;
+                }
+                .categoryPillBtn {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 8px;
+                    padding: 7px 16px;
+                    border-radius: 20px;
+                    font-size: 0.86rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    white-space: nowrap;
+                    border: 1.5px solid #e2e8f0;
+                    background: #f8fafc;
+                    color: #334155;
+                    transition: all 0.18s ease;
+                }
+                .categoryPillBtn:hover {
+                    border-color: #94a3b8;
+                    background: #f1f5f9;
+                    color: #0f172a;
+                    transform: translateY(-1px);
+                }
+                .categoryPillBtn.active {
+                    background: #2ecc71;
+                    border-color: #2ecc71;
+                    color: #ffffff;
+                    box-shadow: 0 3px 8px rgba(46, 204, 113, 0.28);
+                }
+                .categoryPillText {
+                    line-height: 1;
+                }
+                .categoryPillBadge {
+                    background: #e2e8f0;
+                    color: #475569;
+                    font-size: 0.72rem;
+                    font-weight: 700;
+                    padding: 2px 7px;
+                    border-radius: 9999px;
+                    min-width: 18px;
+                    text-align: center;
+                }
+                .categoryPillBadge.activeBadge {
+                    background: rgba(255, 255, 255, 0.28);
+                    color: #ffffff;
+                }
+                .categoryBadgeOnCard {
+                    padding: 3px 9px;
+                    border-radius: 6px;
+                    font-size: 0.75rem;
+                    font-weight: 600;
+                    background-color: #f0fdf4;
+                    color: #166534;
+                    border: 1px solid #bbf7d0;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 4px;
+                }
+                .categoryDatalistInput {
+                    width: 100%;
+                }
+
                 .searchAndFilter {
                     max-width: 1100px;
                     margin: 0 auto 30px auto;
@@ -1754,11 +1986,96 @@ export default function BranchItemsPage() {
             <div className="searchAndFilter">
                 <input
                     type="text"
-                    placeholder="Search menu items..."
+                    placeholder="Search menu items by name, category, or ID..."
                     className="searchInputField"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
+                {searchTerm && (
+                    <button
+                        type="button"
+                        onClick={() => setSearchTerm('')}
+                        style={{
+                            position: 'absolute',
+                            right: '16px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            background: '#e2e8f0',
+                            border: 'none',
+                            borderRadius: '50%',
+                            width: '24px',
+                            height: '24px',
+                            cursor: 'pointer',
+                            color: '#64748b',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '12px'
+                        }}
+                        title="Clear search"
+                    >
+                        ✕
+                    </button>
+                )}
+            </div>
+
+            {/* Category Wise Filter Component */}
+            <div className="categoryFilterContainer">
+                <div className="categoryFilterTopBar">
+                    <div className="categoryFilterLeft">
+                        <span className="categoryFilterIcon">📂</span>
+                        <span className="categoryFilterHeading">Category Filter:</span>
+                        {selectedCategory !== 'All' && (
+                            <span className="categoryActiveTag">
+                                Active: <strong>{selectedCategory}</strong> ({filteredItems.length} items)
+                            </span>
+                        )}
+                    </div>
+                    <div className="categoryFilterRight">
+                        <select
+                            className="categoryQuickSelect"
+                            value={selectedCategory}
+                            onChange={(e) => setSelectedCategory(e.target.value)}
+                            aria-label="Filter items by category"
+                        >
+                            {availableCategories.map(cat => (
+                                <option key={cat.name} value={cat.name}>
+                                    {cat.name} ({cat.count})
+                                </option>
+                            ))}
+                        </select>
+                        {selectedCategory !== 'All' && (
+                            <button
+                                type="button"
+                                className="btnResetCategoryFilter"
+                                onClick={() => setSelectedCategory('All')}
+                                title="Reset to All Categories"
+                            >
+                                ✕ View All
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {/* Horizontal Scrollable Category Pills */}
+                <div className="categoryPillsScroll">
+                    {availableCategories.map(cat => {
+                        const isSelected = selectedCategory === cat.name;
+                        return (
+                            <button
+                                key={cat.name}
+                                type="button"
+                                className={`categoryPillBtn ${isSelected ? 'active' : ''}`}
+                                onClick={() => setSelectedCategory(cat.name)}
+                            >
+                                <span className="categoryPillText">{cat.name}</span>
+                                <span className={`categoryPillBadge ${isSelected ? 'activeBadge' : ''}`}>
+                                    {cat.count}
+                                </span>
+                            </button>
+                        );
+                    })}
+                </div>
             </div>
 
             {/* Selection & Batch Actions Toolbar */}
@@ -1870,6 +2187,23 @@ export default function BranchItemsPage() {
                                             onChange={(e) => setEditName(e.target.value)}
                                             placeholder="Enter item name"
                                         />
+                                    </div>
+                                    <div className="editFieldGroup">
+                                        <span className="editFieldLabel">Category</span>
+                                        <input
+                                            type="text"
+                                            list={`cat-options-${item._id}`}
+                                            className="editInputField"
+                                            value={editCategory}
+                                            disabled={savingId === item._id || uploadingImage}
+                                            onChange={(e) => setEditCategory(e.target.value)}
+                                            placeholder="Select or enter category (e.g. Biryani)"
+                                        />
+                                        <datalist id={`cat-options-${item._id}`}>
+                                            {availableCategories.filter(c => c.name !== 'All' && c.name !== 'Uncategorized').map(c => (
+                                                <option key={c.name} value={c.name} />
+                                            ))}
+                                        </datalist>
                                     </div>
                                     <div className="editFieldGroup">
                                         <span className="editFieldLabel">Description (Optional)</span>
@@ -2143,6 +2477,11 @@ export default function BranchItemsPage() {
                                                     </button>
                                                 </span>
                                             )}
+                                            {item.category ? (
+                                                <span className="categoryBadgeOnCard" title={`Category: ${item.category}`}>
+                                                    📂 {item.category}
+                                                </span>
+                                            ) : null}
                                             {item.vegOrNonVeg && (
                                                 <span style={{
                                                     padding: '3px 8px',

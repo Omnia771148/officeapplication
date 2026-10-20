@@ -43,6 +43,7 @@ export default function Dashboard() {
         const checkPendingOrders = async () => {
             try {
                 const res = await fetch('/api/check-pending');
+                if (!res.ok) return;
                 const data = await res.json();
                 
                 if (data.success && data.status === 'ALERT') {
@@ -148,6 +149,16 @@ export default function Dashboard() {
                     onClick={() => router.push('/customers')}
                 >
                     👥 Customers and Details
+                </button>
+            </div>
+
+            <div style={{ width: '90%', maxWidth: '800px', marginBottom: '20px' }}>
+                <button
+                    className="branchButton"
+                    style={{ '--btn-color': '#10b981' }}
+                    onClick={() => router.push('/whitelist')}
+                >
+                    🛡️ Whitelist Customer Access
                 </button>
             </div>
 

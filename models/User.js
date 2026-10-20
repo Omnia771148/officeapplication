@@ -5,6 +5,7 @@ const UserSchema = new mongoose.Schema({
     email: String,
     phone: String,
     password: { type: String },
+    isWhitelisted: { type: Boolean, default: false },
     createdAt: Date,
     blickstatus: { type: Boolean, default: true },
     blockStatus: { type: Boolean, default: false },
