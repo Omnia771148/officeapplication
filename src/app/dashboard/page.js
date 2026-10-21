@@ -255,6 +255,16 @@ export default function Dashboard() {
             <div style={{ width: '90%', maxWidth: '800px', marginBottom: '20px' }}>
                 <button
                     className="branchButton"
+                    style={{ '--btn-color': '#4f46e5' }}
+                    onClick={() => router.push('/invoice')}
+                >
+                    🧾 Invoices
+                </button>
+            </div>
+
+            <div style={{ width: '90%', maxWidth: '800px', marginBottom: '20px' }}>
+                <button
+                    className="branchButton"
                     style={{ '--btn-color': '#607D8B' }}
                     onClick={() => setShowMoreOptions(!showMoreOptions)}
                 >
