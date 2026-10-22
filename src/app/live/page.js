@@ -24,7 +24,7 @@ export default function LivePage() {
     };
     useEffect(() => {
         fetchOrderStatuses();
-        const intervalId = setInterval(fetchOrderStatuses, 15000); // Poll every 15 seconds
+        const intervalId = setInterval(fetchOrderStatuses, 1000); // Poll every 1 second
 
         return () => clearInterval(intervalId);
     }, []);
