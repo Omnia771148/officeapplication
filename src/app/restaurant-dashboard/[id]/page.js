@@ -674,6 +674,183 @@ export default function RestaurantDashboardPage({ params }) {
         }
     };
 
+    // Free Item on Cart Total Offers states (e.g. Total reaches ₹200 -> Free Item)
+    const [freeItemOffers, setFreeItemOffers] = useState([]);
+    const [restaurantItems, setRestaurantItems] = useState([]);
+    const [loadingFreeOffers, setLoadingFreeOffers] = useState(false);
+    const [savingFreeOffers, setSavingFreeOffers] = useState(false);
+    const [isFreeOffersModalOpen, setIsFreeOffersModalOpen] = useState(false);
+    const [freeOfferError, setFreeOfferError] = useState('');
+    const [freeOfferSuccessMsg, setFreeOfferSuccessMsg] = useState('');
+
+    // Form states for creating a new Free Item Offer
+    const [newMinOrderAmount, setNewMinOrderAmount] = useState('200');
+    const [selectedFreeItemId, setSelectedFreeItemId] = useState('');
+    const [customOfferTitle, setCustomOfferTitle] = useState('');
+    const [togglingFreeOfferId, setTogglingFreeOfferId] = useState(null);
+    const [deletingFreeOfferId, setDeletingFreeOfferId] = useState(null);
+
+    // Fetch free item offers for this restaurant
+    const fetchFreeItemOffers = async () => {
+        if (!id) return;
+        setLoadingFreeOffers(true);
+        try {
+            const res = await fetch(`/api/restaurant-offers?restaurantId=${id}`);
+            const data = await res.json();
+            if (data.success && data.data && Array.isArray(data.data.freeItemOffers)) {
+                setFreeItemOffers(data.data.freeItemOffers);
+            }
+        } catch (err) {
+            console.error('Error fetching free item offers:', err);
+        } finally {
+            setLoadingFreeOffers(false);
+        }
+    };
+
+    // Fetch items belonging to this restaurant for the free item dropdown
+    const fetchRestaurantItems = async () => {
+        if (!id) return;
+        try {
+            const res = await fetch(`/api/item-status?restaurantId=${id}`);
+            const data = await res.json();
+            if (data.success && Array.isArray(data.data)) {
+                setRestaurantItems(data.data);
+                if (data.data.length > 0 && !selectedFreeItemId) {
+                    const firstItem = data.data[0];
+                    setSelectedFreeItemId(String(firstItem._id || firstItem.itemId));
+                }
+            }
+        } catch (err) {
+            console.error('Error fetching restaurant items for free offers:', err);
+        }
+    };
+
+    useEffect(() => {
+        if (id) {
+            fetchFreeItemOffers();
+            fetchRestaurantItems();
+        }
+    }, [id]);
+
+    // Save Free Item Offers to DB
+    const handleSaveFreeOffersList = async (updatedList) => {
+        setSavingFreeOffers(true);
+        setFreeOfferError('');
+        try {
+            const res = await fetch('/api/restaurant-offers', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    restaurantId: id,
+                    freeItemOffers: updatedList
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setFreeItemOffers(updatedList);
+                setFreeOfferSuccessMsg('Free item offers updated successfully! 🎉');
+                setTimeout(() => setFreeOfferSuccessMsg(''), 4000);
+                return true;
+            } else {
+                setFreeOfferError(data.error || 'Failed to save free item offers.');
+                return false;
+            }
+        } catch (err) {
+            console.error('Error saving free item offers:', err);
+            setFreeOfferError('Server communication error.');
+            return false;
+        } finally {
+            setSavingFreeOffers(false);
+        }
+    };
+
+    // Handle adding new offer
+    const handleAddNewFreeItemOffer = async (e) => {
+        if (e) e.preventDefault();
+        setFreeOfferError('');
+        const minAmount = Number(newMinOrderAmount);
+        if (isNaN(minAmount) || minAmount <= 0) {
+            setFreeOfferError('Please enter a valid order total amount (e.g. 200).');
+            return;
+        }
+        if (!selectedFreeItemId) {
+            setFreeOfferError('Please select a free item.');
+            return;
+        }
+        const selectedItem = restaurantItems.find(
+            item => String(item._id || item.itemId) === String(selectedFreeItemId)
+        );
+        if (!selectedItem) {
+            setFreeOfferError('Selected item not found.');
+            return;
+        }
+
+        const itemName = selectedItem.itemName || 'Free Item';
+        const itemPrice = Number(selectedItem.price || 0);
+        const itemCategory = selectedItem.category || '';
+        const offerTitle = customOfferTitle.trim() || `Spend ₹${minAmount}+ & Get Free ${itemName}!`;
+
+        const newOffer = {
+            _id: `free_${Date.now()}`,
+            minOrderAmount: minAmount,
+            freeItemId: String(selectedItem._id || selectedItem.itemId),
+            freeItemName: itemName,
+            freeItemPrice: itemPrice,
+            freeItemCategory: itemCategory,
+            offerTitle: offerTitle,
+            description: `Cart total reaches ₹${minAmount} to get free ${itemName}`,
+            isActive: true,
+            createdAt: new Date().toISOString()
+        };
+
+        const updatedList = [...freeItemOffers, newOffer].sort((a, b) => a.minOrderAmount - b.minOrderAmount);
+        const saved = await handleSaveFreeOffersList(updatedList);
+        if (saved) {
+            setCustomOfferTitle('');
+            setNewMinOrderAmount(String(minAmount >= 200 ? minAmount + 300 : 500));
+        }
+    };
+
+    // Toggle active state of offer
+    const handleToggleFreeItemOffer = async (offerIndex) => {
+        const target = freeItemOffers[offerIndex];
+        if (!target) return;
+        setTogglingFreeOfferId(target._id || offerIndex);
+        const updatedList = freeItemOffers.map((offer, idx) => 
+            idx === offerIndex ? { ...offer, isActive: !offer.isActive } : offer
+        );
+        await handleSaveFreeOffersList(updatedList);
+        setTogglingFreeOfferId(null);
+    };
+
+    // Delete an offer
+    const handleDeleteFreeItemOffer = async (offerIndex) => {
+        const target = freeItemOffers[offerIndex];
+        if (!target) return;
+        if (!window.confirm(`Are you sure you want to delete offer "Orders ₹${target.minOrderAmount}+ get ${target.freeItemName}"?`)) {
+            return;
+        }
+        setDeletingFreeOfferId(target._id || offerIndex);
+        const updatedList = freeItemOffers.filter((_, idx) => idx !== offerIndex);
+        await handleSaveFreeOffersList(updatedList);
+        setDeletingFreeOfferId(null);
+    };
+
+    const handleOpenFreeOffersModal = () => {
+        fetchFreeItemOffers();
+        fetchRestaurantItems();
+        setFreeOfferError('');
+        setFreeOfferSuccessMsg('');
+        setIsFreeOffersModalOpen(true);
+    };
+
+    const handleCloseFreeOffersModal = () => {
+        if (savingFreeOffers) return;
+        setIsFreeOffersModalOpen(false);
+        setFreeOfferError('');
+        setFreeOfferSuccessMsg('');
+    };
+
     return (
         <div className="branchPageContainer">
             <div className="branchHeader">
@@ -735,6 +912,28 @@ export default function RestaurantDashboardPage({ params }) {
                         Add Customer Item
                     </button>
                 </Link>
+
+                <button 
+                    onClick={handleOpenFreeOffersModal}
+                    className="branchActionButton"
+                    style={{ 
+                        backgroundColor: '#059669', 
+                        color: 'white',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        cursor: 'pointer',
+                        boxShadow: '0 4px 12px rgba(5, 150, 105, 0.35)',
+                        transition: 'all 0.2s ease',
+                        border: 'none',
+                        minWidth: '220px'
+                    }}
+                    title="Configure Free Item on Cart Total (e.g. Total reaches ₹200 -> Free Item)"
+                >
+                    <span style={{ fontSize: '1.15rem' }}>🎁</span>
+                    <span>Free Item Offers ({freeItemOffers.length})</span>
+                </button>
 
                 <button 
                     onClick={() => {
@@ -870,6 +1069,27 @@ export default function RestaurantDashboardPage({ params }) {
                                 title="Edit restaurant name and replace picture"
                             >
                                 ✏️ Edit Restaurant
+                            </button>
+                            <button
+                                onClick={handleOpenFreeOffersModal}
+                                style={{
+                                    backgroundColor: '#059669',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '8px 16px',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer',
+                                    fontWeight: '600',
+                                    fontSize: '0.9rem',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    boxShadow: '0 2px 8px rgba(5, 150, 105, 0.25)',
+                                    transition: 'all 0.2s'
+                                }}
+                                title="Configure Free Item when total becomes ₹200 or specified amount"
+                            >
+                                🎁 Free Item Offers ({freeItemOffers.length})
                             </button>
                         </div>
                     </div>
@@ -1234,6 +1454,23 @@ export default function RestaurantDashboardPage({ params }) {
                             )}
                         </div>
                         <div className="detailItem">
+                            <span className="detailLabel">Free Item on Cart Total</span>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                                <span className="detailValue">
+                                    {freeItemOffers.length > 0 
+                                        ? `${freeItemOffers.filter(o => o.isActive).length} active (${freeItemOffers.length} total)` 
+                                        : 'None configured'}
+                                </span>
+                                <button 
+                                    className="passwordToggleBtn" 
+                                    onClick={handleOpenFreeOffersModal}
+                                    style={{ backgroundColor: '#059669', color: 'white' }}
+                                >
+                                    🎁 Manage
+                                </button>
+                            </div>
+                        </div>
+                        <div className="detailItem">
                             <span className="detailLabel">Offer Title</span>
                             {isEditingOfferTitle ? (
                                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '4px' }}>
@@ -1581,6 +1818,199 @@ export default function RestaurantDashboardPage({ params }) {
                             </div>
                         </div>
                     </div>
+                </div>
+            )}
+
+            {/* Free Item on Order Total Offers Card */}
+            {details && (
+                <div style={{
+                    maxWidth: '1000px',
+                    margin: '30px auto 0 auto',
+                    background: '#ffffff',
+                    borderRadius: '16px',
+                    padding: '28px',
+                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
+                    border: '1px solid #e2e8f0',
+                    textAlign: 'left'
+                }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px', marginBottom: '18px' }}>
+                        <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <h3 style={{ margin: 0, fontSize: '1.35rem', fontWeight: '700', color: '#065f46' }}>
+                                    🎁 Free Item on Order Total (Cart Milestone Offers)
+                                </h3>
+                                <span style={{
+                                    backgroundColor: '#d1fae5',
+                                    color: '#065f46',
+                                    padding: '4px 10px',
+                                    borderRadius: '20px',
+                                    fontSize: '0.82rem',
+                                    fontWeight: '700'
+                                }}>
+                                    {freeItemOffers.filter(o => o.isActive).length} Active / {freeItemOffers.length} Offers
+                                </span>
+                            </div>
+                            <p style={{ margin: '6px 0 0 0', fontSize: '0.9rem', color: '#64748b' }}>
+                                When customer cart total reaches a specific amount (e.g. ₹200), the selected item becomes FREE! Add n number of offers for this restaurant.
+                            </p>
+                        </div>
+                        <button
+                            onClick={handleOpenFreeOffersModal}
+                            style={{
+                                backgroundColor: '#059669',
+                                color: 'white',
+                                border: 'none',
+                                padding: '10px 20px',
+                                borderRadius: '10px',
+                                cursor: 'pointer',
+                                fontWeight: '700',
+                                fontSize: '0.92rem',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                boxShadow: '0 3px 10px rgba(5, 150, 105, 0.3)',
+                                transition: 'all 0.2s'
+                            }}
+                        >
+                            <span>+ Add Free Item Offer</span>
+                        </button>
+                    </div>
+
+                    {freeOfferSuccessMsg && (
+                        <div style={{
+                            backgroundColor: '#ecfdf5',
+                            border: '1px solid #10b981',
+                            color: '#065f46',
+                            padding: '10px 16px',
+                            borderRadius: '8px',
+                            marginBottom: '18px',
+                            fontWeight: '600',
+                            fontSize: '0.9rem'
+                        }}>
+                            {freeOfferSuccessMsg}
+                        </div>
+                    )}
+
+                    {loadingFreeOffers ? (
+                        <div style={{ padding: '20px', textAlign: 'center', color: '#64748b', fontSize: '0.95rem' }}>
+                            Loading free item offers...
+                        </div>
+                    ) : freeItemOffers.length === 0 ? (
+                        <div style={{
+                            padding: '36px 20px',
+                            textAlign: 'center',
+                            backgroundColor: '#f8fafc',
+                            borderRadius: '12px',
+                            border: '2px dashed #cbd5e1'
+                        }}>
+                            <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>🎁</div>
+                            <h4 style={{ margin: '0 0 6px 0', fontSize: '1.1rem', fontWeight: '700', color: '#1e293b' }}>
+                                No Free Item Offers Configured Yet
+                            </h4>
+                            <p style={{ margin: '0 0 16px 0', fontSize: '0.9rem', color: '#64748b', maxWidth: '520px', marginLeft: 'auto', marginRight: 'auto' }}>
+                                Reward customers when their order total reaches ₹200 or any milestone amount with a selected free item!
+                            </p>
+                            <button
+                                onClick={handleOpenFreeOffersModal}
+                                style={{
+                                    backgroundColor: '#059669',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '9px 18px',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer',
+                                    fontWeight: '600',
+                                    fontSize: '0.9rem',
+                                    boxShadow: '0 2px 8px rgba(5, 150, 105, 0.25)'
+                                }}
+                            >
+                                + Create Free Item Offer
+                            </button>
+                        </div>
+                    ) : (
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: '16px' }}>
+                            {freeItemOffers.map((offer, idx) => (
+                                <div
+                                    key={offer._id || idx}
+                                    style={{
+                                        backgroundColor: offer.isActive ? '#f0fdf4' : '#f8fafc',
+                                        borderRadius: '12px',
+                                        border: offer.isActive ? '1.5px solid #86efac' : '1px solid #e2e8f0',
+                                        padding: '16px',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        justifyContent: 'space-between',
+                                        gap: '12px',
+                                        position: 'relative',
+                                        boxShadow: '0 2px 6px rgba(0,0,0,0.03)'
+                                    }}
+                                >
+                                    <div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                            <span style={{
+                                                backgroundColor: '#059669',
+                                                color: '#ffffff',
+                                                padding: '4px 10px',
+                                                borderRadius: '6px',
+                                                fontWeight: '800',
+                                                fontSize: '0.85rem',
+                                                letterSpacing: '0.3px'
+                                            }}>
+                                                Total ≥ ₹{offer.minOrderAmount}
+                                            </span>
+                                            <span style={{
+                                                fontSize: '0.8rem',
+                                                fontWeight: '700',
+                                                color: offer.isActive ? '#15803d' : '#94a3b8'
+                                            }}>
+                                                {offer.isActive ? '● Active' : '○ Inactive'}
+                                            </span>
+                                        </div>
+                                        <div style={{ fontSize: '1.05rem', fontWeight: '700', color: '#0f172a', marginBottom: '4px' }}>
+                                            🎁 {offer.freeItemName || 'Item'} <span style={{ color: '#059669', fontWeight: '800' }}>FREE</span>
+                                        </div>
+                                        <div style={{ fontSize: '0.85rem', color: '#475569', marginBottom: '6px' }}>
+                                            {offer.offerTitle || `Orders ₹${offer.minOrderAmount}+ get ${offer.freeItemName} Free`}
+                                        </div>
+                                        {offer.freeItemPrice > 0 && (
+                                            <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                                                Original Price: <span style={{ textDecoration: 'line-through' }}>₹{offer.freeItemPrice}</span> <span style={{ color: '#059669', fontWeight: '700' }}>(₹0 Free)</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '10px', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '600', color: '#334155' }}>
+                                            <input
+                                                type="checkbox"
+                                                checked={offer.isActive !== false}
+                                                disabled={togglingFreeOfferId === (offer._id || idx)}
+                                                onChange={() => handleToggleFreeItemOffer(idx)}
+                                                style={{ width: '16px', height: '16px', accentColor: '#059669', cursor: 'pointer' }}
+                                            />
+                                            <span>{offer.isActive ? 'Enabled' : 'Disabled'}</span>
+                                        </label>
+                                        <button
+                                            onClick={() => handleDeleteFreeItemOffer(idx)}
+                                            disabled={deletingFreeOfferId === (offer._id || idx)}
+                                            style={{
+                                                backgroundColor: 'transparent',
+                                                border: '1px solid #fca5a5',
+                                                color: '#dc2626',
+                                                padding: '4px 10px',
+                                                borderRadius: '6px',
+                                                cursor: 'pointer',
+                                                fontSize: '0.8rem',
+                                                fontWeight: '600'
+                                            }}
+                                            title="Delete this free item offer"
+                                        >
+                                            🗑️ Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -2206,6 +2636,360 @@ export default function RestaurantDashboardPage({ params }) {
                                         <span>Save Sub-Restaurants</span>
                                     </>
                                 )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Free Item Offers Management Modal */}
+            {isFreeOffersModalOpen && (
+                <div 
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: 'rgba(15, 23, 42, 0.65)',
+                        backdropFilter: 'blur(4px)',
+                        WebkitBackdropFilter: 'blur(4px)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 99999,
+                        padding: '16px',
+                        boxSizing: 'border-box'
+                    }}
+                    onClick={handleCloseFreeOffersModal}
+                >
+                    <div 
+                        style={{
+                            backgroundColor: '#ffffff',
+                            borderRadius: '16px',
+                            maxWidth: '680px',
+                            width: '100%',
+                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                            overflow: 'hidden',
+                            maxHeight: '92vh',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            boxSizing: 'border-box',
+                            textAlign: 'left'
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Modal Header */}
+                        <div style={{
+                            padding: '18px 24px',
+                            borderBottom: '1px solid #e2e8f0',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            backgroundColor: '#f8fafc'
+                        }}>
+                            <div>
+                                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '700', color: '#065f46', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <span>🎁</span> Free Item on Cart Total Offers
+                                </h3>
+                                <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#64748b' }}>
+                                    For {details?.name || `Restaurant ${id}`}: If cart total reaches amount (e.g. ₹200), selected item is FREE! Add n number of offers.
+                                </p>
+                            </div>
+                            <button
+                                onClick={handleCloseFreeOffersModal}
+                                disabled={savingFreeOffers}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    fontSize: '1.4rem',
+                                    color: '#64748b',
+                                    cursor: savingFreeOffers ? 'not-allowed' : 'pointer',
+                                    padding: '4px 8px',
+                                    lineHeight: 1
+                                }}
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        {/* Modal Body */}
+                        <div style={{ padding: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                            {freeOfferError && (
+                                <div style={{
+                                    backgroundColor: '#fef2f2',
+                                    border: '1px solid #f87171',
+                                    color: '#b91c1c',
+                                    padding: '10px 14px',
+                                    borderRadius: '8px',
+                                    fontSize: '0.9rem',
+                                    fontWeight: '500'
+                                }}>
+                                    ⚠️ {freeOfferError}
+                                </div>
+                            )}
+
+                            {freeOfferSuccessMsg && (
+                                <div style={{
+                                    backgroundColor: '#ecfdf5',
+                                    border: '1px solid #10b981',
+                                    color: '#065f46',
+                                    padding: '10px 14px',
+                                    borderRadius: '8px',
+                                    fontSize: '0.9rem',
+                                    fontWeight: '500'
+                                }}>
+                                    {freeOfferSuccessMsg}
+                                </div>
+                            )}
+
+                            {/* Section: Add New Offer Form */}
+                            <form onSubmit={handleAddNewFreeItemOffer} style={{
+                                backgroundColor: '#f8fafc',
+                                border: '1.5px solid #cbd5e1',
+                                borderRadius: '12px',
+                                padding: '18px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '14px'
+                            }}>
+                                <div style={{ fontSize: '1rem', fontWeight: '700', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <span>➕</span> Add New Free Item Offer
+                                </div>
+
+                                {/* Row 1: Min Order Total & Free Item Select */}
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px' }}>
+                                    {/* Min Order Total */}
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#334155', marginBottom: '6px' }}>
+                                            If Cart Total Becomes (₹) *
+                                        </label>
+                                        <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #cbd5e1', borderRadius: '8px', background: '#ffffff', overflow: 'hidden' }}>
+                                            <span style={{ padding: '8px 12px', backgroundColor: '#f1f5f9', color: '#475569', fontWeight: '700', fontSize: '0.9rem', borderRight: '1px solid #cbd5e1' }}>₹</span>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                step="1"
+                                                value={newMinOrderAmount}
+                                                onChange={(e) => setNewMinOrderAmount(e.target.value)}
+                                                placeholder="e.g. 200"
+                                                required
+                                                style={{
+                                                    flex: 1,
+                                                    border: 'none',
+                                                    padding: '9px 12px',
+                                                    fontSize: '0.95rem',
+                                                    outline: 'none',
+                                                    fontWeight: '600'
+                                                }}
+                                            />
+                                        </div>
+                                        <span style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '3px', display: 'block' }}>
+                                            Example: ₹200, ₹500, ₹1000
+                                        </span>
+                                    </div>
+
+                                    {/* Free Item Select */}
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#334155', marginBottom: '6px' }}>
+                                            This Item is FREE * ({restaurantItems.length} items available)
+                                        </label>
+                                        <select
+                                            value={selectedFreeItemId}
+                                            onChange={(e) => setSelectedFreeItemId(e.target.value)}
+                                            required
+                                            style={{
+                                                width: '100%',
+                                                padding: '9px 12px',
+                                                borderRadius: '8px',
+                                                border: '1px solid #cbd5e1',
+                                                backgroundColor: '#ffffff',
+                                                fontSize: '0.9rem',
+                                                fontWeight: '500',
+                                                outline: 'none',
+                                                cursor: 'pointer'
+                                            }}
+                                        >
+                                            {restaurantItems.length === 0 && (
+                                                <option value="">No items found for this restaurant</option>
+                                            )}
+                                            {restaurantItems.map((item) => (
+                                                <option key={item._id || item.itemId} value={String(item._id || item.itemId)}>
+                                                    {item.itemName} — ₹{item.price} {item.category ? `(${item.category})` : ''}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <span style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '3px', display: 'block' }}>
+                                            Select the item that will be rewarded for free
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Custom Offer Title / Label */}
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#334155', marginBottom: '6px' }}>
+                                        Offer Title / Banner (Optional)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={customOfferTitle}
+                                        onChange={(e) => setCustomOfferTitle(e.target.value)}
+                                        placeholder={`e.g. Free Item on orders ₹${newMinOrderAmount || 200}+! (Auto-generated if left empty)`}
+                                        style={{
+                                            width: '100%',
+                                            padding: '9px 12px',
+                                            borderRadius: '8px',
+                                            border: '1px solid #cbd5e1',
+                                            fontSize: '0.9rem',
+                                            boxSizing: 'border-box',
+                                            outline: 'none'
+                                        }}
+                                    />
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    disabled={savingFreeOffers || restaurantItems.length === 0}
+                                    style={{
+                                        backgroundColor: '#059669',
+                                        color: '#ffffff',
+                                        border: 'none',
+                                        padding: '10px 18px',
+                                        borderRadius: '8px',
+                                        cursor: (savingFreeOffers || restaurantItems.length === 0) ? 'not-allowed' : 'pointer',
+                                        fontWeight: '700',
+                                        fontSize: '0.92rem',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '8px',
+                                        boxShadow: '0 2px 8px rgba(5, 150, 105, 0.3)',
+                                        marginTop: '4px'
+                                    }}
+                                >
+                                    {savingFreeOffers ? 'Saving Offer...' : '+ Add This Free Item Offer'}
+                                </button>
+                            </form>
+
+                            {/* Section: Configured Offers List */}
+                            <div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                    <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: '700', color: '#1e293b' }}>
+                                        Configured Offers ({freeItemOffers.length})
+                                    </h4>
+                                    <span style={{ fontSize: '0.82rem', color: '#64748b' }}>
+                                        N number of offers can be added
+                                    </span>
+                                </div>
+
+                                {freeItemOffers.length === 0 ? (
+                                    <div style={{ padding: '24px', textAlign: 'center', backgroundColor: '#f8fafc', borderRadius: '10px', color: '#64748b', fontSize: '0.9rem', border: '1px dashed #cbd5e1' }}>
+                                        No free item offers added yet. Use the form above to add an offer.
+                                    </div>
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                        {freeItemOffers.map((offer, idx) => (
+                                            <div
+                                                key={offer._id || idx}
+                                                style={{
+                                                    display: 'flex',
+                                                    justifyContent: 'space-between',
+                                                    alignItems: 'center',
+                                                    padding: '12px 16px',
+                                                    backgroundColor: offer.isActive ? '#f0fdf4' : '#f8fafc',
+                                                    border: offer.isActive ? '1px solid #86efac' : '1px solid #e2e8f0',
+                                                    borderRadius: '10px',
+                                                    flexWrap: 'wrap',
+                                                    gap: '10px'
+                                                }}
+                                            >
+                                                <div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                                        <span style={{
+                                                            backgroundColor: '#059669',
+                                                            color: '#ffffff',
+                                                            padding: '2px 8px',
+                                                            borderRadius: '4px',
+                                                            fontWeight: '800',
+                                                            fontSize: '0.8rem'
+                                                        }}>
+                                                            Total ≥ ₹{offer.minOrderAmount}
+                                                        </span>
+                                                        <strong style={{ fontSize: '0.95rem', color: '#0f172a' }}>
+                                                            🎁 {offer.freeItemName} (FREE)
+                                                        </strong>
+                                                        {offer.freeItemPrice > 0 && (
+                                                            <span style={{ fontSize: '0.8rem', color: '#64748b', textDecoration: 'line-through' }}>
+                                                                ₹{offer.freeItemPrice}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div style={{ fontSize: '0.82rem', color: '#64748b' }}>
+                                                        {offer.offerTitle || `Orders ₹${offer.minOrderAmount}+ get ${offer.freeItemName} Free`}
+                                                    </div>
+                                                </div>
+
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '600', color: offer.isActive ? '#15803d' : '#94a3b8' }}>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={offer.isActive !== false}
+                                                            disabled={togglingFreeOfferId === (offer._id || idx)}
+                                                            onChange={() => handleToggleFreeItemOffer(idx)}
+                                                            style={{ width: '16px', height: '16px', accentColor: '#059669', cursor: 'pointer' }}
+                                                        />
+                                                        <span>{offer.isActive ? 'Active' : 'Inactive'}</span>
+                                                    </label>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleDeleteFreeItemOffer(idx)}
+                                                        disabled={deletingFreeOfferId === (offer._id || idx)}
+                                                        style={{
+                                                            backgroundColor: 'transparent',
+                                                            border: '1px solid #fca5a5',
+                                                            color: '#dc2626',
+                                                            padding: '4px 8px',
+                                                            borderRadius: '6px',
+                                                            cursor: 'pointer',
+                                                            fontSize: '0.8rem',
+                                                            fontWeight: '600'
+                                                        }}
+                                                        title="Delete offer"
+                                                    >
+                                                        🗑️ Delete
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div style={{
+                            padding: '14px 24px',
+                            borderTop: '1px solid #e2e8f0',
+                            backgroundColor: '#f8fafc',
+                            display: 'flex',
+                            justifyContent: 'flex-end',
+                            gap: '10px'
+                        }}>
+                            <button
+                                type="button"
+                                onClick={handleCloseFreeOffersModal}
+                                style={{
+                                    backgroundColor: '#e2e8f0',
+                                    color: '#475569',
+                                    border: 'none',
+                                    padding: '8px 18px',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer',
+                                    fontWeight: '600',
+                                    fontSize: '0.9rem'
+                                }}
+                            >
+                                Close
                             </button>
                         </div>
                     </div>

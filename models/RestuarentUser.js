@@ -100,6 +100,13 @@ const RegisterUserSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    isFreeDelivery: {
+      type: Boolean,
+      default: false,
+    },
+    freeDeliveryAddedAt: {
+      type: Date,
+    },
     position: {
       type: Number,
       default: 0,
@@ -133,6 +140,19 @@ const RegisterUserSchema = new mongoose.Schema(
           type: Date,
           default: Date.now,
         },
+      },
+    ],
+    freeItemOffers: [
+      {
+        minOrderAmount: { type: Number, default: 0 },
+        freeItemId: { type: String, default: "" },
+        freeItemName: { type: String, default: "" },
+        freeItemPrice: { type: Number, default: 0 },
+        freeItemCategory: { type: String, default: "" },
+        offerTitle: { type: String, default: "" },
+        description: { type: String, default: "" },
+        isActive: { type: Boolean, default: true },
+        createdAt: { type: Date, default: Date.now },
       },
     ],
   },

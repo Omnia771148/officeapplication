@@ -245,6 +245,16 @@ export default function Dashboard() {
             <div style={{ width: '90%', maxWidth: '800px', marginBottom: '20px' }}>
                 <button
                     className="branchButton"
+                    style={{ '--btn-color': '#0ea5e9' }}
+                    onClick={() => router.push('/restaurant-cart-offers')}
+                >
+                    🎁 Restaurant Item & Delivery Offers
+                </button>
+            </div>
+
+            <div style={{ width: '90%', maxWidth: '800px', marginBottom: '20px' }}>
+                <button
+                    className="branchButton"
                     style={{ '--btn-color': '#059669' }}
                     onClick={() => router.push('/completed-order-coupons')}
                 >

@@ -12,7 +12,8 @@ const CONTROL_DESCRIPTIONS = {
     maintenanceMode: 'Turn off and on application maintenance mode.',
     homeHangingBanner: 'Turn on and off the swinging hanging banner on the customer home page, and customize its title and text.',
     appVersion: 'Turn on and off app version enforcement and mandatory update prompts.',
-    upiOnDelivery: 'Turn off and on the UPI on delivery payment option in the cart checkout flow.'
+    upiOnDelivery: 'Turn off and on the UPI on delivery payment option in the cart checkout flow.',
+    cartCoupons: 'Turn off and on the coupons and offers section in the customer cart page.'
 };
 
 export default function ControlsPage() {

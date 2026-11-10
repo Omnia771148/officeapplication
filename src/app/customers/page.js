@@ -20,6 +20,103 @@ export default function CustomersPage() {
     const [copiedId, setCopiedId] = useState(null);
     const router = useRouter();
 
+    // Customer-Specific One-Time Coupon Modal States
+    const [activeCouponUser, setActiveCouponUser] = useState(null);
+    const [couponModalType, setCouponModalType] = useState('delivery'); // 'delivery' | 'items'
+    const [newCouponCode, setNewCouponCode] = useState('');
+    const [newDiscountType, setNewDiscountType] = useState('percentage'); // 'percentage' | 'flat'
+    const [newDiscountValue, setNewDiscountValue] = useState('');
+    const [selectedCouponRestId, setSelectedCouponRestId] = useState('all');
+    const [availableRestaurantsForCoupon, setAvailableRestaurantsForCoupon] = useState([]);
+    const [customerCouponsList, setCustomerCouponsList] = useState([]);
+    const [couponLoadingList, setCouponLoadingList] = useState(false);
+    const [couponSubmitting, setCouponSubmitting] = useState(false);
+    const [couponModalMsg, setCouponModalMsg] = useState({ text: '', type: '' });
+
+    const openCouponModal = async (customer, type = 'delivery') => {
+        setActiveCouponUser(customer);
+        setCouponModalType(type);
+        setNewCouponCode('');
+        setNewDiscountType('percentage');
+        setNewDiscountValue('');
+        setSelectedCouponRestId('all');
+        setCouponModalMsg({ text: '', type: '' });
+        setCouponLoadingList(true);
+        try {
+            const res = await fetch(`/api/customer-coupons?userId=${customer.id}`);
+            const data = await res.json();
+            if (data.success) {
+                setCustomerCouponsList(data.coupons || []);
+                setAvailableRestaurantsForCoupon(data.restaurants || []);
+            } else {
+                setCustomerCouponsList([]);
+            }
+        } catch (e) {
+            console.error('Error fetching customer coupons:', e);
+            setCustomerCouponsList([]);
+        } finally {
+            setCouponLoadingList(false);
+        }
+    };
+
+    const handleCreateCustomerCoupon = async () => {
+        if (!activeCouponUser || !newCouponCode.trim() || !newDiscountValue) {
+            setCouponModalMsg({ text: 'Please fill in coupon code and discount value', type: 'error' });
+            return;
+        }
+        setCouponSubmitting(true);
+        setCouponModalMsg({ text: '', type: '' });
+        try {
+            const matchedRest = (availableRestaurantsForCoupon || []).find(r => String(r.restId) === String(selectedCouponRestId));
+            const selectedRestName = selectedCouponRestId === 'all' ? 'All Restaurants' : (matchedRest?.name || 'Specific Restaurant');
+            const res = await fetch('/api/customer-coupons', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: activeCouponUser.id,
+                    couponCode: newCouponCode.trim().toUpperCase(),
+                    couponType: couponModalType,
+                    discountType: newDiscountType,
+                    discountValue: Number(newDiscountValue),
+                    restId: selectedCouponRestId,
+                    restaurantName: selectedRestName
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setCouponModalMsg({ text: data.message || 'Coupon assigned successfully!', type: 'success' });
+                setCustomerCouponsList(data.coupons || []);
+                setNewCouponCode('');
+                setNewDiscountValue('');
+            } else {
+                setCouponModalMsg({ text: data.error || 'Failed to assign coupon', type: 'error' });
+            }
+        } catch (err) {
+            setCouponModalMsg({ text: 'Network error assigning coupon', type: 'error' });
+        } finally {
+            setCouponSubmitting(false);
+        }
+    };
+
+    const handleDeleteCustomerCoupon = async (cCode) => {
+        if (!activeCouponUser || !cCode) return;
+        if (!confirm(`Delete unredeemed coupon ${cCode}?`)) return;
+        try {
+            const res = await fetch(`/api/customer-coupons?userId=${activeCouponUser.id}&couponCode=${encodeURIComponent(cCode)}`, {
+                method: 'DELETE'
+            });
+            const data = await res.json();
+            if (data.success) {
+                setCustomerCouponsList(data.coupons || []);
+                setCouponModalMsg({ text: `Coupon ${cCode} removed`, type: 'success' });
+            } else {
+                setCouponModalMsg({ text: data.error || 'Failed to delete coupon', type: 'error' });
+            }
+        } catch (e) {
+            setCouponModalMsg({ text: 'Error deleting coupon', type: 'error' });
+        }
+    };
+
     const isPasswordVisible = (userId) => {
         if (visiblePasswords[userId] !== undefined) {
             return visiblePasswords[userId];
@@ -422,6 +519,56 @@ export default function CustomersPage() {
                                         </button>
                                     </div>
                                 </div>
+
+                                {/* Dedicated One-Time Customer Coupon Buttons */}
+                                <div style={{ display: 'flex', gap: '8px', width: '100%', marginTop: '6px' }}>
+                                    <button
+                                        type="button"
+                                        style={{
+                                            flex: 1,
+                                            padding: '8px 6px',
+                                            background: 'linear-gradient(135deg, #0284c7, #0369a1)',
+                                            color: '#ffffff',
+                                            border: 'none',
+                                            borderRadius: '8px',
+                                            fontSize: '11px',
+                                            fontWeight: '700',
+                                            cursor: 'pointer',
+                                            boxShadow: '0 2px 4px rgba(2, 132, 199, 0.25)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '4px'
+                                        }}
+                                        onClick={() => openCouponModal(customer, 'delivery')}
+                                        title="Add one-time delivery fee discount coupon for this customer"
+                                    >
+                                        🚚 Delivery Coupon
+                                    </button>
+                                    <button
+                                        type="button"
+                                        style={{
+                                            flex: 1,
+                                            padding: '8px 6px',
+                                            background: 'linear-gradient(135deg, #059669, #047857)',
+                                            color: '#ffffff',
+                                            border: 'none',
+                                            borderRadius: '8px',
+                                            fontSize: '11px',
+                                            fontWeight: '700',
+                                            cursor: 'pointer',
+                                            boxShadow: '0 2px 4px rgba(5, 150, 105, 0.25)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '4px'
+                                        }}
+                                        onClick={() => openCouponModal(customer, 'items')}
+                                        title="Add one-time overall items discount coupon for this customer"
+                                    >
+                                        🏷️ Items Coupon
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     ))
@@ -429,6 +576,269 @@ export default function CustomersPage() {
                     <div className="noData">No customers found.</div>
                 )}
             </div>
+
+            {/* Modal Dialog Window for Assigning Customer-Specific One-Time Coupon */}
+            {activeCouponUser && (
+                <div className="txnModalOverlay" style={{ zIndex: 10000 }}>
+                    <div className="txnModalContainer" style={{ maxWidth: '480px', maxHeight: '90vh', overflowY: 'auto' }}>
+                        <div className="txnModalHeader" style={{ borderBottom: '1px solid #e2e8f0', background: couponModalType === 'delivery' ? '#f0f9ff' : '#ecfdf5' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontSize: '1.4rem' }}>{couponModalType === 'delivery' ? '🚚' : '🏷️'}</span>
+                                <div>
+                                    <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#1e293b' }}>
+                                        {couponModalType === 'delivery' ? 'Delivery Fee Discount Coupon' : 'Overall Items Discount Coupon'}
+                                    </h3>
+                                    <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Valid for 1-Time Use Only</span>
+                                </div>
+                            </div>
+                            <button
+                                className="txnModalCloseBtn"
+                                onClick={() => setActiveCouponUser(null)}
+                            >
+                                &times;
+                            </button>
+                        </div>
+
+                        <div className="txnModalBody" style={{ gap: '14px' }}>
+                            <div style={{ background: '#f8fafc', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                                <p style={{ margin: '0 0 4px 0', fontSize: '0.9rem', color: '#334155' }}>
+                                    Customer: <strong>{activeCouponUser.name}</strong>
+                                </p>
+                                <p style={{ margin: 0, fontSize: '0.82rem', color: '#64748b' }}>
+                                    Phone: <strong>{activeCouponUser.phone}</strong>
+                                </p>
+                            </div>
+
+                            {/* Coupon Type Switcher Tab inside modal */}
+                            <div style={{ display: 'flex', background: '#e2e8f0', padding: '3px', borderRadius: '10px' }}>
+                                <button
+                                    type="button"
+                                    onClick={() => setCouponModalType('delivery')}
+                                    style={{
+                                        flex: 1,
+                                        padding: '7px',
+                                        border: 'none',
+                                        borderRadius: '8px',
+                                        fontSize: '0.82rem',
+                                        fontWeight: '700',
+                                        cursor: 'pointer',
+                                        background: couponModalType === 'delivery' ? '#0284c7' : 'transparent',
+                                        color: couponModalType === 'delivery' ? '#fff' : '#475569',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    🚚 Delivery Discount
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setCouponModalType('items')}
+                                    style={{
+                                        flex: 1,
+                                        padding: '7px',
+                                        border: 'none',
+                                        borderRadius: '8px',
+                                        fontSize: '0.82rem',
+                                        fontWeight: '700',
+                                        cursor: 'pointer',
+                                        background: couponModalType === 'items' ? '#059669' : 'transparent',
+                                        color: couponModalType === 'items' ? '#fff' : '#475569',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    🏷️ Items Discount
+                                </button>
+                            </div>
+
+                            {/* Applicable Restaurant Selector */}
+                            <div className="txnModalField">
+                                <label style={{ fontSize: '0.82rem', fontWeight: '700', color: '#334155' }}>
+                                    Applicable Restaurant (Select Specific or All) *
+                                </label>
+                                <select
+                                    value={selectedCouponRestId}
+                                    onChange={(e) => setSelectedCouponRestId(e.target.value)}
+                                    className="txnModalInput"
+                                    style={{ height: '42px', fontWeight: '600', cursor: 'pointer', borderColor: selectedCouponRestId !== 'all' ? '#0284c7' : '#dfe6e9' }}
+                                >
+                                    <option value="all">🌟 All Restaurants (Valid for any restaurant)</option>
+                                    {(availableRestaurantsForCoupon || []).map((r) => (
+                                        <option key={r.restId || r._id} value={r.restId}>
+                                            🍽️ {r.name} {r.restLocation ? '(' + r.restLocation + ')' : '(ID: ' + r.restId + ')'}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Coupon Code Input */}
+                            <div className="txnModalField">
+                                <label style={{ fontSize: '0.82rem', fontWeight: '700', color: '#334155' }}>Coupon Code *</label>
+                                <input
+                                    type="text"
+                                    placeholder={couponModalType === 'delivery' ? 'e.g. FREEDEL50, ZEROFEES' : 'e.g. SPECIAL20, SAVE50'}
+                                    value={newCouponCode}
+                                    onChange={(e) => setNewCouponCode(e.target.value.toUpperCase())}
+                                    className="txnModalInput"
+                                    style={{ textTransform: 'uppercase', fontWeight: '700', letterSpacing: '1px' }}
+                                />
+                            </div>
+
+                            {/* Discount Type & Value Row */}
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <div style={{ flex: 1 }} className="txnModalField">
+                                    <label style={{ fontSize: '0.82rem', fontWeight: '700', color: '#334155' }}>Discount Type</label>
+                                    <select
+                                        value={newDiscountType}
+                                        onChange={(e) => setNewDiscountType(e.target.value)}
+                                        className="txnModalInput"
+                                        style={{ height: '42px', fontWeight: '600', cursor: 'pointer' }}
+                                    >
+                                        <option value="percentage">% Percentage Off</option>
+                                        <option value="flat">₹ Flat Amount Off</option>
+                                    </select>
+                                </div>
+                                <div style={{ flex: 1 }} className="txnModalField">
+                                    <label style={{ fontSize: '0.82rem', fontWeight: '700', color: '#334155' }}>
+                                        {newDiscountType === 'percentage' ? 'Discount Percentage (%)' : 'Discount Amount (₹)'} *
+                                    </label>
+                                    <input
+                                        type="number"
+                                        placeholder={newDiscountType === 'percentage' ? 'e.g. 50 (for 50%)' : 'e.g. 30 (for ₹30)'}
+                                        value={newDiscountValue}
+                                        onChange={(e) => setNewDiscountValue(e.target.value)}
+                                        className="txnModalInput"
+                                        min="1"
+                                        max={newDiscountType === 'percentage' ? '100' : '9999'}
+                                        style={{ fontWeight: '700' }}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Alert Message */}
+                            {couponModalMsg.text ? (
+                                <div style={{
+                                    padding: '8px 12px',
+                                    borderRadius: '8px',
+                                    fontSize: '0.85rem',
+                                    fontWeight: '600',
+                                    background: couponModalMsg.type === 'error' ? '#fef2f2' : '#f0fdf4',
+                                    color: couponModalMsg.type === 'error' ? '#dc2626' : '#16a34a',
+                                    border: `1px solid ${couponModalMsg.type === 'error' ? '#fca5a5' : '#86efac'}`
+                                }}>
+                                    {couponModalMsg.text}
+                                </div>
+                            ) : null}
+
+                            {/* Assigned Coupons for this User */}
+                            <div style={{ marginTop: '4px' }}>
+                                <label style={{ fontSize: '0.82rem', fontWeight: '700', color: '#334155', display: 'block', marginBottom: '6px' }}>
+                                    Coupons Assigned to this Customer:
+                                </label>
+                                {couponLoadingList ? (
+                                    <div style={{ fontSize: '0.8rem', color: '#94a3b8', fontStyle: 'italic' }}>Loading customer coupons...</div>
+                                ) : customerCouponsList.length === 0 ? (
+                                    <div style={{ fontSize: '0.8rem', color: '#94a3b8', fontStyle: 'italic' }}>No coupons assigned yet for this customer.</div>
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '160px', overflowY: 'auto' }}>
+                                        {customerCouponsList.map((c, idx) => (
+                                            <div key={idx} style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'space-between',
+                                                background: c.isUsed ? '#f1f5f9' : '#f8fafc',
+                                                border: `1px solid ${c.isUsed ? '#cbd5e1' : '#e2e8f0'}`,
+                                                padding: '6px 10px',
+                                                borderRadius: '6px'
+                                            }}>
+                                                <div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                        <strong style={{ fontSize: '0.85rem', color: c.isUsed ? '#64748b' : '#0f172a' }}>{c.couponCode}</strong>
+                                                        <span style={{
+                                                            fontSize: '0.7rem',
+                                                            padding: '2px 6px',
+                                                            borderRadius: '4px',
+                                                            fontWeight: '700',
+                                                            background: c.couponType === 'delivery' ? '#e0f2fe' : '#dcfce7',
+                                                            color: c.couponType === 'delivery' ? '#0369a1' : '#15803d'
+                                                        }}>
+                                                            {c.couponType === 'delivery' ? '🚚 Delivery' : '🍔 Items'}
+                                                        </span>
+                                                        <span style={{ fontSize: '0.78rem', color: '#475569' }}>
+                                                            ({c.discountType === 'percentage' ? `${c.discountValue}%` : `₹${c.discountValue}`} OFF)
+                                                        </span>
+                                                    </div>
+                                                    <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '2px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                                        <span style={{ fontWeight: '600', color: c.restId ? '#0284c7' : '#059669' }}>
+                                                            {c.restId ? ('📍 ' + (c.restaurantName || 'Specific Restaurant')) : '🌟 All Restaurants'}
+                                                        </span>
+                                                        <span>•</span>
+                                                        <span style={{ color: c.isUsed ? '#94a3b8' : '#16a34a', fontWeight: '600' }}>
+                                                            {c.isUsed ? `Redeemed on ${c.usedAt ? new Date(c.usedAt).toLocaleDateString() : 'past order'}` : 'Active (Valid 1 time)'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <span style={{
+                                                        fontSize: '0.72rem',
+                                                        fontWeight: '700',
+                                                        padding: '3px 8px',
+                                                        borderRadius: '6px',
+                                                        background: c.isUsed ? '#fee2e2' : '#dcfce7',
+                                                        color: c.isUsed ? '#991b1b' : '#166534'
+                                                    }}>
+                                                        {c.isUsed ? 'Used' : 'Unused'}
+                                                    </span>
+                                                    {!c.isUsed && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleDeleteCustomerCoupon(c.couponCode)}
+                                                            style={{
+                                                                background: 'none',
+                                                                border: 'none',
+                                                                color: '#ef4444',
+                                                                cursor: 'pointer',
+                                                                fontSize: '0.9rem',
+                                                                padding: '2px'
+                                                            }}
+                                                            title="Delete coupon"
+                                                        >
+                                                            🗑️
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="txnModalFooter">
+                            <button
+                                onClick={() => setActiveCouponUser(null)}
+                                className="txnModalCancelBtn"
+                            >
+                                Close
+                            </button>
+                            <button
+                                onClick={handleCreateCustomerCoupon}
+                                disabled={couponSubmitting || !newCouponCode.trim() || !newDiscountValue}
+                                style={{
+                                    background: couponModalType === 'delivery' ? '#0284c7' : '#059669',
+                                    color: '#fff',
+                                    border: 'none',
+                                    padding: '8px 20px',
+                                    borderRadius: '8px',
+                                    fontWeight: '700',
+                                    cursor: (couponSubmitting || !newCouponCode.trim() || !newDiscountValue) ? 'not-allowed' : 'pointer',
+                                    opacity: (couponSubmitting || !newCouponCode.trim() || !newDiscountValue) ? 0.6 : 1
+                                }}
+                            >
+                                {couponSubmitting ? 'Assigning...' : `Add ${couponModalType === 'delivery' ? 'Delivery' : 'Items'} Coupon`}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Modal Dialog Window for entering Transaction ID & No of Coins */}
             {activePayUser && (

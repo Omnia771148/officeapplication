@@ -17,7 +17,7 @@ function getRestaurantQuery(restaurantId) {
   return { restId: String(restaurantId) };
 }
 
-// GET: Fetch all restaurants and their coupons
+// GET: Fetch all restaurants, their coupons, and free delivery status
 export async function GET(request) {
   try {
     await dbConnect();
@@ -26,9 +26,9 @@ export async function GET(request) {
 
     const collection = mongoose.connection.db.collection('restuarentusers');
 
-    // Fetch all restaurants for dropdown
+    // Fetch all restaurants for dropdown with isFreeDelivery fields
     const allRestaurants = await collection
-      .find({}, { projection: { _id: 1, restId: 1, name: 1, restLocation: 1, coupons: 1 } })
+      .find({}, { projection: { _id: 1, restId: 1, name: 1, restLocation: 1, coupons: 1, isFreeDelivery: 1, freeDeliveryAddedAt: 1 } })
       .sort({ name: 1 })
       .toArray();
 
@@ -36,8 +36,15 @@ export async function GET(request) {
       _id: r._id.toString(),
       restId: r.restId || r._id.toString(),
       name: r.name || `Restaurant ${r.restId || ''}`,
-      restLocation: r.restLocation || ''
+      restLocation: r.restLocation || '',
+      isFreeDelivery: Boolean(r.isFreeDelivery),
+      freeDeliveryAddedAt: r.freeDeliveryAddedAt || null
     }));
+
+    // Free delivery active restaurants list
+    const freeDeliveryRestaurants = restaurantList
+      .filter((r) => r.isFreeDelivery)
+      .sort((a, b) => new Date(b.freeDeliveryAddedAt || 0) - new Date(a.freeDeliveryAddedAt || 0));
 
     // Build coupon list
     let allCoupons = [];
@@ -72,7 +79,8 @@ export async function GET(request) {
     return NextResponse.json({
       success: true,
       restaurants: restaurantList,
-      coupons: allCoupons
+      coupons: allCoupons,
+      freeDeliveryRestaurants: freeDeliveryRestaurants
     });
   } catch (error) {
     console.error('Error in GET /api/restaurant-coupons:', error);
@@ -80,11 +88,82 @@ export async function GET(request) {
   }
 }
 
-// POST: Add new coupon to selected restaurant in restuarentusers collection
+// POST: Add new coupon OR enable/disable free delivery for restaurants
 export async function POST(request) {
   try {
     await dbConnect();
     const body = await request.json();
+    const collection = mongoose.connection.db.collection('restuarentusers');
+
+    // 1. Enable Free Delivery for one or multiple restaurants
+    if (body.action === 'set_free_delivery') {
+      const { restaurantIds } = body;
+      const ids = Array.isArray(restaurantIds) ? restaurantIds : (restaurantIds ? [restaurantIds] : []);
+      if (ids.length === 0) {
+        return NextResponse.json(
+          { success: false, message: 'Please select at least one restaurant' },
+          { status: 400 }
+        );
+      }
+
+      const objectIds = ids.filter((id) => mongoose.Types.ObjectId.isValid(id)).map((id) => new mongoose.Types.ObjectId(id));
+      const stringIds = ids.map((id) => String(id));
+
+      const query = {
+        $or: [
+          { _id: { $in: objectIds } },
+          { restId: { $in: stringIds } }
+        ]
+      };
+
+      const result = await collection.updateMany(query, {
+        $set: {
+          isFreeDelivery: true,
+          freeDeliveryAddedAt: new Date()
+        }
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: `Free delivery offer enabled for ${result.modifiedCount || ids.length} restaurant(s)!`,
+        modifiedCount: result.modifiedCount
+      });
+    }
+
+    // 2. Remove Free Delivery from one or multiple restaurants
+    if (body.action === 'remove_free_delivery') {
+      const { restaurantIds, restaurantId } = body;
+      const rawIds = restaurantIds || (restaurantId ? [restaurantId] : []);
+      const ids = Array.isArray(rawIds) ? rawIds : [rawIds];
+      if (ids.length === 0) {
+        return NextResponse.json(
+          { success: false, message: 'Restaurant ID is required to remove free delivery' },
+          { status: 400 }
+        );
+      }
+
+      const objectIds = ids.filter((id) => mongoose.Types.ObjectId.isValid(id)).map((id) => new mongoose.Types.ObjectId(id));
+      const stringIds = ids.map((id) => String(id));
+
+      const query = {
+        $or: [
+          { _id: { $in: objectIds } },
+          { restId: { $in: stringIds } }
+        ]
+      };
+
+      const result = await collection.updateMany(query, {
+        $set: { isFreeDelivery: false },
+        $unset: { freeDeliveryAddedAt: '' }
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: `Free delivery offer removed from ${result.modifiedCount || ids.length} restaurant(s)`
+      });
+    }
+
+    // 3. Regular Coupon Code Creation
     const { restaurantId, couponCode, offerType, offerValue } = body;
 
     if (!restaurantId) {
@@ -125,9 +204,7 @@ export async function POST(request) {
       );
     }
 
-    const collection = mongoose.connection.db.collection('restuarentusers');
     const query = getRestaurantQuery(restaurantId);
-
     const restaurant = await collection.findOne(query);
     if (!restaurant) {
       return NextResponse.json(
@@ -186,17 +263,19 @@ export async function POST(request) {
   }
 }
 
-// DELETE: Remove a specific coupon from selected restaurant
+// DELETE: Remove a specific coupon or remove free delivery offer
 export async function DELETE(request) {
   try {
     await dbConnect();
     const { searchParams } = new URL(request.url);
+    const action = searchParams.get('action');
+
     let restaurantId = searchParams.get('restaurantId') || searchParams.get('restId');
     let couponId = searchParams.get('couponId');
     let couponCode = searchParams.get('couponCode');
 
     // If query params are empty, try reading request body
-    if (!restaurantId || (!couponId && !couponCode)) {
+    if (!restaurantId || (!couponId && !couponCode && !action)) {
       try {
         const body = await request.json();
         restaurantId = restaurantId || body.restaurantId || body.restId;
@@ -207,6 +286,37 @@ export async function DELETE(request) {
       }
     }
 
+    const collection = mongoose.connection.db.collection('restuarentusers');
+
+    // Delete Free Delivery action
+    if (action === 'free_delivery' || action === 'remove_free_delivery') {
+      if (!restaurantId) {
+        return NextResponse.json(
+          { success: false, message: 'Restaurant ID is required to remove free delivery' },
+          { status: 400 }
+        );
+      }
+
+      const query = getRestaurantQuery(restaurantId);
+      const updateResult = await collection.updateOne(query, {
+        $set: { isFreeDelivery: false },
+        $unset: { freeDeliveryAddedAt: '' }
+      });
+
+      if (updateResult.matchedCount === 0) {
+        return NextResponse.json(
+          { success: false, message: 'Restaurant not found' },
+          { status: 404 }
+        );
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: 'Free delivery offer removed successfully'
+      });
+    }
+
+    // Delete Coupon action
     if (!restaurantId) {
       return NextResponse.json(
         { success: false, message: 'Restaurant ID is required to delete coupon' },
@@ -221,9 +331,7 @@ export async function DELETE(request) {
       );
     }
 
-    const collection = mongoose.connection.db.collection('restuarentusers');
     const query = getRestaurantQuery(restaurantId);
-
     const restaurant = await collection.findOne(query);
     if (!restaurant) {
       return NextResponse.json(

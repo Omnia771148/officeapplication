@@ -40,6 +40,20 @@ const RestaurantOfferSchema = new mongoose.Schema(
         isActive: { type: Boolean, default: true },
       },
     ],
+    // Free Item on Min Order Value (e.g. Spend ₹200 -> Get Item Free)
+    freeItemOffers: [
+      {
+        minOrderAmount: { type: Number, required: true, min: 0 },
+        freeItemId: { type: String, required: true },
+        freeItemName: { type: String, required: true },
+        freeItemPrice: { type: Number, default: 0 },
+        freeItemCategory: { type: String, default: '' },
+        offerTitle: { type: String, default: '' },
+        description: { type: String, default: '' },
+        isActive: { type: Boolean, default: true },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
   },
   { timestamps: true, strict: false }
 );
