@@ -153,6 +153,16 @@ export default function Dashboard() {
             <div style={{ width: '90%', maxWidth: '800px', marginBottom: '20px' }}>
                 <button
                     className="branchButton"
+                    style={{ '--btn-color': '#0284c7' }}
+                    onClick={() => router.push('/customer-order-counts')}
+                >
+                    📊 Customers &amp; Order Counts
+                </button>
+            </div>
+
+            <div style={{ width: '90%', maxWidth: '800px', marginBottom: '20px' }}>
+                <button
+                    className="branchButton"
                     style={{ '--btn-color': '#10b981' }}
                     onClick={() => router.push('/whitelist')}
                 >
