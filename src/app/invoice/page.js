@@ -25,6 +25,7 @@ export default function InvoicePage() {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
 
     // Filters
     const [searchQuery, setSearchQuery] = useState('');
@@ -160,12 +161,14 @@ export default function InvoicePage() {
     const filteredSummary = useMemo(() => {
         let grandTotal = 0;
         let totalPrice = 0;
+        let deliveryFee = 0;
         let sentToRest = 0;
         let whatWeGet = 0;
 
         filteredOrders.forEach(o => {
             grandTotal += o.grandTotal || 0;
             totalPrice += o.totalPrice || 0;
+            deliveryFee += o.deliveryFee || 0;
             sentToRest += o.amountSentToRestaurants || 0;
             whatWeGet += o.whatWeGet || 0;
         });
@@ -174,6 +177,7 @@ export default function InvoicePage() {
             count: filteredOrders.length,
             grandTotal,
             totalPrice,
+            deliveryFee,
             sentToRest,
             whatWeGet
         };
@@ -215,6 +219,45 @@ export default function InvoicePage() {
         } catch {
             return '';
         }
+    };
+
+    const formatDateTime = (dateStr) => {
+        if (!dateStr) return 'N/A';
+        try {
+            const d = new Date(dateStr);
+            if (isNaN(d.getTime())) return 'N/A';
+            return d.toLocaleString('en-IN', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true
+            });
+        } catch {
+            return 'N/A';
+        }
+    };
+
+    const calculateDuration = (createdAt, completedAt) => {
+        if (!createdAt || !completedAt) return 'N/A';
+        const start = new Date(createdAt);
+        const end = new Date(completedAt);
+        if (isNaN(start.getTime()) || isNaN(end.getTime())) return 'N/A';
+        const diffMs = end.getTime() - start.getTime();
+        if (diffMs <= 0) return 'Immediate (< 1 min)';
+
+        const totalMinutes = Math.floor(diffMs / (1000 * 60));
+        const days = Math.floor(totalMinutes / (60 * 24));
+        const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+        const minutes = totalMinutes % 60;
+
+        const parts = [];
+        if (days > 0) parts.push(`${days}d`);
+        if (hours > 0) parts.push(`${hours}h`);
+        if (minutes > 0 || parts.length === 0) parts.push(`${minutes}m`);
+        return parts.join(' ');
     };
 
     // Label describing active filter period
@@ -307,7 +350,7 @@ export default function InvoicePage() {
             '',
             filteredSummary.grandTotal,
             filteredSummary.totalPrice,
-            '',
+            filteredSummary.deliveryFee,
             'UPI',
             '',
             '',
@@ -336,7 +379,7 @@ export default function InvoicePage() {
                         ← Back to Dashboard
                     </button>
                     <div className="headerTitleBlock">
-                        <h1>🧾 Invoices & Settlement Records</h1>
+                        <h1>💰 Total Income & Invoices</h1>
                         <p>Track restaurant settlements, commissions, and platform earnings</p>
                     </div>
                 </div>
@@ -396,6 +439,14 @@ export default function InvoicePage() {
                     <div>
                         <span className="metricLabel">Total Food Price</span>
                         <span className="metricValue">{formatCurrency(filteredSummary.totalPrice)}</span>
+                    </div>
+                </div>
+
+                <div className="metricCard">
+                    <div className="metricIcon iconDelivery">🛵</div>
+                    <div>
+                        <span className="metricLabel">Total Delivery Fee</span>
+                        <span className="metricValue" style={{ color: '#ea580c' }}>{formatCurrency(filteredSummary.deliveryFee)}</span>
                     </div>
                 </div>
 
@@ -551,7 +602,7 @@ export default function InvoicePage() {
                         )}
                         {searchQuery.trim() && (
                             <span className="activeTag">
-                                🔍 "{searchQuery}"
+                                🔍 &quot;{searchQuery}&quot;
                                 <span className="activeTagRemove" onClick={() => setSearchQuery('')}>✕</span>
                             </span>
                         )}
@@ -583,6 +634,10 @@ export default function InvoicePage() {
                         <div className="printSummaryItem">
                             <span className="printSummaryLabel">Total Food Price</span>
                             <span className="printSummaryVal">{formatCurrency(filteredSummary.totalPrice)}</span>
+                        </div>
+                        <div className="printSummaryItem">
+                            <span className="printSummaryLabel">Total Delivery Fee</span>
+                            <span className="printSummaryVal" style={{ color: '#ea580c' }}>{formatCurrency(filteredSummary.deliveryFee)}</span>
                         </div>
                         <div className="printSummaryItem">
                             <span className="printSummaryLabel">What We Get (Platform Cut)</span>
@@ -622,6 +677,7 @@ export default function InvoicePage() {
                                     <th>Commission Rate</th>
                                     <th>Amount Sent to Restaurants</th>
                                     <th>What We Get</th>
+                                    <th className="noPrintCol">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -671,6 +727,16 @@ export default function InvoicePage() {
                                                     {formatCurrency(order.whatWeGet)}
                                                 </span>
                                             </td>
+                                            <td className="noPrintCol">
+                                                <button
+                                                    type="button"
+                                                    className="orderDetailBtn"
+                                                    onClick={() => setSelectedOrderDetails(order)}
+                                                    title="View full order, delivery and customer details"
+                                                >
+                                                    ℹ️ Details
+                                                </button>
+                                            </td>
                                         </tr>
                                     );
                                 })}
@@ -681,7 +747,9 @@ export default function InvoicePage() {
                                     <td>-</td>
                                     <td>{formatCurrency(filteredSummary.grandTotal)}</td>
                                     <td>{formatCurrency(filteredSummary.totalPrice)}</td>
-                                    <td>-</td>
+                                    <td style={{ color: '#ea580c', fontWeight: 800 }}>
+                                        {formatCurrency(filteredSummary.deliveryFee)}
+                                    </td>
                                     <td>UPI</td>
                                     <td>-</td>
                                     <td style={{ color: '#059669', fontWeight: 800 }}>
@@ -690,6 +758,7 @@ export default function InvoicePage() {
                                     <td style={{ color: '#4338ca', fontWeight: 800 }}>
                                         {formatCurrency(filteredSummary.whatWeGet)}
                                     </td>
+                                    <td className="noPrintCol">-</td>
                                 </tr>
                             </tfoot>
                         </table>
@@ -710,6 +779,152 @@ export default function InvoicePage() {
                     </div>
                 </div>
             </div>
+
+            {/* Order Details Modal */}
+            {selectedOrderDetails && (
+                <div className="modalBackdrop" onClick={() => setSelectedOrderDetails(null)}>
+                    <div className="modalContainer" onClick={(e) => e.stopPropagation()}>
+                        <div className="modalHeader">
+                            <div className="modalTitleBlock">
+                                <h2>Order #{selectedOrderDetails.orderId}</h2>
+                                <span className="modalStatusBadge">{selectedOrderDetails.status || 'Delivered'}</span>
+                            </div>
+                            <button
+                                className="modalCloseBtn"
+                                onClick={() => setSelectedOrderDetails(null)}
+                                title="Close modal"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="modalBody">
+                            {/* Timing & Time Taken Highlight */}
+                            <div className="modalDurationCard">
+                                <div className="durationItem">
+                                    <span className="modalHeading">Order Placed</span>
+                                    <span className="modalValue">{formatDateTime(selectedOrderDetails.createdAt)}</span>
+                                </div>
+                                <div className="durationItem">
+                                    <span className="modalHeading">Completed At</span>
+                                    <span className="modalValue">{formatDateTime(selectedOrderDetails.completedAt)}</span>
+                                </div>
+                                <div className="durationItem durationHighlight">
+                                    <span className="modalHeading">Time Taken To Complete</span>
+                                    <span className="modalValue durationText">
+                                        ⏱️ {calculateDuration(selectedOrderDetails.createdAt, selectedOrderDetails.completedAt)}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Financials & Delivery Partner */}
+                            <div className="modalGrid">
+                                <div className="modalField highlightGrandTotal">
+                                    <span className="modalHeading">Grand Total</span>
+                                    <span className="modalValue grandTotalNum">
+                                        {formatCurrency(selectedOrderDetails.grandTotal)}
+                                    </span>
+                                </div>
+                                <div className="modalField">
+                                    <span className="modalHeading">Total Food Price</span>
+                                    <span className="modalValue">
+                                        {formatCurrency(selectedOrderDetails.totalPrice)}
+                                    </span>
+                                </div>
+                                <div className="modalField">
+                                    <span className="modalHeading">Delivery Fee</span>
+                                    <span className="modalValue">
+                                        {formatCurrency(selectedOrderDetails.deliveryFee)}
+                                    </span>
+                                </div>
+                                <div className="modalField highlightBoyField">
+                                    <span className="modalHeading">Delivery Boy Name</span>
+                                    <span className="modalValue highlightBoyText">
+                                        🚴 {selectedOrderDetails.deliveryBoyName || 'N/A'}
+                                    </span>
+                                </div>
+                                {selectedOrderDetails.deliveryBoyPhone && selectedOrderDetails.deliveryBoyPhone !== 'N/A' && (
+                                    <div className="modalField">
+                                        <span className="modalHeading">Delivery Boy Phone</span>
+                                        <span className="modalValue">
+                                            📞 {selectedOrderDetails.deliveryBoyPhone}
+                                        </span>
+                                    </div>
+                                )}
+                                <div className="modalField">
+                                    <span className="modalHeading">Restaurant</span>
+                                    <span className="modalValue">
+                                        🏪 {selectedOrderDetails.restaurantName}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Delivery Address */}
+                            <div className="modalSection">
+                                <span className="modalSectionTitle">📍 Delivery Address</span>
+                                <div className="modalAddressBox">
+                                    {selectedOrderDetails.deliveryAddress || 'Address not specified'}
+                                </div>
+                            </div>
+
+                            {/* Customer Details */}
+                            <div className="modalSection">
+                                <span className="modalSectionTitle">👤 Customer Details</span>
+                                <div className="modalGrid">
+                                    <div className="modalField">
+                                        <span className="modalHeading">Customer Name</span>
+                                        <span className="modalValue">{selectedOrderDetails.userName || 'N/A'}</span>
+                                    </div>
+                                    <div className="modalField">
+                                        <span className="modalHeading">Phone Number</span>
+                                        <span className="modalValue">{selectedOrderDetails.userPhone || 'N/A'}</span>
+                                    </div>
+                                    <div className="modalField">
+                                        <span className="modalHeading">Email Address</span>
+                                        <span className="modalValue">{selectedOrderDetails.userEmail || 'N/A'}</span>
+                                    </div>
+                                    <div className="modalField">
+                                        <span className="modalHeading">User ID</span>
+                                        <span className="modalValue monoText">{selectedOrderDetails.userId || 'N/A'}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Ordered Items (if available) */}
+                            {Array.isArray(selectedOrderDetails.items) && selectedOrderDetails.items.length > 0 && (
+                                <div className="modalSection">
+                                    <span className="modalSectionTitle">
+                                        📦 Ordered Items ({selectedOrderDetails.items.length})
+                                    </span>
+                                    <div className="modalItemsList">
+                                        {selectedOrderDetails.items.map((item, idx) => {
+                                            const name = typeof item === 'object' ? (item.name || item.itemName || 'Item') : String(item);
+                                            const qty = typeof item === 'object' ? (item.quantity || item.qty || 1) : 1;
+                                            const price = typeof item === 'object' ? (item.price || item.itemPrice) : null;
+                                            return (
+                                                <div key={idx} className="modalItemRow">
+                                                    <span className="modalItemName">{name}</span>
+                                                    <span className="modalItemQty">x{qty}</span>
+                                                    {price && <span className="modalItemPrice">₹{price}</span>}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="modalFooter">
+                            <button
+                                className="modalCloseFooterBtn"
+                                onClick={() => setSelectedOrderDetails(null)}
+                            >
+                                Close Details
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -1,0 +1,17 @@
+@import '../invoice/invoice.css';
+
+/* Custom tweaks specific to Total Income page */
+.totalIncomePageContainer {
+    min-height: 100vh;
+    background-color: #f8fafc;
+    font-family: 'Outfit', sans-serif;
+    padding: 24px 32px;
+    box-sizing: border-box;
+    color: #1e293b;
+}
+
+@media (max-width: 768px) {
+    .totalIncomePageContainer {
+        padding: 16px 12px;
+    }
+}

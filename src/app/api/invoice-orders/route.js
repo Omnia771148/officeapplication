@@ -74,7 +74,18 @@ export async function GET(request) {
                 amountSentToRestaurants: Number(amountSentToRestaurants.toFixed(2)),
                 whatWeGet: Number(whatWeGet.toFixed(2)),
                 orderDate: order.completedAt || order.orderDate || order.createdAt || null,
-                status: order.status || order.orderStatus || 'Delivered'
+                status: order.status || order.orderStatus || 'Delivered',
+                // Extended details for Details modal
+                deliveryBoyName: order.deliveryBoyName || order.deliveryboyName || order.driverName || 'N/A',
+                deliveryBoyPhone: order.deliveryBoyPhone || order.deliveryboyPhone || 'N/A',
+                createdAt: order.createdAt || order.orderDate || null,
+                completedAt: order.completedAt || null,
+                deliveryAddress: [order.flatNo, order.street, order.landmark, order.deliveryAddress].filter(Boolean).join(', ') || order.deliveryAddress || 'N/A',
+                userName: order.userName || order.customerName || order.name || 'N/A',
+                userPhone: order.userPhone || order.phone || 'N/A',
+                userEmail: order.userEmail || order.email || 'N/A',
+                userId: order.userId || order.user_id || 'N/A',
+                items: Array.isArray(order.items) ? order.items : []
             };
         });
 

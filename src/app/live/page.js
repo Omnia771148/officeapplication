@@ -57,11 +57,19 @@ export default function LivePage() {
                     <span className="liveCountBadge">{orderStatuses.length} Active</span>
                 </div>
 
-                <Link href="/live-delay-analysis" className="headerAnalysisLink">
-                    <button className="analysisToggleBtn">
-                        📊 Delay Analysis
-                    </button>
-                </Link>
+                <div className="headerActionsGroup">
+                    <Link href="/total-income" className="headerIncomeLink">
+                        <button className="totalIncomeBtn">
+                            💰 Total Income
+                        </button>
+                    </Link>
+
+                    <Link href="/live-delay-analysis" className="headerAnalysisLink">
+                        <button className="analysisToggleBtn">
+                            📊 Delay Analysis
+                        </button>
+                    </Link>
+                </div>
             </header>
 
             {/* Orders Grid */}

@@ -10,10 +10,8 @@ export default function Dashboard() {
     const [alertedOrders, setAlertedOrders] = useState(new Set());
     const [userInteracted, setUserInteracted] = useState(false);
     const [showMoreOptions, setShowMoreOptions] = useState(false);
-    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
-        setMounted(true);
         // Request Firebase Token for Push Notifications
         requestForToken();
         
@@ -259,6 +257,16 @@ export default function Dashboard() {
                     onClick={() => router.push('/completed-order-coupons')}
                 >
                     🎟️ Coupons Used in Completed Orders
+                </button>
+            </div>
+
+            <div style={{ width: '90%', maxWidth: '800px', marginBottom: '20px' }}>
+                <button
+                    className="branchButton"
+                    style={{ '--btn-color': '#10b981' }}
+                    onClick={() => router.push('/total-income')}
+                >
+                    💰 Total Income
                 </button>
             </div>
 
