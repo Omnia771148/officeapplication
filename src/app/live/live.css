@@ -254,15 +254,26 @@
     justify-content: space-between;
     align-items: center;
     border-bottom: 1px solid #e2e8f0;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.15s ease;
+}
+
+.cardHeader:hover {
+    background-color: #f1f5f9;
+}
+
+.orderCard.collapsed .cardHeader {
+    border-bottom: none;
 }
 
 .headerLeft {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    gap: 10px;
+    gap: 12px;
     flex-wrap: wrap;
+    flex: 1;
+    min-width: 0;
 }
 
 .orderNumber {
@@ -270,6 +281,41 @@
     font-weight: 800;
     color: #0f172a;
     letter-spacing: -0.01em;
+}
+
+.headerRight {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    margin-left: 10px;
+}
+
+.expandToggleText {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #0284c7;
+    background: #e0f2fe;
+    padding: 4px 10px;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    transition: background-color 0.15s ease;
+}
+
+.cardHeader:hover .expandToggleText {
+    background: #bae6fd;
+}
+
+.chevronIcon {
+    font-size: 0.75rem;
+    color: #0284c7;
+    transition: transform 0.25s ease;
+    display: inline-block;
+}
+
+.chevronIcon.open {
+    transform: rotate(180deg);
 }
 
 /* --------------------------------------------------------------------------
