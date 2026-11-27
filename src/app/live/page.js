@@ -1,19 +1,41 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import './live.css';
 
 export default function LivePage() {
     const [orderStatuses, setOrderStatuses] = useState([]);
     const [loading, setLoading] = useState(true);
+    const knownOrderIdsRef = useRef(null);
+    const audioRef = useRef(null);
+
+    useEffect(() => {
+        audioRef.current = new Audio('/School%20bell%20sound%20effect%20%23shorts.mp3');
+    }, []);
 
     const fetchOrderStatuses = async () => {
         try {
             const res = await fetch('/api/orderstatuses');
             const data = await res.json();
             if (data.success) {
-                setOrderStatuses(data.data);
+                const orders = data.data || [];
+                const currentIds = new Set(orders.map((order) => order._id || order.orderId));
+
+                if (knownOrderIdsRef.current !== null) {
+                    const hasNewOrder = orders.some(
+                        (order) => !knownOrderIdsRef.current.has(order._id || order.orderId)
+                    );
+                    if (hasNewOrder && audioRef.current) {
+                        audioRef.current.currentTime = 0;
+                        audioRef.current.play().catch((err) => {
+                            console.warn('Could not play order sound:', err);
+                        });
+                    }
+                }
+
+                knownOrderIdsRef.current = currentIds;
+                setOrderStatuses(orders);
             }
         } catch (error) {
             console.error('Failed to fetch order statuses:', error);

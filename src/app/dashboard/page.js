@@ -1,23 +1,40 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import './dashboard.css';
 import { requestForToken, onMessageListener } from '../../../lib/firebase';
+
+const ORDER_BELL_SOUND = '/School%20bell%20sound%20effect%20%23shorts.mp3';
 
 export default function Dashboard() {
     const router = useRouter();
     const [alertedOrders, setAlertedOrders] = useState(new Set());
     const [userInteracted, setUserInteracted] = useState(false);
     const [showMoreOptions, setShowMoreOptions] = useState(false);
+    const audioRef = useRef(null);
+
+    const playOrderBell = () => {
+        if (typeof window === 'undefined') return;
+        try {
+            if (!audioRef.current) {
+                audioRef.current = new Audio(ORDER_BELL_SOUND);
+            }
+            audioRef.current.currentTime = 0;
+            audioRef.current.play().catch(() => { });
+        } catch (err) {
+            console.error('Failed to play order bell:', err);
+        }
+    };
 
     useEffect(() => {
         // Request Firebase Token for Push Notifications
         requestForToken();
-        
+
         // Handle foreground notifications
         onMessageListener()
             .then((payload) => {
+                playOrderBell();
                 if (typeof Notification !== "undefined" && payload?.notification) {
                     new Notification(payload.notification.title || "Notification", {
                         body: payload.notification.body || "",
@@ -35,7 +52,7 @@ export default function Dashboard() {
             window.removeEventListener('keydown', handleInteraction);
         };
     }, []);
-    
+
     // Polling logic for pending orders > 30 seconds
     useEffect(() => {
         const checkPendingOrders = async () => {
@@ -43,10 +60,10 @@ export default function Dashboard() {
                 const res = await fetch('/api/check-pending');
                 if (!res.ok) return;
                 const data = await res.json();
-                
+
                 if (data.success && data.status === 'ALERT') {
                     const newStaleOrders = (data.orders || []).filter(o => !alertedOrders.has(String(o.id)));
-                    
+
                     if (newStaleOrders.length > 0) {
                         setAlertedOrders(prev => {
                             const next = new Set(prev);
@@ -309,7 +326,7 @@ export default function Dashboard() {
                     >
                         🎟️ Coupon Codes for Influencers
                     </button>
-                    
+
                     <button
                         className="branchButton"
                         style={{ '--btn-color': '#34495e' }}
