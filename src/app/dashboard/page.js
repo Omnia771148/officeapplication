@@ -200,6 +200,16 @@ export default function Dashboard() {
             <div style={{ width: '90%', maxWidth: '800px', marginBottom: '20px' }}>
                 <button
                     className="branchButton"
+                    style={{ '--btn-color': '#e11d48' }}
+                    onClick={() => router.push('/pending-payments')}
+                >
+                    💰 Pending Payments
+                </button>
+            </div>
+
+            <div style={{ width: '90%', maxWidth: '800px', marginBottom: '20px' }}>
+                <button
+                    className="branchButton"
                     style={{ '--btn-color': '#d35400' }}
                     onClick={() => router.push('/settings-fees')}
                 >
